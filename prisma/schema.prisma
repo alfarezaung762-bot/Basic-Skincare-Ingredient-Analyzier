@@ -1,0 +1,134 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. NEXTAUTH JS SCHEMA (WAJIB UNTUK GOOGLE LOGIN)
+// ==========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Relasi ke tabel spesifik aplikasi kita
+  profile       Profile?
+  histories     AnalysisHistory[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// 2. SKINCARE APP SCHEMA
+// ==========================================
+
+enum SeverityLevel {
+  BIASA
+  SEDANG
+  PARAH
+}
+
+enum SkinFocus {
+  MENCERAHKAN
+  MENURUNKAN_JERAWAT
+  MERAWAT_MEMBERSIHKAN
+  MENGHILANGKAN_BEKAS
+}
+
+enum ProductType {
+  FACEWASH
+  MOISTURIZER
+  SUNSCREEN
+}
+
+model Profile {
+  id             String        @id @default(cuid())
+  userId         String        @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  skinType       String        // Contoh: Oily, Dry, Combination, Normal, Sensitive
+  age            Int
+  severity       SeverityLevel
+  primaryFocus   SkinFocus
+  allergies      String?       // Disimpan sebagai string yang dipisahkan koma (contoh: "Fragrance, Alcohol")
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model AnalysisHistory {
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  productName      String?     // Opsional, agar rapi di UI Riwayat
+  productType      ProductType
+  ingredientsInput String      @db.Text // Teks mentah dari OCR atau ketikan manual user
+  
+  // Hasil Analisis AI (Disimpan agar instan saat dibuka lagi)
+  matchScore       Int         // 0-100
+  safetyScore      Int         // 0-100
+  aiResponse       Json        // Menyimpan data lengkap: Red Flags, Penjelasan, Tooltip
+  
+  isSaved          Boolean     @default(false) // Tombol "Bintangi" di riwayat
+
+  createdAt        DateTime    @default(now())
+}
+
+// ==========================================
+// 3. INGREDIENT DICTIONARY (CACHE UNTUK HEMAT API GEMINI)
+// ==========================================
+model IngredientDictionary {
+  id                String   @id @default(cuid())
+  name              String   @unique // Nama bahan (huruf kecil semua untuk pencocokan)
+  benefits          String   @db.Text
+  comedogenicRating Int      @default(0) // Skala 0-5
+  warnings          String?  @db.Text // Contoh: "Hindari AHA/BHA jika kulit meradang parah"
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
