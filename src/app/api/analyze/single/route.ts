@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     `;
 
     // 4. Memanggil Google Gemini AI (Model Flash yang super cepat)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(systemPrompt);
     const responseText = await result.response.text();
 

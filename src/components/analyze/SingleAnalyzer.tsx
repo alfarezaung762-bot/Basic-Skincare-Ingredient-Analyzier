@@ -30,12 +30,12 @@ export default function SingleAnalyzer() {
     setResult(null);
 
     try {
-      // Endpoint API yang akan kita bangun setelah ini
       const response = await fetch("/api/analyze/single", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Mengubah undefined menjadi string kosong agar JSON valid di backend
         body: JSON.stringify({ 
-          productName: productName.trim() || undefined, // Kirim undefined jika kosong agar backend yang mengurus penamaan otomatis
+          productName: productName.trim() || "", 
           productType,
           ingredients 
         }),
@@ -62,13 +62,13 @@ export default function SingleAnalyzer() {
     <div className="w-full max-w-4xl mx-auto space-y-8">
       
       {/* BAGIAN 1: INPUT FORM */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+      <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border-2 border-gray-300">
         <form onSubmit={handleAnalyze} className="space-y-6">
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Input Nama Brand */}
             <div>
-              <label htmlFor="productName" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="productName" className="block text-sm font-bold text-gray-900 mb-2">
                 Nama Skincare / Brand (Opsional)
               </label>
               <input
@@ -77,17 +77,17 @@ export default function SingleAnalyzer() {
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
                 placeholder="Contoh: Wardah Perfect Bright..."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-sm"
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-gray-50 text-gray-900 font-medium placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-sm hover:bg-white"
               />
-              <p className="text-xs text-gray-500 mt-1">Agar mudah dicari di riwayat nanti.</p>
+              <p className="text-xs text-gray-600 font-medium mt-1">Agar mudah dicari di riwayat nanti.</p>
             </div>
 
             {/* Input Jenis Skincare */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-bold text-gray-900 mb-2">
                 Jenis Basic Skincare
               </label>
-              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-200">
+              <div className="flex bg-gray-100 p-1.5 rounded-xl border-2 border-gray-300">
                 {[
                   { id: "FACEWASH", label: "Face Wash" },
                   { id: "MOISTURIZER", label: "Moisturizer" },
@@ -97,10 +97,10 @@ export default function SingleAnalyzer() {
                     key={type.id}
                     type="button"
                     onClick={() => setProductType(type.id)}
-                    className={`flex-1 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                    className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
                       productType === type.id
-                        ? "bg-white text-black shadow-sm"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "bg-black text-white shadow-md"
+                        : "text-gray-600 hover:text-black hover:bg-white"
                     }`}
                   >
                     {type.label}
@@ -113,13 +113,13 @@ export default function SingleAnalyzer() {
           {/* Input Ingredients */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label htmlFor="ingredients" className="block text-sm font-semibold text-gray-900">
+              <label htmlFor="ingredients" className="block text-sm font-bold text-gray-900">
                 Komposisi Produk (Ingredients) <span className="text-red-500">*</span>
               </label>
               <button 
                 type="button"
                 onClick={handleOCRClick}
-                className="text-xs flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+                className="text-xs flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors font-bold"
               >
                 <span>📷</span> Scan OCR
               </button>
@@ -131,10 +131,10 @@ export default function SingleAnalyzer() {
               value={ingredients}
               onChange={(e) => setIngredients(e.target.value)}
               placeholder="Ketik atau tempel bahan di sini. Pastikan review kembali teks hasil OCR jika ada salah eja..."
-              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-sm resize-none"
+              className="w-full px-4 py-3 rounded-2xl border-2 border-gray-300 bg-gray-50 text-gray-900 font-medium placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-sm resize-none hover:bg-white"
               required
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-600 font-medium mt-2">
               Pisahkan setiap bahan dengan koma (contoh: Water, Glycerin, Niacinamide...).
             </p>
           </div>
@@ -144,7 +144,7 @@ export default function SingleAnalyzer() {
             <button
               type="submit"
               disabled={isAnalyzing || !ingredients.trim()}
-              className="w-full sm:w-auto px-8 py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+              className="w-full sm:w-auto px-8 py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg text-lg"
             >
               {isAnalyzing ? (
                 <>
@@ -152,7 +152,7 @@ export default function SingleAnalyzer() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>AI Sedang Menganalisis...</span>
+                  <span>Menganalisis...</span>
                 </>
               ) : (
                 <span>Mulai Analisis ✨</span>
@@ -162,57 +162,57 @@ export default function SingleAnalyzer() {
         </form>
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2">
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-bold flex items-center gap-2">
             <span>⚠️</span> {error}
           </div>
         )}
       </div>
 
-      {/* BAGIAN 2: HASIL ANALISIS (Tampil jika result ada) */}
+      {/* BAGIAN 2: HASIL ANALISIS */}
       {result && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           {/* Kartu Match Score */}
-          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between">
+          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border-2 border-gray-300 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">🎯 Match Score</h3>
-                <span className={`text-3xl font-black ${result.matchScore >= 70 ? 'text-green-500' : result.matchScore >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>
+                <h3 className="text-xl font-extrabold text-gray-900">🎯 Match Score</h3>
+                <span className={`text-4xl font-black ${result.matchScore >= 70 ? 'text-green-600' : result.matchScore >= 40 ? 'text-yellow-500' : 'text-red-600'}`}>
                   {result.matchScore}%
                 </span>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">{result.matchExplanation}</p>
+              <p className="text-base text-gray-800 font-medium leading-relaxed">{result.matchExplanation}</p>
             </div>
             
-            <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-start gap-3">
-              <span className="text-gray-400 mt-0.5">ℹ️</span>
-              <p className="text-xs text-gray-500 leading-relaxed">
+            <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-start gap-3">
+              <span className="text-gray-500 mt-0.5">ℹ️</span>
+              <p className="text-xs text-gray-700 font-medium leading-relaxed">
                 <strong>Disclaimer:</strong> Analisis comedogenic didasarkan pada bahan tunggal. Formulasi keseluruhan produk mungkin memberikan efek yang berbeda.
               </p>
             </div>
           </div>
 
           {/* Kartu Safety Score */}
-          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between">
+          <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border-2 border-gray-300 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">🛡️ Safety Score</h3>
-                <span className={`text-3xl font-black ${result.safetyScore >= 70 ? 'text-green-500' : result.safetyScore >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>
+                <h3 className="text-xl font-extrabold text-gray-900">🛡️ Safety Score</h3>
+                <span className={`text-4xl font-black ${result.safetyScore >= 70 ? 'text-green-600' : result.safetyScore >= 40 ? 'text-yellow-500' : 'text-red-600'}`}>
                   {result.safetyScore}%
                 </span>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">{result.safetyExplanation}</p>
+              <p className="text-base text-gray-800 font-medium leading-relaxed">{result.safetyExplanation}</p>
             </div>
 
             {/* Red Flags Alert */}
-            {result.redFlags.length > 0 && (
+            {result.redFlags && result.redFlags.length > 0 && (
               <div className="mt-8 space-y-3">
-                <h4 className="text-xs font-bold text-red-500 uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-sm font-bold text-red-600 uppercase tracking-wider flex items-center gap-2">
                   <span>🚩</span> Peringatan Keamanan
                 </h4>
                 <ul className="space-y-2">
                   {result.redFlags.map((flag, idx) => (
-                    <li key={idx} className="text-sm text-red-700 bg-red-50/50 border border-red-100 px-4 py-3 rounded-xl leading-relaxed">
+                    <li key={idx} className="text-sm text-red-800 font-bold bg-red-50 border border-red-200 px-4 py-3 rounded-xl leading-relaxed">
                       {flag}
                     </li>
                   ))}
@@ -222,14 +222,14 @@ export default function SingleAnalyzer() {
           </div>
 
           {/* Kartu Rekomendasi (Lebar Penuh) */}
-          {result.recommendations.length > 0 && (
+          {result.recommendations && result.recommendations.length > 0 && (
             <div className="col-span-1 md:col-span-2 bg-[#18181B] p-6 md:p-8 rounded-3xl shadow-sm mt-2">
-              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <h3 className="text-xl font-extrabold text-white mb-6 flex items-center gap-2">
                 <span>✨</span> Alternatif & Rekomendasi Cerdas
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {result.recommendations.map((rec, idx) => (
-                  <div key={idx} className="bg-white/10 border border-white/10 text-zinc-300 text-sm p-5 rounded-2xl leading-relaxed">
+                  <div key={idx} className="bg-zinc-800 border border-zinc-700 text-zinc-200 font-medium text-sm p-5 rounded-2xl leading-relaxed">
                     {rec}
                   </div>
                 ))}

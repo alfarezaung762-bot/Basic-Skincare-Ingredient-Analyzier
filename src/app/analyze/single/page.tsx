@@ -24,14 +24,21 @@ export default async function SingleAnalyzerPage() {
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Single Ingredient 🔬</h1>
             <p className="text-gray-500 mt-1">
-              Tempelkan komposisi produkmu di bawah ini. AI akan menganalisis kecocokannya secara spesifik berdasarkan profil kulitmu.
+              Tempelkan komposisi produkmu di bawah ini. AI akan menganalisis kecocokan secara spesifik berdasarkan profil kulitmu.
             </p>
           </div>
         </div>
 
-        {/* Memanggil Komponen UI */}
+        {/* Memanggil Komponen UI Analisis */}
         <SingleAnalyzer />
         
+        {/* Opsional: Widget Edukasi di Bawah (agar tampilan grid konsisten) */}
+        <div className="bg-zinc-900 text-white rounded-3xl p-8 flex flex-col justify-center mt-12">
+          <h3 className="text-xl font-bold mb-3">Pahami Skin Profile-mu 💡</h3>
+          <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
+            Hasil analisis AI ini sangat dipengaruhi oleh profil kulitmu. Pastikan data di halaman Profil (Umur, Jenis Kulit, Fokus) sudah diisi dengan benar untuk hasil yang paling akurat.
+          </p>
+        </div>
       </div>
     </main>
   );
