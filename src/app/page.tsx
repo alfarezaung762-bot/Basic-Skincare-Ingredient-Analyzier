@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { LoginButton, LogoutButton } from "@/components/AuthButtons";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma"; // 👈 Tambahan: Memanggil Prisma
 
 export default async function HomePage() {
   // Mengecek sesi login di sisi server (Server-Side Rendering)
@@ -29,6 +30,17 @@ export default async function HomePage() {
     );
   }
 
+  // 1. Ambil ID User dari Sesi
+  const userId = (session.user as any).id;
+
+  // 2. Cari data User terbaru langsung dari Database
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  // 3. Prioritaskan nama dari Database, jika kosong baru pakai dari Sesi
+  const displayName = dbUser?.name || session.user?.name;
+
   // Jika SUDAH login: Tampilkan Dashboard bergaya Bento Grid
   return (
     <main className="min-h-screen bg-[#F4F4F5] p-4 md:p-8 font-sans">
@@ -37,7 +49,8 @@ export default async function HomePage() {
         {/* Top Header */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-3xl shadow-sm gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Halo, {session.user?.name} 👋</h2>
+            {/* 👇 Menampilkan nama yang sudah pasti ter-update */}
+            <h2 className="text-2xl font-bold text-gray-900">Halo, {displayName} 👋</h2>
             <p className="text-gray-500 text-sm mt-1">Siap merawat kulitmu hari ini?</p>
           </div>
           <div className="flex gap-3">
