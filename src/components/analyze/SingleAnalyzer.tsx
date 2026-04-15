@@ -181,7 +181,7 @@ export default function SingleAnalyzer() {
                   {result.matchScore}%
                 </span>
               </div>
-              <p className="text-base text-gray-800 font-medium leading-relaxed">{result.matchExplanation}</p>
+              <p className="text-base text-gray-800  leading-relaxed font-bold">{result.matchExplanation}</p>
             </div>
             
             <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-start gap-3">
