@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  callbacks: {
+ callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -25,14 +25,13 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        // Menyisipkan User ID ke dalam session agar mudah dipanggil di Frontend
         (session.user as any).id = token.id; 
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Setelah login, selalu arahkan ke halaman profil untuk mengecek/mengisi data kulit
-      return `${baseUrl}/profile`;
+      // PERBAIKAN: Biarkan user kembali ke beranda (Home) secara default setelah login
+      return baseUrl;
     },
   },
   pages: {

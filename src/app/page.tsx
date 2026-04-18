@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { LoginButton, LogoutButton } from "@/components/AuthButtons";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma"; // 👈 Tambahan: Memanggil Prisma
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   // Mengecek sesi login di sisi server (Server-Side Rendering)
@@ -33,15 +34,21 @@ export default async function HomePage() {
   // 1. Ambil ID User dari Sesi
   const userId = (session.user as any).id;
 
-  // 2. Cari data User terbaru langsung dari Database
+  // 2. Cari data User terbaru langsung dari Database beserta data profilnya
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
+    include: { profile: true } // 👈 PENTING: Meminta Prisma sekalian mengambil data profil
   });
 
-  // 3. Prioritaskan nama dari Database, jika kosong baru pakai dari Sesi
+  // 3. LOGIKA SATPAM: Jika User belum punya profil, otomatis tendang ke halaman isi profil
+  if (!dbUser?.profile) {
+    redirect("/profile");
+  }
+
+  // 4. Prioritaskan nama dari Database, jika kosong baru pakai dari Sesi
   const displayName = dbUser?.name || session.user?.name;
 
-  // Jika SUDAH login: Tampilkan Dashboard bergaya Bento Grid
+  // Jika SUDAH login dan SUDAH punya profil: Tampilkan Dashboard bergaya Bento Grid
   return (
     <main className="min-h-screen bg-[#F4F4F5] p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-8">
