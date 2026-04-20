@@ -85,22 +85,37 @@ enum ProductType {
   SUNSCREEN
 }
 
+// TIPE BAHAN UNTUK LOGIKA MATEMATIKA AI
+enum IngredientType {
+  HERO     // Bahan utama yang sangat bagus (Bisa nambah skor)
+  TOXIC    // Bahan dilarang/berbahaya mutlak (Skor langsung 0)
+  HARSH    // Bahan keras/aktif yang butuh penenang (Bisa ngurangin skor)
+  BUFFER   // Bahan penenang/pelembap penyeimbang HARSH
+  BASIC    // Bahan standar (Pelarut, pengawet aman, tekstur)
+}
+
+// KATEGORI FUNGSIONAL KHUSUS (BARU)
+enum FunctionalCategory {
+  SURFAKTAN
+  UV_FILTER
+  PELEMBAP
+  UMUM
+}
+
 model Profile {
-  id             String        @id @default(cuid())
-  userId         String        @unique
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String        @id @default(cuid())
+  userId              String        @unique
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  skinType       String        // Contoh: Oily, Dry, Combination, Normal, Sensitive
-  age            Int
-  severity       SeverityLevel
-  primaryFocus   SkinFocus
-  allergies      String?       // Disimpan sebagai string yang dipisahkan koma (contoh: "Fragrance, Alcohol")
-
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  // Tambahkan baris ini:
+  skinType            String        // Contoh: Kering, Berminyak, Kombinasi, Normal (bisa gabung Sensitif)
+  age                 Int
+  severity            SeverityLevel
+  primaryFocus        SkinFocus
+  allergies           String?       // Disimpan sebagai string yang dipisahkan koma
   isPregnantOrNursing Boolean       @default(false) 
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 }
 
 model AnalysisHistory {
@@ -108,30 +123,56 @@ model AnalysisHistory {
   userId           String
   user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  productName      String?     // Opsional, agar rapi di UI Riwayat
+  productName      String?     
   productType      ProductType
-  ingredientsInput String      @db.Text // Teks mentah dari OCR atau ketikan manual user
+  ingredientsInput String      @db.Text 
   
-  // Hasil Analisis AI (Disimpan agar instan saat dibuka lagi)
   matchScore       Int         // 0-100
   safetyScore      Int         // 0-100
-  aiResponse       Json        // Menyimpan data lengkap: Red Flags, Penjelasan, Tooltip
+  aiResponse       Json        // Menyimpan Penjelasan AI & Rekomendasi
   
-  isSaved          Boolean     @default(false) // Tombol "Bintangi" di riwayat
+  isSaved          Boolean     @default(false) 
 
   createdAt        DateTime    @default(now())
 }
 
 // ==========================================
-// 3. INGREDIENT DICTIONARY (CACHE UNTUK HEMAT API GEMINI)
+// 3. INGREDIENT DICTIONARY & UNKNOWN INGREDIENTS
 // ==========================================
+
 model IngredientDictionary {
-  id                String   @id @default(cuid())
-  name              String   @unique // Nama bahan (huruf kecil semua untuk pencocokan)
-  benefits          String   @db.Text
-  comedogenicRating Int      @default(0) // Skala 0-5
-  warnings          String?  @db.Text // Contoh: "Hindari AHA/BHA jika kulit meradang parah"
+  id                 String             @id @default(cuid())
+  name               String             @unique // Nama bahan (huruf kecil semua)
+  type               IngredientType     @default(BASIC) // Kategori logika bahan
+  functionalCategory FunctionalCategory @default(UMUM) // Kategori Fungsional (BARU)
   
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  benefits           String             @db.Text // Penjelasan manfaat
+  warnings           String?            @db.Text // Peringatan khusus
+  comedogenicRating  Int                @default(0) // Skala 0-5
+  aliases            String?            // Untuk menampung sinonim beda bahasa, dipisah koma
+  
+  // Keamanan Khusus
+  safeForPregnancy   Boolean            @default(true) // Aman untuk bumil/menyusui?
+  safeForSensitive   Boolean            @default(true) // Aman untuk kulit sensitif?
+  
+  // Kecocokan Kulit (Format string dipisah koma, contoh: "Kering,Normal")
+  goodForSkinTypes   String?        
+  badForSkinTypes    String?        
+  
+  // Fokus Perawatan (Jika ini tipe HERO, cocok untuk apa? misal: "MENCERAHKAN")
+  targetFocus        String?        
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+// Menangkap bahan asing hasil input user yang belum ada di Database
+model UnknownIngredient {
+  id          String   @id @default(cuid())
+  name        String   @unique // Nama bahan yang tidak dikenali (huruf kecil)
+  reportCount Int      @default(1) // Berapa kali bahan ini diinput user
+  isReviewed  Boolean  @default(false) // Apakah sudah dicek oleh Admin?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
