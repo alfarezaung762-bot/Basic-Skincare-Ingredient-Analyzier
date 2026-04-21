@@ -16,7 +16,9 @@ export async function POST(req: Request) {
     }
 
     const userId = (session.user as any).id;
-    const { productName, productType, ingredients } = await req.json();
+    
+    // MENANGKAP PARAMETER MODE DARI FRONTEND
+    const { productName, productType, ingredients, mode } = await req.json();
 
     if (!ingredients) {
       return NextResponse.json({ message: "Komposisi (ingredients) tidak boleh kosong." }, { status: 400 });
@@ -55,7 +57,6 @@ export async function POST(req: Request) {
 
     const unknownContext = engineResult.unknownIngredients.join(", ");
 
-    // PROMPT DIPERBARUI: Memaksa AI menjawab dengan poin (✅/❌) agar rapi di UI
     const systemPrompt = `
       Anda adalah seorang Ahli Dermatologi AI kelas dunia. Anda beroperasi di bawah aturan mutlak berikut:
 
@@ -87,63 +88,72 @@ export async function POST(req: Request) {
       }
     `;
 
-    // SISTEM FALLBACK AI
-// ==============================================================
-    // 7. SISTEM FALLBACK AI & GRACEFUL DEGRADATION
-    // ==============================================================
-    const fallbackModels = [
-      "gemini-3.1-pro-preview",    // Seri 3.1
-      "gemini-3-flash",            // Seri 3
-      "gemini-2.5-pro",            // Seri 2.5 Pro
-      "gemini-2.5-flash",          // Seri 2.5 Flash
-      "gemini-1.5-flash-latest"    // Warisan/Legacy yang paling aman
-    ];
-    
     let responseText = "";
     let analysisData = null;
 
-    for (const modelName of fallbackModels) {
-      try {
-        console.log(`Mencoba model AI: ${modelName}...`);
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(systemPrompt);
-        responseText = await result.response.text();
-        
-        // Bersihkan output
-        const cleanedResponse = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        analysisData = JSON.parse(cleanedResponse);
-        
-        console.log(`✅ Berhasil menggunakan model: ${modelName}`);
-        break; // Jika berhasil, hentikan loop
-      } catch (err: any) {
-        console.warn(`⚠️ Model ${modelName} gagal: ${err.message}.`);
+    // ==============================================================
+    // 7. SISTEM AI (HANYA BERJALAN JIKA USER MEMILIH HYBRID)
+    // ==============================================================
+    if (mode !== "FAST") {
+      const fallbackModels = [
+        "gemini-3.1-pro-preview",
+        "gemini-3-flash",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-1.5-flash-latest"
+      ];
+      
+      for (const modelName of fallbackModels) {
+        try {
+          console.log(`Mencoba model AI: ${modelName}...`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent(systemPrompt);
+          responseText = await result.response.text();
+          
+          const cleanedResponse = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+          analysisData = JSON.parse(cleanedResponse);
+          
+          console.log(`✅ Berhasil menggunakan model: ${modelName}`);
+          break; 
+        } catch (err: any) {
+          console.warn(`⚠️ Model ${modelName} gagal: ${err.message}.`);
+        }
       }
     }
 
     // ==============================================================
-    // 8. SABUK PENGAMAN (JIKA SEMUA AI MATI / LIMIT HABIS)
+    // 8. MODE CEPAT (FAST) ATAU SABUK PENGAMAN JIKA AI GAGAL
     // ==============================================================
     if (!analysisData) {
-      console.warn("🚨 SEMUA MODEL AI GAGAL / LIMIT HABIS. MENGGUNAKAN MODE TEMPLATE OTOMATIS.");
+      if (mode === "FAST") {
+        console.log("⚡ Menjalankan Analisis via Sistem Cepat (Tanpa AI).");
+      } else {
+        console.warn("🚨 SEMUA MODEL AI GAGAL / LIMIT HABIS. BERALIH KE SISTEM CEPAT.");
+      }
       
-      // Kita buat JSON tiruan menggunakan data dari Mesin Matematika (Tahap 3)
       analysisData = {
         matchExplanation: engineResult.matchFlags.length > 0 
           ? engineResult.matchFlags.map(flag => `❌ ${flag}`).join('\n')
-          : "✅ Produk ini sangat ideal dan memenuhi standar kebutuhan kecocokan profil Anda.",
+          : "✅ Produk ini terpantau ideal dan tidak memiliki kandungan yang bertentangan dengan kebutuhan kecocokan profil Anda.",
           
         safetyExplanation: engineResult.safetyFlags.length > 0
           ? engineResult.safetyFlags.map(flag => `❌ ${flag}`).join('\n')
-          : "✅ Formulasi produk ini terpantau sangat aman dan minim risiko iritasi untuk Anda.",
+          : "✅ Berdasarkan kalkulasi sistem pusat, tidak ditemukan bahan keras atau toksik yang berisiko mengiritasi profil kulit Anda.",
           
         aiUnknownAnalysis: engineResult.unknownIngredients.length > 0
-          ? "⚠️ Sistem mendeteksi bahan asing yang belum diverifikasi. Karena server AI sedang kelebihan beban, kami belum bisa memberikan estimasi real-time. Harap waspada jika Anda memiliki riwayat alergi."
-          : "✅ Semua bahan di dalam produk ini telah terdaftar dan terverifikasi di database medis kami.",
+          ? "⚠️ Sistem mendeteksi bahan asing yang belum diverifikasi oleh database kami. Pada Mode Sistem Cepat, AI dinonaktifkan sehingga evaluasi mendalam untuk bahan asing dilewati. Harap waspada jika Anda memiliki riwayat alergi."
+          : "✅ Seluruh bahan dalam formulasi ini telah terdaftar resmi dan terverifikasi di database medis kami.",
           
-        recommendations: [
-          "Lakukan patch test (uji tempel) di belakang telinga jika ini adalah pertama kalinya Anda menggunakan produk ini.",
-          "Server AI kami saat ini sedang sibuk. Analisis naratif dinonaktifkan sementara, namun skor persentase Anda dijamin 100% akurat berdasarkan sistem pusat."
-        ]
+        recommendations: mode === "FAST" 
+          ? [
+              "Mode Sistem Cepat sedang aktif. Analisis naratif AI dimatikan untuk mempercepat hasil.",
+              "Skor persentase yang Anda lihat dijamin 100% akurat karena dihitung langsung oleh algoritma medis pusat kami.",
+              "Lakukan patch test (uji tempel) di area rahang jika ini adalah produk baru bagi Anda."
+            ]
+          : [
+              "Server AI eksternal kami saat ini sedang sibuk, analisis naratif dinonaktifkan sementara.",
+              "Lakukan patch test (uji tempel) di belakang telinga jika ini adalah pertama kalinya Anda menggunakan produk ini."
+            ]
       };
     }
 
@@ -160,7 +170,6 @@ export async function POST(req: Request) {
       }
     });
 
-    // 10. Kirim Hasil Gabungan ke Frontend
     return NextResponse.json({ 
       engineResult: engineResult,
       analysis: analysisData,

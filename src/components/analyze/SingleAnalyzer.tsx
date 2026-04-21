@@ -38,11 +38,18 @@ interface FullAnalysisResponse {
   historyId: string;
 }
 
-// --- FUNGSI PEMISAH TEKS AI ---
-const RenderExplanation = ({ text }: { text: string }) => {
+// --- FUNGSI PEMISAH TEKS AI DENGAN WARNA DINAMIS ---
+const RenderExplanation = ({ text, score }: { text: string, score: number }) => {
   if (!text) return null;
   const lines = text.split('\n').filter(line => line.trim() !== '');
   
+  // Sinkronisasi warna peringatan dengan warna donat persentase
+  const getNegativeStyle = (currentScore: number) => {
+    if (currentScore >= 70) return 'border-amber-400 bg-amber-50 text-amber-800'; 
+    if (currentScore >= 40) return 'border-orange-400 bg-orange-50 text-orange-800'; 
+    return 'border-rose-500 bg-rose-50 text-rose-800'; 
+  };
+
   return (
     <div className="space-y-3 mt-6 w-full">
       {lines.map((line, idx) => {
@@ -52,7 +59,7 @@ const RenderExplanation = ({ text }: { text: string }) => {
             key={idx} 
             className={`p-4 rounded-xl border-l-4 text-sm font-medium leading-relaxed shadow-sm ${
               isNegative 
-                ? 'border-rose-500 bg-rose-50 text-rose-800' 
+                ? getNegativeStyle(score)
                 : 'border-emerald-500 bg-emerald-50 text-emerald-800'
             }`}
           >
@@ -64,12 +71,12 @@ const RenderExplanation = ({ text }: { text: string }) => {
   );
 };
 
-// --- KOMPONEN GRAFIK SETENGAH DONAT (DIPERBAIKI) ---
+// --- KOMPONEN GRAFIK SETENGAH DONAT (ANIMASI WIPE & GLOW) ---
 const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClass: string, label: string }) => {
   const [animatedScore, setAnimatedScore] = useState(0);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setAnimatedScore(score), 150);
+    const timeout = setTimeout(() => setAnimatedScore(score), 200); // Sedikit delay agar animasi terlihat jelas
     return () => clearTimeout(timeout);
   }, [score]);
 
@@ -79,24 +86,35 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
   const circumference = normalizedRadius * Math.PI; 
   const strokeDashoffset = circumference - (animatedScore / 100) * circumference;
 
+  let glowColor = "rgba(16, 185, 129, 0.4)"; 
+  if (score < 75) glowColor = "rgba(245, 158, 11, 0.4)"; 
+  if (score < 40) glowColor = "rgba(244, 63, 94, 0.4)"; 
+
   return (
     <div className="flex flex-col items-center w-full">
-      {/* ViewBox diset 100x50 agar pas setengah lingkaran (tidak overlap dengan teks bawah) */}
       <div className="relative w-48 h-24 flex justify-center">
-        <svg className="w-full h-full" viewBox="0 0 100 50">
+        <svg className="w-full h-full absolute top-0" viewBox="0 0 100 50" style={{ overflow: 'visible' }}>
           <path 
             d={`M ${strokeWidth/2} 50 A ${normalizedRadius} ${normalizedRadius} 0 0 1 ${100 - strokeWidth/2} 50`} 
             fill="transparent" stroke="#F1F5F9" strokeWidth={strokeWidth} strokeLinecap="round" 
           />
+          {/* Animasi Glow Pulse di latar belakang bar */}
+          <path 
+            d={`M ${strokeWidth/2} 50 A ${normalizedRadius} ${normalizedRadius} 0 0 1 ${100 - strokeWidth/2} 50`} 
+            fill="transparent" stroke={glowColor} strokeWidth={strokeWidth + 8} strokeLinecap="round" 
+            strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} 
+            className="transition-all duration-[1500ms] ease-[cubic-bezier(0.1,1,0,1)] animate-pulse blur-md" 
+          />
+          {/* Bar Utama dengan animasi wipe yang lebih lambat dan dramatis */}
           <path 
             d={`M ${strokeWidth/2} 50 A ${normalizedRadius} ${normalizedRadius} 0 0 1 ${100 - strokeWidth/2} 50`} 
             fill="transparent" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" 
             strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} 
-            className={`transition-all duration-1000 ease-out ${colorClass}`} 
+            className={`transition-all duration-[1500ms] ease-[cubic-bezier(0.1,1,0,1)] ${colorClass} relative z-10`} 
           />
         </svg>
         <div className="absolute bottom-0 flex flex-col items-center">
-          <span className={`text-4xl font-black ${colorClass}`}>{animatedScore}%</span>
+          <span className={`text-4xl font-black ${colorClass} drop-shadow-sm`}>{animatedScore}%</span>
         </div>
       </div>
       <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-3 bg-slate-100 px-4 py-1.5 rounded-full">
@@ -109,18 +127,33 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
 // --- KOMPONEN KARTU BAHAN DETAIL ---
 const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
   const getStyle = () => {
-    if (ing.type === "TOXIC") return "bg-rose-50 border-rose-200 text-rose-900";
-    if (ing.type === "HARSH") return "bg-orange-50 border-orange-200 text-orange-900";
-    if (ing.type === "HERO") return "bg-emerald-50 border-emerald-200 text-emerald-900";
+    if (ing.type === "TOXIC") return "bg-rose-50 text-rose-900 border-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.3)]"; // Glow Merah
+    if (ing.type === "HARSH") return "bg-orange-50 text-orange-900 border-orange-200";
+    if (ing.type === "HERO") return "bg-emerald-50 text-emerald-900 border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]"; // Glow Hijau
     if (ing.type === "BUFFER") return "bg-blue-50 border-blue-200 text-blue-900";
     return "bg-slate-50 border-slate-200 text-slate-900";
   };
 
+  const isPulsing = ing.type === "TOXIC" || ing.type === "HARSH" || ing.type === "HERO";
+  const getPulseColor = () => {
+    if (ing.type === "TOXIC") return "bg-rose-500";
+    if (ing.type === "HARSH") return "bg-orange-500";
+    return "bg-emerald-500"; 
+  };
+
   return (
-    <div className={`p-5 rounded-2xl border ${getStyle()} shadow-sm transition-all hover:shadow-md`}>
+    <div className={`p-5 rounded-2xl border ${getStyle()} transition-all hover:-translate-y-1 relative`}>
       <div className="flex justify-between items-start mb-3">
-        <h4 className="font-bold capitalize text-base">{ing.name}</h4>
-        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-white rounded-md border border-inherit opacity-80 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          {isPulsing && (
+            <span className="relative flex h-3 w-3">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${getPulseColor()}`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${getPulseColor()}`}></span>
+            </span>
+          )}
+          <h4 className="font-bold capitalize text-base leading-tight">{ing.name}</h4>
+        </div>
+        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-white rounded-md border border-inherit opacity-80 shadow-sm shrink-0">
           {ing.type}
         </span>
       </div>
@@ -148,10 +181,17 @@ export default function SingleAnalyzer() {
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("FACEWASH");
   const [ingredients, setIngredients] = useState("");
-  
+  const [analysisMode, setAnalysisMode] = useState<"HYBRID" | "FAST">("HYBRID");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<FullAnalysisResponse | null>(null);
   const [error, setError] = useState("");
+
+  const [showAllGoodIngredients, setShowAllGoodIngredients] = useState(false);
+  const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
+
+  const handleOCRClick = () => {
+    alert("Fitur Pindai Label (OCR) sedang dalam pengembangan!");
+  };
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +205,7 @@ export default function SingleAnalyzer() {
       const response = await fetch("/api/analyze/single", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productName, productType, ingredients }),
+        body: JSON.stringify({ productName, productType, ingredients, mode: analysisMode }),
       });
 
       if (!response.ok) {
@@ -182,35 +222,49 @@ export default function SingleAnalyzer() {
 
   const handleReportIngredient = (ingName: string) => alert(`Bahan "${ingName}" dilaporkan ke Admin.`);
 
-  // Hitung jumlah bahan dari input teks
   const ingredientCount = ingredients.split(',').filter(i => i.trim() !== '').length;
 
-  // Pengelompokan & Pengurutan Bahan (HERO > TOXIC > HARSH > BUFFER > BASIC)
   const orderMap: Record<string, number> = { HERO: 1, TOXIC: 2, HARSH: 3, BUFFER: 4, BASIC: 5 };
-  
   const sortedDetectedIngredients = result?.engineResult.detectedIngredients.sort(
     (a, b) => (orderMap[a.type] || 99) - (orderMap[b.type] || 99)
   ) || [];
 
   const riskIngredients = sortedDetectedIngredients.filter(i => i.type === "HARSH" || i.type === "TOXIC");
   const goodIngredients = sortedDetectedIngredients.filter(i => i.type === "HERO" || i.type === "BUFFER");
-const handleOCRClick = () => {
-    alert("Fitur Pindai Label (OCR) sedang dalam pengembangan!");
-  };
+  const basicIngredients = sortedDetectedIngredients.filter(i => i.type === "BASIC");
+  const visibleGoodIngredients = showAllGoodIngredients ? goodIngredients : goodIngredients.slice(0, 4);
+
   return (
     <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
       
-      {/* === INPUT FORM (DESIGN BARU) === */}
+      {/* === INPUT FORM === */}
       <div className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden">
-        
-        {/* Dekorasi Halus */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
 
-        <div className="flex items-center gap-4 mb-8 border-b border-slate-100 pb-5">
-          <span className="bg-slate-100 text-slate-800 font-black text-lg px-4 py-2 rounded-xl border border-slate-200">01</span>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Formulir Analisis Klinis</h2>
-            <p className="text-sm text-slate-500 mt-1 font-medium">Masukkan komposisi produk untuk dievaluasi sistem</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-5">
+          <div className="flex items-center gap-4">
+            <span className="bg-slate-100 text-slate-800 font-black text-lg px-4 py-2 rounded-xl border border-slate-200">01</span>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Formulir Analisis Klinis</h2>
+              <p className="text-sm text-slate-500 mt-1 font-medium">Masukkan komposisi produk untuk dievaluasi sistem</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner w-fit">
+            <button 
+              type="button" 
+              onClick={() => setAnalysisMode("FAST")} 
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+            >
+              ⚡ Sistem Cepat
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setAnalysisMode("HYBRID")} 
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+            >
+              🤖 AI Hybrid
+            </button>
           </div>
         </div>
         
@@ -218,32 +272,13 @@ const handleOCRClick = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Nama Produk <span className="text-slate-400 font-normal">(opsional)</span></label>
-              <input 
-                type="text" 
-                value={productName} 
-                onChange={(e) => setProductName(e.target.value)} 
-                placeholder="Contoh: laboré"
-                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm shadow-sm" 
-              />
+              <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Contoh: laboré" className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm shadow-sm" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Klasifikasi Produk</label>
               <div className="flex bg-slate-50 p-1.5 rounded-2xl border-2 border-slate-100 shadow-inner">
-                {[ 
-                  { id: "FACEWASH", label: "Face Wash", icon: "💧" }, 
-                  { id: "MOISTURIZER", label: "Moisturizer", icon: "✨" }, 
-                  { id: "SUNSCREEN", label: "Sunscreen", icon: "🌞" } 
-                ].map((type) => (
-                  <button 
-                    key={type.id} 
-                    type="button" 
-                    onClick={() => setProductType(type.id)} 
-                    className={`flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
-                      productType === type.id 
-                        ? "bg-white text-slate-900 shadow-md border border-slate-200 scale-[1.02]" 
-                        : "text-slate-400 hover:text-slate-700"
-                    }`}
-                  >
+                {[ { id: "FACEWASH", label: "Face Wash", icon: "💧" }, { id: "MOISTURIZER", label: "Moisturizer", icon: "✨" }, { id: "SUNSCREEN", label: "Sunscreen", icon: "🌞" } ].map((type) => (
+                  <button key={type.id} type="button" onClick={() => setProductType(type.id)} className={`flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${productType === type.id ? "bg-white text-slate-900 shadow-md border border-slate-200 scale-[1.02]" : "text-slate-400 hover:text-slate-700"}`}>
                     <span>{type.icon}</span> {type.label}
                   </button>
                 ))}
@@ -254,34 +289,19 @@ const handleOCRClick = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Daftar Komposisi <span className="text-rose-500">*</span></label>
-              <button 
-                type="button" 
-                onClick={handleOCRClick}
-                className="text-xs flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl hover:bg-slate-50 font-bold shadow-sm transition-all active:scale-95"
-              >
+              <button type="button" onClick={handleOCRClick} className="text-xs flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl hover:bg-slate-50 font-bold shadow-sm transition-all active:scale-95">
                 <span>📷</span> Pindai Label
               </button>
             </div>
-            <textarea 
-              rows={6} required 
-              value={ingredients} 
-              onChange={(e) => setIngredients(e.target.value)} 
-              placeholder="Paste daftar ingredients di sini, pisahkan dengan koma..." 
-              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm resize-none shadow-inner leading-relaxed" 
-            />
+            <textarea rows={6} required value={ingredients} onChange={(e) => setIngredients(e.target.value)} placeholder="Paste daftar ingredients di sini, pisahkan dengan koma..." className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm resize-none shadow-inner leading-relaxed" />
             {ingredients.trim().length > 0 && (
               <p className="text-xs font-bold text-slate-400 mt-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                {ingredientCount} bahan terdeteksi dari teks
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> {ingredientCount} bahan terdeteksi dari teks
               </p>
             )}
           </div>
 
-          <button 
-            type="submit" 
-            disabled={isAnalyzing || !ingredients.trim()} 
-            className="w-full py-4 bg-[#111827] text-white font-bold rounded-2xl hover:bg-black transition-all disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none flex items-center justify-center gap-3 shadow-lg shadow-slate-900/20 text-base tracking-wide relative overflow-hidden"
-          >
+          <button type="submit" disabled={isAnalyzing || !ingredients.trim()} className="w-full py-4 bg-[#111827] text-white font-bold rounded-2xl hover:bg-black transition-all disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none flex items-center justify-center gap-3 shadow-lg shadow-slate-900/20 text-base tracking-wide relative overflow-hidden">
             {isAnalyzing ? (
               <>
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -311,23 +331,23 @@ const handleOCRClick = () => {
               <div className="flex flex-col items-center">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Kecocokan Profil Kulit</h3>
                 <HalfDonutChart score={result.engineResult.matchScore} label={result.engineResult.matchLabel} colorClass={result.engineResult.matchScore >= 75 ? 'text-emerald-500' : result.engineResult.matchScore >= 40 ? 'text-amber-500' : 'text-rose-500'} />
-                <RenderExplanation text={result.analysis.matchExplanation} />
+                <RenderExplanation text={result.analysis.matchExplanation} score={result.engineResult.matchScore} />
               </div>
               <div className="flex flex-col items-center pt-8 md:pt-0 md:pl-10">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Tingkat Keamanan Produk</h3>
                 <HalfDonutChart score={result.engineResult.safetyScore} label={result.engineResult.safetyLabel} colorClass={result.engineResult.safetyScore >= 70 ? 'text-emerald-500' : result.engineResult.safetyScore >= 40 ? 'text-amber-500' : 'text-rose-500'} />
-                <RenderExplanation text={result.analysis.safetyExplanation} />
+                <RenderExplanation text={result.analysis.safetyExplanation} score={result.engineResult.safetyScore} />
               </div>
             </div>
           </div>
 
-          {/* BAHAN TERDETEKSI (DIURUTKAN & BERWARNA) */}
-          {sortedDetectedIngredients.length > 0 && (
+          {/* BAHAN TERDETEKSI & BAHAN ASING */}
+          {(sortedDetectedIngredients.length > 0 || result.engineResult.unknownIngredients.length > 0) && (
             <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-base font-black text-slate-800">Bahan Terdeteksi Sistem</h3>
                 <span className="bg-white text-slate-600 font-bold text-xs px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                  Total: {sortedDetectedIngredients.length} Bahan
+                  Total: {sortedDetectedIngredients.length + result.engineResult.unknownIngredients.length} Bahan
                 </span>
               </div>
               
@@ -345,6 +365,50 @@ const handleOCRClick = () => {
                     </span>
                   );
                 })}
+              </div>
+
+              {/* INTEGRASI BAHAN ASING SEBAGAI DROPDOWN NOTIFIKASI */}
+              {result.engineResult.unknownIngredients.length > 0 && (
+                <div className="mt-6 border-t border-slate-200 pt-5">
+                  <button 
+                    onClick={() => setShowUnknownIngredients(!showUnknownIngredients)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-amber-300 rounded-xl shadow-sm text-amber-800 text-sm font-bold hover:bg-amber-50 transition-colors"
+                  >
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                    </span>
+                    <span>Bahan Asing Ditemukan ({result.engineResult.unknownIngredients.length})</span>
+                    <span className="ml-2 text-amber-500">{showUnknownIngredients ? '▲' : '▼'}</span>
+                  </button>
+
+                  {showUnknownIngredients && (
+                    <div className="mt-4 p-5 bg-white rounded-2xl border border-amber-200 shadow-sm animate-in slide-in-from-top-2">
+                      <div className="bg-amber-50 p-4 rounded-xl text-sm text-slate-700 font-medium leading-relaxed mb-4 border border-amber-100">
+                        {result.analysis.aiUnknownAnalysis}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Daftar Bahan:</span>
+                        {result.engineResult.unknownIngredients.map((ing, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                            <span className="text-xs font-bold text-slate-700">{ing}</span>
+                            <button onClick={() => handleReportIngredient(ing)} className="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 hover:bg-rose-100 transition-colors">Laporkan 🚩</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Legenda Keterangan Warna */}
+              <div className="mt-6 pt-5 border-t border-slate-200 flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span> Bintang Utama</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-400"></span> Berbahaya</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400"></span> Keras / Aktif</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span> Penenang</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-white border border-slate-300"></span> Standar</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-slate-100 border border-slate-300 border-dashed"></span> Tidak Dikenali</div>
               </div>
             </div>
           )}
@@ -366,27 +430,17 @@ const handleOCRClick = () => {
               <h3 className="text-lg font-black text-emerald-800 mb-2 flex items-center gap-2"><span>🌱</span> Bahan Unggulan & Penenang</h3>
               <p className="text-sm text-slate-500 mb-6 font-medium">Bahan-bahan ini memberikan nilai tambah berupa perawatan ekstra untuk kulit.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {goodIngredients.map((ing, idx) => <IngredientCard key={idx} ing={ing} />)}
+                {visibleGoodIngredients.map((ing, idx) => <IngredientCard key={idx} ing={ing} />)}
               </div>
-            </div>
-          )}
-
-          {/* ZONA BAHAN ASING */}
-          {result.engineResult.unknownIngredients.length > 0 && (
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 md:p-8 rounded-[2rem] border border-amber-200 shadow-sm">
-              <h3 className="text-lg font-black text-amber-900 mb-4 flex items-center gap-2"><span>❓</span> Analisis Bahan Asing (AI)</h3>
-              <div className="bg-white p-6 rounded-2xl border border-amber-200 text-sm text-slate-700 font-medium leading-relaxed mb-6 shadow-sm">
-                {result.analysis.aiUnknownAnalysis}
-              </div>
-              <div className="flex flex-wrap items-center gap-3 bg-white/60 p-4 rounded-2xl border border-amber-100">
-                <span className="text-xs font-bold text-amber-700 uppercase tracking-widest">Bahan Asing:</span>
-                {result.engineResult.unknownIngredients.map((ing, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-amber-200 shadow-sm">
-                    <span className="text-xs font-bold text-slate-700">{ing}</span>
-                    <button onClick={() => handleReportIngredient(ing)} className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded border border-rose-200 hover:bg-rose-100 transition-colors">Laporkan 🚩</button>
-                  </div>
-                ))}
-              </div>
+              
+              {goodIngredients.length > 4 && (
+                <button 
+                  onClick={() => setShowAllGoodIngredients(!showAllGoodIngredients)} 
+                  className="w-full mt-6 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-bold rounded-xl border border-slate-200 transition-colors shadow-sm"
+                >
+                  {showAllGoodIngredients ? "Sembunyikan Bahan ▲" : `Tampilkan ${goodIngredients.length - 4} Bahan Lainnya 🔽`}
+                </button>
+              )}
             </div>
           )}
 

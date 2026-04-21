@@ -33,12 +33,7 @@ export default async function SingleAnalyzerPage() {
         <SingleAnalyzer />
         
         {/* Opsional: Widget Edukasi di Bawah (agar tampilan grid konsisten) */}
-        <div className="bg-zinc-900 text-white rounded-3xl p-8 flex flex-col justify-center mt-12">
-          <h3 className="text-xl font-bold mb-3">Pahami Skin Profile-mu 💡</h3>
-          <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
-            Hasil analisis AI ini sangat dipengaruhi oleh profil kulitmu. Pastikan data di halaman Profil (Umur, Jenis Kulit, Fokus) sudah diisi dengan benar untuk hasil yang paling akurat.
-          </p>
-        </div>
+        
       </div>
     </main>
   );
