@@ -171,7 +171,7 @@ export function runScoringEngine(
     }
 
     if (profile.isPregnantOrNursing && !ing.safeForPregnancy) {
-      safetyScore -= 30;
+      safetyScore -= 100;
       safetyFlags.push(`Tidak aman untuk ibu hamil atau menyusui: ${ing.name}.`);
     }
 
