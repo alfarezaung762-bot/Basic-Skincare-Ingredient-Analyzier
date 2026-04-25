@@ -12,6 +12,9 @@ interface IngredientDb {
   comedogenicRating: number;
   safeForPregnancy: boolean;
   safeForSensitive: boolean;
+  // TAMBAHAN V3
+  isKeyActive?: boolean;
+  strengthLevel?: number;
 }
 
 interface EngineResult {
@@ -23,6 +26,9 @@ interface EngineResult {
   safetyFlags: string[];
   detectedIngredients: IngredientDb[];
   unknownIngredients: string[];
+  // TAMBAHAN V3
+  primaryProductFocus?: string | null;
+  secondaryProductFocuses?: string[];
 }
 
 interface AiAnalysis {
@@ -53,7 +59,7 @@ const RenderExplanation = ({ text, score }: { text: string, score: number }) => 
   return (
     <div className="space-y-3 mt-6 w-full">
       {lines.map((line, idx) => {
-        const isNegative = line.includes('❌');
+        const isNegative = line.includes('❌') || line.includes('⚠️') || line.includes('🚫');
         return (
           <div 
             key={idx} 
@@ -76,7 +82,7 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
   const [animatedScore, setAnimatedScore] = useState(0);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setAnimatedScore(score), 200); // Sedikit delay agar animasi terlihat jelas
+    const timeout = setTimeout(() => setAnimatedScore(score), 200);
     return () => clearTimeout(timeout);
   }, [score]);
 
@@ -124,38 +130,49 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
   );
 };
 
-// --- KOMPONEN KARTU BAHAN DETAIL ---
+// --- KOMPONEN KARTU BAHAN DETAIL (UPDATE V3) ---
 const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
   const getStyle = () => {
-    if (ing.type === "TOXIC") return "bg-rose-50 text-rose-900 border-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.3)]"; // Glow Merah
+    if (ing.type === "TOXIC") return "bg-rose-50 text-rose-900 border-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.3)]";
     if (ing.type === "HARSH") return "bg-orange-50 text-orange-900 border-orange-200";
-    if (ing.type === "HERO") return "bg-emerald-50 text-emerald-900 border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]"; // Glow Hijau
+    if (ing.isKeyActive) return "bg-emerald-50 text-emerald-900 border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]"; // HERO diganti isKeyActive
     if (ing.type === "BUFFER") return "bg-blue-50 border-blue-200 text-blue-900";
     return "bg-slate-50 border-slate-200 text-slate-900";
   };
 
-  const isPulsing = ing.type === "TOXIC" || ing.type === "HARSH" || ing.type === "HERO";
+  const isPulsing = ing.type === "TOXIC" || ing.type === "HARSH" || ing.isKeyActive;
   const getPulseColor = () => {
     if (ing.type === "TOXIC") return "bg-rose-500";
     if (ing.type === "HARSH") return "bg-orange-500";
     return "bg-emerald-500"; 
   };
 
+  // Label Kekuatan (V3)
+  let strengthBadge = null;
+  if (ing.type === "HARSH" && ing.strengthLevel) {
+    strengthBadge = <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-orange-100 text-orange-800 rounded-md border border-orange-200 ml-2">🔥 Keras: Lvl {ing.strengthLevel}</span>;
+  } else if (ing.type === "BUFFER" && ing.strengthLevel) {
+    strengthBadge = <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-blue-100 text-blue-800 rounded-md border border-blue-200 ml-2">💧 Penenang: Lvl {ing.strengthLevel}</span>;
+  }
+
   return (
     <div className={`p-5 rounded-2xl border ${getStyle()} transition-all hover:-translate-y-1 relative`}>
       <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {isPulsing && (
-            <span className="relative flex h-3 w-3">
+            <span className="relative flex h-3 w-3 shrink-0">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${getPulseColor()}`}></span>
               <span className={`relative inline-flex rounded-full h-3 w-3 ${getPulseColor()}`}></span>
             </span>
           )}
           <h4 className="font-bold capitalize text-base leading-tight">{ing.name}</h4>
         </div>
-        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-white rounded-md border border-inherit opacity-80 shadow-sm shrink-0">
-          {ing.type}
-        </span>
+        <div className="flex items-center shrink-0">
+          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-white rounded-md border border-inherit opacity-80 shadow-sm">
+            {ing.isKeyActive ? "BINTANG UTAMA" : ing.type}
+          </span>
+          {strengthBadge}
+        </div>
       </div>
       <p className="text-xs font-medium opacity-80 mb-5 leading-relaxed">{ing.benefits}</p>
       
@@ -224,13 +241,16 @@ export default function SingleAnalyzer() {
 
   const ingredientCount = ingredients.split(',').filter(i => i.trim() !== '').length;
 
-  const orderMap: Record<string, number> = { HERO: 1, TOXIC: 2, HARSH: 3, BUFFER: 4, BASIC: 5 };
-  const sortedDetectedIngredients = result?.engineResult.detectedIngredients.sort(
-    (a, b) => (orderMap[a.type] || 99) - (orderMap[b.type] || 99)
-  ) || [];
+  // URUTAN V3: Bintang Utama selalu di atas, lalu Toxic, Harsh, Buffer, Basic
+  const orderMap: Record<string, number> = { TOXIC: 1, HARSH: 2, BUFFER: 3, BASIC: 4 };
+  const sortedDetectedIngredients = result?.engineResult.detectedIngredients.sort((a, b) => {
+    if (a.isKeyActive && !b.isKeyActive) return -1;
+    if (!a.isKeyActive && b.isKeyActive) return 1;
+    return (orderMap[a.type] || 99) - (orderMap[b.type] || 99);
+  }) || [];
 
   const riskIngredients = sortedDetectedIngredients.filter(i => i.type === "HARSH" || i.type === "TOXIC");
-  const goodIngredients = sortedDetectedIngredients.filter(i => i.type === "HERO" || i.type === "BUFFER");
+  const goodIngredients = sortedDetectedIngredients.filter(i => i.isKeyActive || i.type === "BUFFER");
   const basicIngredients = sortedDetectedIngredients.filter(i => i.type === "BASIC");
   const visibleGoodIngredients = showAllGoodIngredients ? goodIngredients : goodIngredients.slice(0, 4);
 
@@ -341,6 +361,44 @@ export default function SingleAnalyzer() {
             </div>
           </div>
 
+          {/* KESIMPULAN FOKUS PRODUK V3 */}
+          {(result.engineResult.primaryProductFocus || (result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0)) && (
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
+              <h3 className="text-sm font-black text-slate-400 border-b border-slate-100 pb-4 mb-6 text-center uppercase tracking-widest">
+                Profil Formulasi Produk
+              </h3>
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Target Utama */}
+                <div className="flex-1 bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-200 rounded-full blur-3xl -ml-10 -mt-10 opacity-50"></div>
+                  <span className="text-3xl mb-3 relative z-10">🎯</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Target Utama Formulasi</span>
+                  <span className="text-lg font-black text-slate-800 relative z-10">
+                    {result.engineResult.primaryProductFocus || "Tidak Spesifik (Basic Care)"}
+                  </span>
+                </div>
+
+                {/* Manfaat Tambahan */}
+                {result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0 && (
+                  <div className="flex-1 bg-slate-50 p-6 rounded-2xl border border-slate-200 relative overflow-hidden">
+                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-200 rounded-full blur-3xl -mr-10 -mb-10 opacity-50"></div>
+                    <div className="flex items-center gap-2 mb-4 relative z-10">
+                      <span className="text-xl">🎁</span>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Manfaat Tambahan (Sekunder)</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 relative z-10">
+                      {result.engineResult.secondaryProductFocuses.map((focus, idx) => (
+                        <span key={idx} className="bg-white text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                          {focus}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* BAHAN TERDETEKSI & BAHAN ASING */}
           {(sortedDetectedIngredients.length > 0 || result.engineResult.unknownIngredients.length > 0) && (
             <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-200">
@@ -354,7 +412,7 @@ export default function SingleAnalyzer() {
               <div className="flex flex-wrap gap-2.5">
                 {sortedDetectedIngredients.map((ing, idx) => {
                   let style = "bg-white text-slate-600 border-slate-200";
-                  if (ing.type === "HERO") style = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                  if (ing.isKeyActive) style = "bg-emerald-100 text-emerald-800 border-emerald-200";
                   if (ing.type === "TOXIC") style = "bg-rose-100 text-rose-800 border-rose-200";
                   if (ing.type === "HARSH") style = "bg-orange-100 text-orange-800 border-orange-200";
                   if (ing.type === "BUFFER") style = "bg-blue-100 text-blue-800 border-blue-200";

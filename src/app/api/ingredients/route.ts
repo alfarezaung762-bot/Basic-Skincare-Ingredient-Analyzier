@@ -19,10 +19,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // PERUBAHAN: Menangkap functionalCategory
+    // PERUBAHAN V3: Menangkap variabel baru dari form Admin
     const { 
       name, aliases, type, functionalCategory, benefits, warnings, comedogenicRating, 
-      safeForPregnancy, safeForSensitive, goodForSkinTypes, targetFocus 
+      safeForPregnancy, safeForSensitive, 
+      isKeyActive, strengthLevel, blacklistedSkinTypes, blacklistReason, targetFocus 
     } = body;
 
     // Cek jika nama kosong
@@ -30,26 +31,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Nama bahan tidak boleh kosong." }, { status: 400 });
     }
 
-    // Proses pembuatan data di Prisma
+    // Proses pembuatan data di Prisma dengan kolom baru
     const newIngredient = await prisma.ingredientDictionary.create({
       data: {
         name: name.toLowerCase().trim(),
         aliases: aliases ? aliases.toLowerCase().trim() : null,
         type: type || "BASIC",
-        functionalCategory: functionalCategory || "UMUM", // PERUBAHAN: Default ke UMUM
+        functionalCategory: functionalCategory || "UMUM",
         benefits: benefits || "",
         warnings: warnings || null,
         comedogenicRating: Number(comedogenicRating) || 0,
         safeForPregnancy: Boolean(safeForPregnancy),
         safeForSensitive: Boolean(safeForSensitive),
-        goodForSkinTypes: goodForSkinTypes || null,
+        
+        // --- DATA ARSITEKTUR V3 ---
+        isKeyActive: Boolean(isKeyActive),
+        strengthLevel: Number(strengthLevel) || 1,
+        blacklistedSkinTypes: blacklistedSkinTypes || null,
+        blacklistReason: blacklistReason || null,
         targetFocus: targetFocus || null,
       },
     });
 
     return NextResponse.json(newIngredient, { status: 201 });
   } catch (error: any) {
-    // Menampilkan error spesifik di terminal VS Code
     console.error("POST Ingredient Error Detail:", error);
 
     // Mencegah duplikasi nama bahan

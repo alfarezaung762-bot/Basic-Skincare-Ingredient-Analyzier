@@ -63,20 +63,13 @@ model VerificationToken {
 }
 
 // ==========================================
-// 2. SKINCARE APP SCHEMA
+// 2. SKINCARE APP SCHEMA (ARSITEKTUR V3)
 // ==========================================
 
 enum SeverityLevel {
   BIASA
   SEDANG
   PARAH
-}
-
-enum SkinFocus {
-  MENCERAHKAN
-  MENURUNKAN_JERAWAT
-  MERAWAT_MEMBERSIHKAN
-  MENGHILANGKAN_BEKAS
 }
 
 enum ProductType {
@@ -87,18 +80,19 @@ enum ProductType {
 
 // TIPE BAHAN UNTUK LOGIKA MATEMATIKA AI
 enum IngredientType {
-  HERO     // Bahan utama yang sangat bagus (Bisa nambah skor)
-  TOXIC    // Bahan dilarang/berbahaya mutlak (Skor langsung 0)
-  HARSH    // Bahan keras/aktif yang butuh penenang (Bisa ngurangin skor)
-  BUFFER   // Bahan penenang/pelembap penyeimbang HARSH
+  TOXIC    // Bahan dilarang/berbahaya mutlak
+  HARSH    // Bahan keras/aktif yang butuh penenang
+  BUFFER   // Bahan penenang/pereda inflamasi
   BASIC    // Bahan standar (Pelarut, pengawet aman, tekstur)
 }
 
-// KATEGORI FUNGSIONAL KHUSUS (BARU)
+// KATEGORI FUNGSIONAL KHUSUS
 enum FunctionalCategory {
   SURFAKTAN
   UV_FILTER
-  PELEMBAP
+  PELEMBAP_HUMEKTAN  // Berbasis air (ringan)
+  PELEMBAP_EMOLIEN   // Berbasis lemak (menengah)
+  PELEMBAP_OKLUSIF   // Berbasis minyak/lilin (tebal)
   UMUM
 }
 
@@ -110,7 +104,10 @@ model Profile {
   skinType            String        // Contoh: Kering, Berminyak, Kombinasi, Normal (bisa gabung Sensitif)
   age                 Int
   severity            SeverityLevel
-  primaryFocus        SkinFocus
+  
+  // Diubah menjadi String biasa agar bisa menyimpan banyak teks yang dipisah koma
+  primaryFocus        String        
+  
   allergies           String?       // Disimpan sebagai string yang dipisahkan koma
   isPregnantOrNursing Boolean       @default(false) 
 
@@ -141,37 +138,40 @@ model AnalysisHistory {
 // ==========================================
 
 model IngredientDictionary {
-  id                 String             @id @default(cuid())
-  name               String             @unique // Nama bahan (huruf kecil semua)
-  type               IngredientType     @default(BASIC) // Kategori logika bahan
-  functionalCategory FunctionalCategory @default(UMUM) // Kategori Fungsional (BARU)
+  id                   String             @id @default(cuid())
+  name                 String             @unique // Nama bahan (huruf kecil semua)
+  type                 IngredientType     @default(BASIC) 
+  functionalCategory   FunctionalCategory @default(UMUM) 
   
-  benefits           String             @db.Text // Penjelasan manfaat
-  warnings           String?            @db.Text // Peringatan khusus
-  comedogenicRating  Int                @default(0) // Skala 0-5
-  aliases            String?            // Untuk menampung sinonim beda bahasa, dipisah koma
+  benefits             String             @db.Text 
+  warnings             String?            @db.Text 
+  comedogenicRating    Int                @default(0) // Skala 0-5
+  aliases              String?            // Sinonim beda bahasa, dipisah koma
   
   // Keamanan Khusus
-  safeForPregnancy   Boolean            @default(true) // Aman untuk bumil/menyusui?
-  safeForSensitive   Boolean            @default(true) // Aman untuk kulit sensitif?
+  safeForPregnancy     Boolean            @default(true) 
+  safeForSensitive     Boolean            @default(true) 
   
-  // Kecocokan Kulit (Format string dipisah koma, contoh: "Kering,Normal")
-  goodForSkinTypes   String?        
-  badForSkinTypes    String?        
+  // --- FITUR BARU V3 ---
+  isKeyActive          Boolean            @default(false)
+  strengthLevel        Int                @default(1)
+  blacklistedSkinTypes String?            @db.Text
+  blacklistReason      String?            @db.Text
+  // ---------------------
   
-  // Fokus Perawatan (Jika ini tipe HERO, cocok untuk apa? misal: "MENCERAHKAN")
-  targetFocus        String?        
+  goodForSkinTypes     String?        
+  targetFocus          String?        
 
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 }
 
 // Menangkap bahan asing hasil input user yang belum ada di Database
 model UnknownIngredient {
   id          String   @id @default(cuid())
-  name        String   @unique // Nama bahan yang tidak dikenali (huruf kecil)
-  reportCount Int      @default(1) // Berapa kali bahan ini diinput user
-  isReviewed  Boolean  @default(false) // Apakah sudah dicek oleh Admin?
+  name        String   @unique // Nama bahan yang tidak dikenali
+  reportCount Int      @default(1) 
+  isReviewed  Boolean  @default(false) 
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
