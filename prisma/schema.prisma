@@ -157,6 +157,7 @@ model IngredientDictionary {
   strengthLevel        Int                @default(1)
   blacklistedSkinTypes String?            @db.Text
   blacklistReason      String?            @db.Text
+  isVerified           Boolean            @default(false) // Field baru untuk menyimpan status ceklis
   // ---------------------
   
   goodForSkinTypes     String?        

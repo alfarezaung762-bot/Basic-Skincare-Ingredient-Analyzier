@@ -10,7 +10,6 @@ export default function CreateIngredientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // STATE BARU V3: Blacklist Tipe Kulit
   const [blacklistedTypes, setBlacklistedTypes] = useState({
     Normal: false,
     Kering: false,
@@ -18,7 +17,6 @@ export default function CreateIngredientPage() {
     Kombinasi: false,
   });
 
-  // STATE BARU V3: Multi-Fokus
   const [focuses, setFocuses] = useState({
     "Mencerahkan & Bekas Jerawat": false,
     "Merawat Jerawat & Sebum": false,
@@ -28,7 +26,6 @@ export default function CreateIngredientPage() {
     "Eksfoliasi & Tekstur Pori-pori": false,
   });
 
-  // STATE BARU V3: Variabel Tambahan (isKeyActive, strengthLevel, blacklistReason)
   const [formData, setFormData] = useState({
     name: "",
     aliases: "", 
@@ -50,6 +47,52 @@ export default function CreateIngredientPage() {
       router.push("/admin/login");
     }
   }, [router]);
+
+  // LOGIKA BARU: Penanganan saat Sifat Kimia diubah
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    
+    if (newType === "TOXIC") {
+      // Jika TOXIC, bersihkan semua data yang tidak relevan agar tidak tersimpan ke database
+      setFormData((prev) => ({
+        ...prev,
+        type: newType,
+        functionalCategory: "UMUM",
+        comedogenicRating: 0,
+        safeForPregnancy: false, // Bahan Toxic pasti tidak aman
+        safeForSensitive: false, // Bahan Toxic pasti tidak aman
+        isKeyActive: false,
+        strengthLevel: 1,
+        blacklistReason: "",
+      }));
+
+      // Bersihkan semua centang fokus
+      setFocuses({
+        "Mencerahkan & Bekas Jerawat": false,
+        "Merawat Jerawat & Sebum": false,
+        "Anti-Aging & Garis Halus": false,
+        "Memperbaiki Skin Barrier & Hidrasi": false,
+        "Menenangkan Kemerahan (Soothing)": false,
+        "Eksfoliasi & Tekstur Pori-pori": false,
+      });
+
+      // Bersihkan semua centang blacklist (karena toxic berlaku untuk SEMUA kulit)
+      setBlacklistedTypes({
+        Normal: false,
+        Kering: false,
+        Berminyak: false,
+        Kombinasi: false,
+      });
+    } else {
+      // Jika pindah dari TOXIC ke mode normal, kembalikan nilai keamanan bawaan
+      setFormData((prev) => ({
+        ...prev,
+        type: newType,
+        safeForPregnancy: prev.type === "TOXIC" ? true : prev.safeForPregnancy,
+        safeForSensitive: prev.type === "TOXIC" ? true : prev.safeForSensitive,
+      }));
+    }
+  };
 
   const handleBlacklistChange = (type: keyof typeof blacklistedTypes) => {
     setBlacklistedTypes((prev) => ({ ...prev, [type]: !prev[type] }));
@@ -74,14 +117,13 @@ export default function CreateIngredientPage() {
       .map(([key]) => key)
       .join(",");
 
-    // Validasi Wajib Isi Alasan Blacklist
+    // Validasi Wajib Isi Alasan Blacklist (Kecuali Toxic yang akan dikosongkan otomatis)
     if (blacklistedSkinTypes.length > 0 && formData.blacklistReason.trim() === "") {
       setMessage({ type: "error", text: "Anda mencentang Blacklist. Alasan medis wajib diisi!" });
       setIsLoading(false);
       return;
     }
 
-    // Pastikan jika bukan HARSH/BUFFER, strengthLevel tetap dikirim sebagai 1
     const finalStrengthLevel = (formData.type === "HARSH" || formData.type === "BUFFER") 
       ? formData.strengthLevel 
       : 1;
@@ -127,6 +169,7 @@ export default function CreateIngredientPage() {
   };
 
   const hasBlacklist = Object.values(blacklistedTypes).some(Boolean);
+  const isToxic = formData.type === "TOXIC"; // Variabel Pengecek Status Toxic
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
@@ -155,7 +198,7 @@ export default function CreateIngredientPage() {
               </div>
               <div className="space-y-2">
                 <label htmlFor="type" className="text-xs font-bold text-slate-700 uppercase">Sifat Kimia</label>
-                <select id="type" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black">
+                <select id="type" value={formData.type} onChange={handleTypeChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black">
                   <option value="BASIC">BASIC (Standar)</option>
                   <option value="BUFFER">BUFFER (Penenang)</option>
                   <option value="HARSH">HARSH (Keras/Asam)</option>
@@ -163,8 +206,8 @@ export default function CreateIngredientPage() {
                 </select>
               </div>
 
-              {/* LEVEL KEKUATAN (BERPINDAH & KONDISIONAL) */}
-              <div className="space-y-2">
+              {/* LEVEL KEKUATAN */}
+              <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
                 <label htmlFor="strengthLevel" className="text-xs font-bold text-slate-700 uppercase">Level Kekuatan</label>
                 <select 
                   id="strengthLevel" 
@@ -181,9 +224,15 @@ export default function CreateIngredientPage() {
               </div>
 
               {/* FUNGSI KHUSUS */}
-              <div className="space-y-2">
+              <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
                 <label htmlFor="functionalCategory" className="text-xs font-bold text-slate-700 uppercase">Fungsi Khusus</label>
-                <select id="functionalCategory" value={formData.functionalCategory} onChange={(e) => setFormData({...formData, functionalCategory: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black">
+                <select 
+                  id="functionalCategory" 
+                  value={formData.functionalCategory} 
+                  onChange={(e) => setFormData({...formData, functionalCategory: e.target.value})} 
+                  disabled={isToxic}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                >
                   <option value="UMUM">UMUM (Lainnya)</option>
                   <option value="SURFAKTAN">SURFAKTAN (Sabun)</option>
                   <option value="UV_FILTER">UV FILTER (Tabir Surya)</option>
@@ -200,66 +249,66 @@ export default function CreateIngredientPage() {
                 <label htmlFor="aliases" className="text-xs font-bold text-slate-700 uppercase">Sinonim / Alias</label>
                 <input id="aliases" type="text" placeholder="Contoh: bha, betahydroxy acid (Pisahkan koma)" value={formData.aliases} onChange={(e) => setFormData({...formData, aliases: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black" />
               </div>
-              <div className="md:col-span-1 pt-4">
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-yellow-50 border border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors">
-                  <input type="checkbox" checked={formData.isKeyActive} onChange={(e) => setFormData({...formData, isKeyActive: e.target.checked})} className="w-5 h-5 accent-yellow-600" />
-                  <span className="text-sm font-bold text-yellow-800">⭐ Bahan Aktif Utama</span>
+              <div className={`md:col-span-1 pt-4 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
+                <label className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 cursor-pointer'}`}>
+                  <input type="checkbox" checked={formData.isKeyActive} disabled={isToxic} onChange={(e) => setFormData({...formData, isKeyActive: e.target.checked})} className="w-5 h-5 accent-yellow-600 disabled:cursor-not-allowed" />
+                  <span className={`text-sm font-bold ${isToxic ? 'text-slate-400' : 'text-yellow-800'}`}>⭐ Bahan Aktif Utama</span>
                 </label>
               </div>
             </div>
 
-            {/* BARIS 3: MANFAAT */}
+            {/* BARIS 3: MANFAAT (Tetap Aktif untuk Alasan Berbahayanya) */}
             <div className="space-y-2">
-              <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase">Penjelasan Manfaat</label>
-              <textarea id="benefits" required rows={2} placeholder="Jelaskan cara kerja bahan ini..." value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 focus:ring-2 focus:ring-black" />
+              <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase">{isToxic ? "Alasan Berbahaya (Wajib)" : "Penjelasan Manfaat"}</label>
+              <textarea id="benefits" required rows={2} placeholder={isToxic ? "Jelaskan mengapa bahan ini berbahaya..." : "Jelaskan cara kerja bahan ini..."} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white ${isToxic ? 'border-rose-200 text-rose-900 focus:ring-rose-500 focus:border-transparent placeholder-rose-300' : 'border-slate-200 text-slate-900 focus:ring-black'}`} />
             </div>
 
             {/* BARIS 4: KOMEDOGENIK & KEAMANAN */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-100">
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-100 ${isToxic ? 'opacity-50' : ''}`}>
               <div className="space-y-2">
                 <label htmlFor="comedogenicRating" className="text-xs font-bold text-slate-700 uppercase">Komedogenik (0-5)</label>
-                <input id="comedogenicRating" type="number" min="0" max="5" value={formData.comedogenicRating} onChange={(e) => setFormData({...formData, comedogenicRating: parseInt(e.target.value)})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black" />
+                <input id="comedogenicRating" type="number" min="0" max="5" disabled={isToxic} value={formData.comedogenicRating} onChange={(e) => setFormData({...formData, comedogenicRating: parseInt(e.target.value)})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" />
               </div>
-              <div className="flex items-center gap-2 pt-6">
-                <input type="checkbox" id="preg" checked={formData.safeForPregnancy} onChange={(e) => setFormData({...formData, safeForPregnancy: e.target.checked})} className="w-5 h-5 accent-black cursor-pointer" />
-                <label htmlFor="preg" className="text-sm font-bold text-slate-700 cursor-pointer">Aman Bumil 🤰</label>
+              <div className={`flex items-center gap-2 pt-6 ${isToxic ? 'pointer-events-none' : 'cursor-pointer'}`}>
+                <input type="checkbox" id="preg" checked={formData.safeForPregnancy} disabled={isToxic} onChange={(e) => setFormData({...formData, safeForPregnancy: e.target.checked})} className="w-5 h-5 accent-black disabled:cursor-not-allowed" />
+                <label htmlFor="preg" className="text-sm font-bold text-slate-700">Aman Bumil 🤰</label>
               </div>
-              <div className="flex items-center gap-2 pt-6">
-                <input type="checkbox" id="sens" checked={formData.safeForSensitive} onChange={(e) => setFormData({...formData, safeForSensitive: e.target.checked})} className="w-5 h-5 accent-black cursor-pointer" />
-                <label htmlFor="sens" className="text-sm font-bold text-slate-700 cursor-pointer">Aman Sensitif 🌡️</label>
+              <div className={`flex items-center gap-2 pt-6 ${isToxic ? 'pointer-events-none' : 'cursor-pointer'}`}>
+                <input type="checkbox" id="sens" checked={formData.safeForSensitive} disabled={isToxic} onChange={(e) => setFormData({...formData, safeForSensitive: e.target.checked})} className="w-5 h-5 accent-black disabled:cursor-not-allowed" />
+                <label htmlFor="sens" className="text-sm font-bold text-slate-700">Aman Sensitif 🌡️</label>
               </div>
             </div>
 
             {/* BARIS 5: MULTI FOKUS */}
-            <div className="space-y-3">
+            <div className={`space-y-3 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
               <label className="text-xs font-bold text-slate-700 uppercase">Fokus Perawatan (Bisa lebih dari 1)</label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {(Object.keys(focuses) as Array<keyof typeof focuses>).map((focus) => (
-                  <label key={focus} className="flex items-center gap-3 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <input type="checkbox" checked={focuses[focus]} onChange={() => handleFocusChange(focus)} className="w-5 h-5 accent-black" />
-                    <span className="text-sm font-bold text-slate-800">{focus}</span>
+                  <label key={focus} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 cursor-pointer'}`}>
+                    <input type="checkbox" disabled={isToxic} checked={focuses[focus]} onChange={() => handleFocusChange(focus)} className="w-5 h-5 accent-black disabled:cursor-not-allowed" />
+                    <span className={`text-sm font-bold ${isToxic ? 'text-slate-400' : 'text-slate-800'}`}>{focus}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* BARIS 6: BLACKLIST MUTLAK */}
-            <div className="space-y-3 pt-6 border-t border-slate-100">
+            <div className={`space-y-3 pt-6 border-t border-slate-100 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
               <label className="text-xs font-black text-red-600 uppercase flex items-center gap-2">
                 🚫 Dilarang Keras Untuk (Blacklist Mutlak)
               </label>
               <p className="text-[11px] font-medium text-slate-500 mb-2">Hanya centang jika bahan ini merupakan pantangan mutlak (Penalti -50%). Kosongkan jika aman.</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {(Object.keys(blacklistedTypes) as Array<keyof typeof blacklistedTypes>).map((type) => (
-                  <label key={type} className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-colors ${blacklistedTypes[type] ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
-                    <input type="checkbox" checked={blacklistedTypes[type]} onChange={() => handleBlacklistChange(type)} className="w-5 h-5 accent-red-600" />
-                    <span className={`text-sm font-bold ${blacklistedTypes[type] ? 'text-red-700' : 'text-slate-700'}`}>{type}</span>
+                  <label key={type} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : blacklistedTypes[type] ? 'bg-red-50 border-red-300 cursor-pointer' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 cursor-pointer'}`}>
+                    <input type="checkbox" disabled={isToxic} checked={blacklistedTypes[type]} onChange={() => handleBlacklistChange(type)} className="w-5 h-5 accent-red-600 disabled:cursor-not-allowed" />
+                    <span className={`text-sm font-bold ${isToxic ? 'text-slate-400' : blacklistedTypes[type] ? 'text-red-700' : 'text-slate-700'}`}>{type}</span>
                   </label>
                 ))}
               </div>
               
               {/* KOTAK ALASAN MUNCUL JIKA ADA BLACKLIST */}
-              {hasBlacklist && (
+              {hasBlacklist && !isToxic && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3">
                   <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
                   <textarea id="blacklistReason" required rows={2} placeholder="Wajib isi: Mengapa tipe kulit tersebut dilarang keras memakai bahan ini?" value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 placeholder-red-300" />
@@ -267,8 +316,8 @@ export default function CreateIngredientPage() {
               )}
             </div>
 
-            <button type="submit" disabled={isLoading} className="w-full py-4 mt-8 bg-black text-white font-bold rounded-2xl hover:bg-slate-800 transition-all active:scale-95 disabled:bg-slate-300 shadow-md text-lg">
-              {isLoading ? "Menyimpan ke Database..." : "Simpan Bahan ke Kamus ✨"}
+            <button type="submit" disabled={isLoading} className={`w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-300 shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-black hover:bg-slate-800 text-white'}`}>
+              {isLoading ? "Menyimpan ke Database..." : isToxic ? "Simpan Bahan Berbahaya 🚨" : "Simpan Bahan ke Kamus ✨"}
             </button>
           </form>
         </motion.div>

@@ -1,5 +1,9 @@
+// src/app/api/ingredients/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
+// BARIS AJAIB: Memaksa Next.js selalu mengambil data terbaru dari database (Anti-Cache)
+export const dynamic = "force-dynamic"; 
 
 // 1. Mengambil semua data bahan (GET)
 export async function GET() {
@@ -19,7 +23,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // PERUBAHAN V3: Menangkap variabel baru dari form Admin
+    // Menangkap variabel baru dari form Admin
     const { 
       name, aliases, type, functionalCategory, benefits, warnings, comedogenicRating, 
       safeForPregnancy, safeForSensitive, 
