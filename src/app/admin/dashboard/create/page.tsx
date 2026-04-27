@@ -11,6 +11,11 @@ export default function CreateIngredientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  // STATE BARU: Menyimpan daftar nama DAN alias bahan yang sudah ada di database
+  const [existingNames, setExistingNames] = useState<string[]>([]);
+  const [nameError, setNameError] = useState("");
+  const [aliasError, setAliasError] = useState(""); // State baru untuk error alias
+
   const [blacklistedTypes, setBlacklistedTypes] = useState({
     Normal: false,
     Kering: false,
@@ -33,7 +38,7 @@ export default function CreateIngredientPage() {
     type: "BASIC",
     functionalCategory: "UMUM", 
     benefits: "",
-    aiContext: "", // <-- TAMBAHAN BARU V3.1
+    aiContext: "", 
     warnings: "",
     comedogenicRating: 0,
     safeForPregnancy: true,
@@ -47,10 +52,68 @@ export default function CreateIngredientPage() {
     const isAuth = sessionStorage.getItem("isAdminAuth");
     if (!isAuth) {
       router.push("/admin/login");
+      return;
     }
+
+    // Mengambil daftar nama dan alias dari API saat halaman dimuat
+    fetch("/api/ingredients")
+      .then(res => res.json())
+      .then(data => {
+        let allUsedNames: string[] = [];
+        
+        data.forEach((item: any) => {
+          // Masukkan nama utama
+          allUsedNames.push(item.name.toLowerCase().trim());
+          
+          // Pecah dan masukkan semua alias jika ada
+          if (item.aliases) {
+            const itemAliases = item.aliases.split(',').map((a: string) => a.toLowerCase().trim());
+            allUsedNames = [...allUsedNames, ...itemAliases];
+          }
+        });
+        
+        // Hapus duplikat dari array (jaga-jaga) dan simpan ke state
+        setExistingNames(Array.from(new Set(allUsedNames)));
+      })
+      .catch(err => console.error("Gagal memuat daftar nama bahan", err));
   }, [router]);
 
-  // LOGIKA BARU: Penanganan saat Sifat Kimia diubah
+  // LOGIKA VALIDASI NAMA (INCI)
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFormData({ ...formData, name: val });
+
+    if (existingNames.includes(val.toLowerCase().trim())) {
+      setNameError("⚠️ Bahan dengan nama/alias ini sudah terdaftar di kamus!");
+    } else {
+      setNameError("");
+    }
+  };
+
+  // LOGIKA VALIDASI ALIAS (Bisa mengecek banyak kata sekaligus)
+  const handleAliasesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFormData({ ...formData, aliases: val });
+
+    // Jika kosong, hilangkan error
+    if (!val.trim()) {
+      setAliasError("");
+      return;
+    }
+
+    // Pecah inputan user berdasarkan koma, bersihkan spasi
+    const typedAliases = val.split(',').map(a => a.toLowerCase().trim()).filter(a => a !== "");
+    
+    // Cari apakah ada kata yang bentrok dengan database
+    const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));
+
+    if (duplicateAliases.length > 0) {
+      setAliasError(`⚠️ Alias sudah terpakai: ${duplicateAliases.join(", ")}`);
+    } else {
+      setAliasError("");
+    }
+  };
+
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value;
     
@@ -93,6 +156,10 @@ export default function CreateIngredientPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Keamanan Ganda: Jangan proses jika ada error pada nama ATAU alias
+    if (nameError || aliasError) return;
+
     setIsLoading(true);
     setMessage({ type: "", text: "" });
 
@@ -131,7 +198,6 @@ export default function CreateIngredientPage() {
       if (res.ok) {
         setMessage({ type: "success", text: "Bahan berhasil ditambahkan ke kamus! ✨" });
         
-        // Reset Form termasuk aiContext
         setFormData({
           name: "", aliases: "", type: "BASIC", functionalCategory: "UMUM", 
           benefits: "", aiContext: "", warnings: "",
@@ -170,7 +236,7 @@ export default function CreateIngredientPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Bahan Baru 🧪</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.1: Pemisahan Konteks UI & Mesin AI.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.1: Pengaturan presisi tinggi untuk AI.</p>
 
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
@@ -180,11 +246,27 @@ export default function CreateIngredientPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             
-            {/* BARIS 1: NAMA, KATEGORI, KEKUATAN, FUNGSI */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2 md:col-span-1">
                 <label htmlFor="name" className="text-xs font-bold text-slate-700 uppercase">Nama (INCI)</label>
-                <input id="name" required type="text" placeholder="Contoh: Salicylic Acid" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black" />
+                <input 
+                  id="name" 
+                  required 
+                  type="text" 
+                  placeholder="Contoh: Salicylic Acid" 
+                  value={formData.name} 
+                  onChange={handleNameChange} // <-- Panggil validasi Nama
+                  className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${
+                    nameError 
+                      ? 'bg-rose-50 border-2 border-rose-300 text-rose-900 focus:ring-rose-500' 
+                      : 'bg-white border border-slate-200 text-slate-900 focus:ring-black'
+                  }`} 
+                />
+                {nameError && (
+                  <p className="text-[11px] font-bold text-rose-600 mt-1 animate-pulse">
+                    {nameError}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="type" className="text-xs font-bold text-slate-700 uppercase">Sifat Kimia</label>
@@ -196,7 +278,6 @@ export default function CreateIngredientPage() {
                 </select>
               </div>
 
-              {/* LEVEL KEKUATAN */}
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
                 <label htmlFor="strengthLevel" className="text-xs font-bold text-slate-700 uppercase">Level Kekuatan</label>
                 <select 
@@ -213,7 +294,6 @@ export default function CreateIngredientPage() {
                 <p className="text-[10px] text-slate-500 font-medium">Hanya aktif untuk HARSH & BUFFER</p>
               </div>
 
-              {/* FUNGSI KHUSUS */}
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
                 <label htmlFor="functionalCategory" className="text-xs font-bold text-slate-700 uppercase">Fungsi Khusus</label>
                 <select 
@@ -233,11 +313,27 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            {/* BARIS 2: ALIAS & CEKLIS BINTANG UTAMA */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
               <div className="space-y-2 md:col-span-3">
                 <label htmlFor="aliases" className="text-xs font-bold text-slate-700 uppercase">Sinonim / Alias</label>
-                <input id="aliases" type="text" placeholder="Contoh: bha, betahydroxy acid (Pisahkan koma)" value={formData.aliases} onChange={(e) => setFormData({...formData, aliases: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black" />
+                <input 
+                  id="aliases" 
+                  type="text" 
+                  placeholder="Contoh: bha, betahydroxy acid (Pisahkan koma)" 
+                  value={formData.aliases} 
+                  onChange={handleAliasesChange} // <-- Panggil validasi Alias
+                  className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${
+                    aliasError 
+                      ? 'bg-amber-50 border-2 border-amber-300 text-amber-900 focus:ring-amber-500' 
+                      : 'bg-white border border-slate-200 text-slate-900 focus:ring-black'
+                  }`} 
+                />
+                {/* TAMPILAN ERROR ALIAS */}
+                {aliasError && (
+                  <p className="text-[11px] font-bold text-amber-600 mt-1 animate-pulse">
+                    {aliasError}
+                  </p>
+                )}
               </div>
               <div className={`md:col-span-1 pt-4 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
                 <label className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 cursor-pointer'}`}>
@@ -247,7 +343,6 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            {/* BARIS 3: MANFAAT (DIPISAH UI & AI) */}
             <div className="grid grid-cols-1 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
               <div className="space-y-2">
                 <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
@@ -264,7 +359,6 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            {/* BARIS 4: KOMEDOGENIK & KEAMANAN */}
             <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-100 ${isToxic ? 'opacity-50' : ''}`}>
               <div className="space-y-2">
                 <label htmlFor="comedogenicRating" className="text-xs font-bold text-slate-700 uppercase">Komedogenik (0-5)</label>
@@ -280,7 +374,6 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            {/* BARIS 5: MULTI FOKUS */}
             <div className={`space-y-3 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
               <label className="text-xs font-bold text-slate-700 uppercase">Fokus Perawatan (Bisa lebih dari 1)</label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -293,7 +386,6 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            {/* BARIS 6: BLACKLIST MUTLAK */}
             <div className={`space-y-3 pt-6 border-t border-slate-100 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
               <label className="text-xs font-black text-red-600 uppercase flex items-center gap-2">
                 🚫 Dilarang Keras Untuk (Blacklist Mutlak)
@@ -308,7 +400,6 @@ export default function CreateIngredientPage() {
                 ))}
               </div>
               
-              {/* KOTAK ALASAN MUNCUL JIKA ADA BLACKLIST */}
               {hasBlacklist && !isToxic && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3">
                   <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
@@ -317,7 +408,12 @@ export default function CreateIngredientPage() {
               )}
             </div>
 
-            <button type="submit" disabled={isLoading} className={`w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-300 shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-black hover:bg-slate-800 text-white'}`}>
+            {/* Tombol dikunci jika ada error Nama ATAU Alias */}
+            <button 
+              type="submit" 
+              disabled={isLoading || nameError !== "" || aliasError !== ""} 
+              className={`w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-black hover:bg-slate-800 text-white'}`}
+            >
               {isLoading ? "Menyimpan ke Database..." : isToxic ? "Simpan Bahan Berbahaya 🚨" : "Simpan Bahan ke Kamus ✨"}
             </button>
           </form>
