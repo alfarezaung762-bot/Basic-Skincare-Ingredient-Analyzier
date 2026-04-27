@@ -23,11 +23,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // Menangkap variabel baru dari form Admin
+    // Menangkap variabel baru dari form Admin (TERMASUK aiContext)
     const { 
       name, aliases, type, functionalCategory, benefits, warnings, comedogenicRating, 
       safeForPregnancy, safeForSensitive, 
-      isKeyActive, strengthLevel, blacklistedSkinTypes, blacklistReason, targetFocus 
+      isKeyActive, strengthLevel, blacklistedSkinTypes, blacklistReason, targetFocus,
+      aiContext // <-- VARIABEL BARU
     } = body;
 
     // Cek jika nama kosong
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
         blacklistedSkinTypes: blacklistedSkinTypes || null,
         blacklistReason: blacklistReason || null,
         targetFocus: targetFocus || null,
+        aiContext: aiContext || null, // <-- SIMPAN KE DATABASE
       },
     });
 

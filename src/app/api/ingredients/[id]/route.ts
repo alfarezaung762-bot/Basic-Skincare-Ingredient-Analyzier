@@ -46,6 +46,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         blacklistedSkinTypes: body.blacklistedSkinTypes || null,
         blacklistReason: body.blacklistReason || null,
         targetFocus: body.targetFocus || null,
+        aiContext: body.aiContext || null, // <-- TAMBAHAN BARU
+        isVerified: Boolean(body.isVerified), // <-- TAMBAHAN BARU (Bisa diubah dari halaman Edit)
       },
     });
 

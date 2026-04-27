@@ -158,6 +158,7 @@ model IngredientDictionary {
   blacklistedSkinTypes String?            @db.Text
   blacklistReason      String?            @db.Text
   isVerified           Boolean            @default(false) // Field baru untuk menyimpan status ceklis
+  aiContext            String?            @db.Text // Analisis Mendalam Khusus Mesin AI
   // ---------------------
   
   goodForSkinTypes     String?        

@@ -1,3 +1,4 @@
+// src/app/admin/dashboard/create/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,6 +33,7 @@ export default function CreateIngredientPage() {
     type: "BASIC",
     functionalCategory: "UMUM", 
     benefits: "",
+    aiContext: "", // <-- TAMBAHAN BARU V3.1
     warnings: "",
     comedogenicRating: 0,
     safeForPregnancy: true,
@@ -53,38 +55,25 @@ export default function CreateIngredientPage() {
     const newType = e.target.value;
     
     if (newType === "TOXIC") {
-      // Jika TOXIC, bersihkan semua data yang tidak relevan agar tidak tersimpan ke database
       setFormData((prev) => ({
         ...prev,
         type: newType,
         functionalCategory: "UMUM",
         comedogenicRating: 0,
-        safeForPregnancy: false, // Bahan Toxic pasti tidak aman
-        safeForSensitive: false, // Bahan Toxic pasti tidak aman
+        safeForPregnancy: false, 
+        safeForSensitive: false, 
         isKeyActive: false,
         strengthLevel: 1,
         blacklistReason: "",
       }));
 
-      // Bersihkan semua centang fokus
       setFocuses({
-        "Mencerahkan & Bekas Jerawat": false,
-        "Merawat Jerawat & Sebum": false,
-        "Anti-Aging & Garis Halus": false,
-        "Memperbaiki Skin Barrier & Hidrasi": false,
-        "Menenangkan Kemerahan (Soothing)": false,
-        "Eksfoliasi & Tekstur Pori-pori": false,
+        "Mencerahkan & Bekas Jerawat": false, "Merawat Jerawat & Sebum": false, "Anti-Aging & Garis Halus": false,
+        "Memperbaiki Skin Barrier & Hidrasi": false, "Menenangkan Kemerahan (Soothing)": false, "Eksfoliasi & Tekstur Pori-pori": false,
       });
 
-      // Bersihkan semua centang blacklist (karena toxic berlaku untuk SEMUA kulit)
-      setBlacklistedTypes({
-        Normal: false,
-        Kering: false,
-        Berminyak: false,
-        Kombinasi: false,
-      });
+      setBlacklistedTypes({ Normal: false, Kering: false, Berminyak: false, Kombinasi: false });
     } else {
-      // Jika pindah dari TOXIC ke mode normal, kembalikan nilai keamanan bawaan
       setFormData((prev) => ({
         ...prev,
         type: newType,
@@ -117,7 +106,6 @@ export default function CreateIngredientPage() {
       .map(([key]) => key)
       .join(",");
 
-    // Validasi Wajib Isi Alasan Blacklist (Kecuali Toxic yang akan dikosongkan otomatis)
     if (blacklistedSkinTypes.length > 0 && formData.blacklistReason.trim() === "") {
       setMessage({ type: "error", text: "Anda mencentang Blacklist. Alasan medis wajib diisi!" });
       setIsLoading(false);
@@ -143,8 +131,10 @@ export default function CreateIngredientPage() {
       if (res.ok) {
         setMessage({ type: "success", text: "Bahan berhasil ditambahkan ke kamus! ✨" });
         
+        // Reset Form termasuk aiContext
         setFormData({
-          name: "", aliases: "", type: "BASIC", functionalCategory: "UMUM", benefits: "", warnings: "",
+          name: "", aliases: "", type: "BASIC", functionalCategory: "UMUM", 
+          benefits: "", aiContext: "", warnings: "",
           comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
           isKeyActive: false, strengthLevel: 1, blacklistReason: ""
         });
@@ -169,7 +159,7 @@ export default function CreateIngredientPage() {
   };
 
   const hasBlacklist = Object.values(blacklistedTypes).some(Boolean);
-  const isToxic = formData.type === "TOXIC"; // Variabel Pengecek Status Toxic
+  const isToxic = formData.type === "TOXIC";
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
@@ -180,7 +170,7 @@ export default function CreateIngredientPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Bahan Baru 🧪</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3: Pengaturan presisi tinggi untuk AI.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.1: Pemisahan Konteks UI & Mesin AI.</p>
 
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
@@ -257,10 +247,21 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            {/* BARIS 3: MANFAAT (Tetap Aktif untuk Alasan Berbahayanya) */}
-            <div className="space-y-2">
-              <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase">{isToxic ? "Alasan Berbahaya (Wajib)" : "Penjelasan Manfaat"}</label>
-              <textarea id="benefits" required rows={2} placeholder={isToxic ? "Jelaskan mengapa bahan ini berbahaya..." : "Jelaskan cara kerja bahan ini..."} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white ${isToxic ? 'border-rose-200 text-rose-900 focus:ring-rose-500 focus:border-transparent placeholder-rose-300' : 'border-slate-200 text-slate-900 focus:ring-black'}`} />
+            {/* BARIS 3: MANFAAT (DIPISAH UI & AI) */}
+            <div className="grid grid-cols-1 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+              <div className="space-y-2">
+                <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
+                  <span>📱</span> {isToxic ? "Alasan Berbahaya (Singkat)" : "Manfaat Singkat (Untuk Pengguna)"} <span className="text-rose-500">*</span>
+                </label>
+                <textarea id="benefits" required rows={2} placeholder={isToxic ? "Jelaskan secara singkat mengapa bahan ini berbahaya..." : "Jelaskan maksimal 2 kalimat untuk dibaca pengguna di aplikasi..."} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white ${isToxic ? 'border-rose-200 text-rose-900 focus:ring-rose-500 focus:border-transparent placeholder-rose-300' : 'border-slate-200 text-slate-900 focus:ring-black'}`} />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="aiContext" className="text-xs font-bold text-purple-700 uppercase flex items-center gap-2">
+                  <span>🤖</span> Analisis Mendalam (Khusus Mesin AI) <span className="text-slate-400 font-normal lowercase tracking-normal">(Opsional)</span>
+                </label>
+                <textarea id="aiContext" rows={3} placeholder="Tuliskan mekanisme kimia, pH optimal, pantangan campuran, atau data klinis mendalam. AI akan menggunakan ini sebagai konteks tersembunyi..." value={formData.aiContext} onChange={(e) => setFormData({...formData, aiContext: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-purple-200 outline-none text-sm font-medium resize-none focus:ring-2 focus:ring-purple-500 bg-purple-50/30 text-purple-950 placeholder-purple-300" />
+              </div>
             </div>
 
             {/* BARIS 4: KOMEDOGENIK & KEAMANAN */}

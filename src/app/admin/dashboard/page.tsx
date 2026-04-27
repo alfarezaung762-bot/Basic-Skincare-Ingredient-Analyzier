@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+// Interface V3.1 (Ditambah aiContext untuk deteksi indikator Robot)
 interface Ingredient {
   id: string;
   name: string;
@@ -15,6 +16,7 @@ interface Ingredient {
   isKeyActive: boolean;
   benefits: string;
   isVerified: boolean;
+  aiContext: string | null; 
   createdAt: string; 
 }
 
@@ -22,8 +24,6 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  
-  const [processingIds, setProcessingIds] = useState<string[]>([]);
   
   // STATE FILTER & SORT (Nilai awal standar)
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,33 +98,6 @@ export default function AdminDashboard() {
 
   const handleRowClick = (id: string) => {
     router.push(`/admin/dashboard/edit/${id}`);
-  };
-
-  const toggleVerify = async (e: React.MouseEvent, id: string, currentStatus: boolean) => {
-    e.stopPropagation(); 
-    if (processingIds.includes(id)) return;
-
-    setProcessingIds((prev) => [...prev, id]);
-    const newStatus = !currentStatus;
-
-    try {
-      const res = await fetch(`/api/ingredients/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isVerified: newStatus }),
-      });
-      
-      if (!res.ok) throw new Error("Gagal");
-
-      setIngredients((prev) => 
-        prev.map((item) => item.id === id ? { ...item, isVerified: newStatus } : item)
-      );
-
-    } catch (error) {
-      alert("Gagal menyimpan ceklis ke database. Periksa koneksi internet Anda.");
-    } finally {
-      setProcessingIds((prev) => prev.filter(pId => pId !== id));
-    }
   };
 
   const formatCategory = (cat: string) => {
@@ -234,8 +207,8 @@ export default function AdminDashboard() {
               <label htmlFor="filterVerified" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status Verifikasi</label>
               <select id="filterVerified" aria-label="Status Verifikasi" value={filterVerified} onChange={(e) => setFilterVerified(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="ALL">Semua Status</option>
-                <option value="VERIFIED">✅ Sudah Diceklis</option>
-                <option value="UNVERIFIED">⬜ Belum Diceklis</option>
+                <option value="VERIFIED">✅ Sudah Ditinjau</option>
+                <option value="UNVERIFIED">⏳ Belum Ditinjau</option>
               </select>
             </div>
 
@@ -282,7 +255,7 @@ export default function AdminDashboard() {
               <table className="w-full text-left text-sm text-slate-700">
                 <thead className="bg-slate-100/80 text-slate-600 font-bold border-b border-slate-200">
                   <tr>
-                    <th className="p-4 text-center whitespace-nowrap w-16">Ceklis</th>
+                    <th className="p-4 whitespace-nowrap w-24">Status</th>
                     <th className="p-4 whitespace-nowrap">Nama Bahan (INCI)</th>
                     <th className="p-4 whitespace-nowrap">Alias</th>
                     <th className="p-4 whitespace-nowrap">Kategori Logika</th>
@@ -297,83 +270,88 @@ export default function AdminDashboard() {
                   animate="visible"
                   className="divide-y divide-slate-100 bg-white"
                 >
-                  {processedIngredients.map((item) => {
-                    const isProcessing = processingIds.includes(item.id);
-
-                    return (
-                      <motion.tr 
-                        variants={itemVariants} 
-                        key={item.id} 
-                        onClick={() => handleRowClick(item.id)} 
-                        className={`cursor-pointer transition-colors group ${item.isVerified ? 'bg-emerald-50/60 hover:bg-emerald-100/60' : 'hover:bg-blue-50/50'}`}
-                      >
-                        <td className="p-4 text-center" onClick={(e) => toggleVerify(e, item.id, item.isVerified)}>
-                          <div className={`w-6 h-6 mx-auto rounded-md border-2 flex items-center justify-center transition-all duration-300 ${
-                            isProcessing ? 'border-blue-400 bg-white' : 
-                            item.isVerified ? 'bg-emerald-500 border-emerald-500 text-white' : 
-                            'bg-white border-slate-300 hover:border-blue-400 shadow-inner'
-                          }`}>
-                            {isProcessing ? (
-                              <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                            ) : item.isVerified ? (
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                            ) : null}
-                          </div>
-                        </td>
-
-                        <td className="p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors capitalize">{item.name}</td>
-                        
-                        <td className="p-4 text-xs font-medium text-slate-500">
-                          {item.aliases ? (
-                            <div className="flex flex-wrap gap-1">
-                              {item.aliases.split(',').map((alias, i) => (
-                                <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias.trim()}</span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="opacity-50">-</span>
-                          )}
-                        </td>
-
-                        <td className="p-4">
-                          {item.isKeyActive ? (
-                            <span className="text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
-                              ⭐ BINTANG UTAMA
-                            </span>
-                          ) : (
-                            <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border ${
-                              item.type === 'TOXIC' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                              item.type === 'HARSH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                              item.type === 'BUFFER' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                              'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}>
-                              {item.type}
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="p-4 font-bold text-xs text-slate-600 whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-md border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
-                            {formatCategory(item.functionalCategory)}
+                  {processedIngredients.map((item) => (
+                    <motion.tr 
+                      variants={itemVariants} 
+                      key={item.id} 
+                      onClick={() => handleRowClick(item.id)} 
+                      className={`cursor-pointer transition-colors group ${item.isVerified ? 'bg-emerald-50/60 hover:bg-emerald-100/60' : 'hover:bg-blue-50/50'}`}
+                    >
+                      {/* KOLOM STATUS (READ ONLY, DENGAN BADGE CANTIK) */}
+                      <td className="p-4">
+                        {item.isVerified ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                            Ditinjau
                           </span>
-                        </td>
-                        
-                        <td className="p-4 text-slate-600 truncate max-w-[200px]">{item.benefits}</td>
-                        
-                        <td className="p-4 text-right whitespace-nowrap">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation(); 
-                              handleDelete(item.id, item.name);
-                            }} 
-                            className="text-red-500 font-bold hover:text-red-700 transition-colors bg-red-50/50 hover:bg-red-100 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200"
-                          >
-                            Hapus
-                          </button>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-slate-100 text-slate-500 border border-slate-200 shadow-sm">
+                            <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
+                            Tertunda
+                          </span>
+                        )}
+                      </td>
+
+                      {/* NAMA BAHAN (DITAMBAH INDIKATOR IKON ROBOT AI) */}
+                      <td className="p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors capitalize">
+                        <div className="flex items-center gap-2">
+                          {item.name}
+                          {item.aiContext && (
+                            <span title="Telah dilengkapi Konteks AI" className="text-sm drop-shadow-sm">🤖</span>
+                          )}
+                        </div>
+                      </td>
+                      
+                      <td className="p-4 text-xs font-medium text-slate-500">
+                        {item.aliases ? (
+                          <div className="flex flex-wrap gap-1">
+                            {item.aliases.split(',').map((alias, i) => (
+                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias.trim()}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="opacity-50">-</span>
+                        )}
+                      </td>
+
+                      <td className="p-4">
+                        {item.isKeyActive ? (
+                          <span className="text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
+                            ⭐ BINTANG UTAMA
+                          </span>
+                        ) : (
+                          <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border ${
+                            item.type === 'TOXIC' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                            item.type === 'HARSH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                            item.type === 'BUFFER' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                            'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}>
+                            {item.type}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-4 font-bold text-xs text-slate-600 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-md border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                          {formatCategory(item.functionalCategory)}
+                        </span>
+                      </td>
+                      
+                      <td className="p-4 text-slate-600 truncate max-w-[150px]">{item.benefits}</td>
+                      
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation(); 
+                            handleDelete(item.id, item.name);
+                          }} 
+                          className="text-red-500 font-bold hover:text-red-700 transition-colors bg-red-50/50 hover:bg-red-100 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
                 </motion.tbody>
               </table>
             </div>
