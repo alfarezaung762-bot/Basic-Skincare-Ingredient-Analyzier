@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 // Impor Komponen Anak
 import SingleAnalyzerHasil, { FullAnalysisResponse, UserProfileSummary } from "./SingleAnalyzerHasil";
+import SingleAnalyzerHasil2 from "./SingleAnalyzerHasil2";
 
 export default function SingleAnalyzer() {
   const [productName, setProductName] = useState("");
@@ -158,8 +159,12 @@ export default function SingleAnalyzer() {
 
       {/* === KOMPONEN ANAK (Menampilkan Hasil Visual) === */}
       {result && (
-        <div ref={resultRef} className="animate-in fade-in zoom-in-95 duration-700 scroll-mt-24 pt-4">
+        <div ref={resultRef} className="animate-in fade-in zoom-in-95 duration-700 scroll-mt-24 pt-4 space-y-6">
+          {/* Komponen Atas: Papan Skor & Profil */}
           <SingleAnalyzerHasil result={result} userProfile={userProfile} />
+          
+          {/* Komponen Bawah: Detail Bahan & Rekomendasi */}
+          <SingleAnalyzerHasil2 result={result} />
         </div>
       )}
 
