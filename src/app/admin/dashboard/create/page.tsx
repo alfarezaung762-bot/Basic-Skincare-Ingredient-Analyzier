@@ -73,7 +73,24 @@ export default function CreateIngredientPage() {
         });
         
         // Hapus duplikat dari array (jaga-jaga) dan simpan ke state
-        setExistingNames(Array.from(new Set(allUsedNames)));
+        const finalExistingNames = Array.from(new Set(allUsedNames));
+        setExistingNames(finalExistingNames);
+
+        // ========================================================
+        // LOGIKA AUTO-FILL DARI URL (Blueprint 3.3)
+        // ========================================================
+        const params = new URLSearchParams(window.location.search);
+        const urlName = params.get("name");
+        
+        if (urlName) {
+          const cleanUrlName = urlName.toLowerCase().trim();
+          setFormData(prev => ({ ...prev, name: cleanUrlName }));
+          
+          // Langsung lakukan validasi real-time
+          if (finalExistingNames.includes(cleanUrlName)) {
+            setNameError("⚠️ Bahan ini ternyata sudah terdaftar di kamus!");
+          }
+        }
       })
       .catch(err => console.error("Gagal memuat daftar nama bahan", err));
   }, [router]);
@@ -198,6 +215,30 @@ export default function CreateIngredientPage() {
       if (res.ok) {
         setMessage({ type: "success", text: "Bahan berhasil ditambahkan ke kamus! ✨" });
         
+        // ========================================================
+        // LOGIKA HAPUS LAPORAN OTOMATIS (Blueprint 3.3)
+        // ========================================================
+        const params = new URLSearchParams(window.location.search);
+        const urlName = params.get("name");
+        
+        if (urlName) {
+          // Cari bahan di tabel laporan berdasarkan nama
+          fetch(`/api/admin/reportbahan`)
+            .then(res => res.json())
+            .then(data => {
+               // Ambil dari unknownReports karena ini berasal dari Tab Bahan Asing
+               const unknownReports = data.unknownReports || [];
+               const reportToClear = unknownReports.find((r: any) => r.name.toLowerCase() === urlName.toLowerCase());
+               
+               if(reportToClear) {
+                 // Kirim request DELETE dengan tipe "unknown"
+                 fetch(`/api/admin/reportbahan?id=${reportToClear.id}&type=unknown`, { method: "DELETE" });
+               }
+            })
+            .catch(err => console.error("Gagal menghapus laporan otomatis:", err));
+        }
+
+        // Kembalikan form ke kondisi awal
         setFormData({
           name: "", aliases: "", type: "BASIC", functionalCategory: "UMUM", 
           benefits: "", aiContext: "", warnings: "",
@@ -230,13 +271,13 @@ export default function CreateIngredientPage() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
       <div className="max-w-4xl mx-auto">
-        <Link href="/admin/dashboard" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
-          ← Kembali ke Dasbor
+        <Link href="/admin/reportbahan" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
+          ← Kembali ke Dasbor Laporan
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Bahan Baru 🧪</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.1: Pengaturan presisi tinggi untuk AI.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.3: Terhubung ke Otomatisasi Laporan Sistem.</p>
 
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
@@ -255,7 +296,7 @@ export default function CreateIngredientPage() {
                   type="text" 
                   placeholder="Contoh: Salicylic Acid" 
                   value={formData.name} 
-                  onChange={handleNameChange} // <-- Panggil validasi Nama
+                  onChange={handleNameChange}
                   className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${
                     nameError 
                       ? 'bg-rose-50 border-2 border-rose-300 text-rose-900 focus:ring-rose-500' 
@@ -321,14 +362,13 @@ export default function CreateIngredientPage() {
                   type="text" 
                   placeholder="Contoh: bha, betahydroxy acid (Pisahkan koma)" 
                   value={formData.aliases} 
-                  onChange={handleAliasesChange} // <-- Panggil validasi Alias
+                  onChange={handleAliasesChange}
                   className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${
                     aliasError 
                       ? 'bg-amber-50 border-2 border-amber-300 text-amber-900 focus:ring-amber-500' 
                       : 'bg-white border border-slate-200 text-slate-900 focus:ring-black'
                   }`} 
                 />
-                {/* TAMPILAN ERROR ALIAS */}
                 {aliasError && (
                   <p className="text-[11px] font-bold text-amber-600 mt-1 animate-pulse">
                     {aliasError}

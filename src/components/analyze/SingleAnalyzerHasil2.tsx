@@ -1,9 +1,10 @@
 // src/components/analyze/SingleAnalyzerHasil2.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion"; // Pastikan framer-motion diimpor untuk animasi pop-up
 
-// --- TIPE DATA (Bisa diimpor, tapi didefinisikan ulang agar file ini mandiri/standalone) ---
+// --- TIPE DATA EXPORT ---
 export interface IngredientDb {
   name: string;
   type: string;
@@ -107,8 +108,60 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
 export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisResponse }) {
   const [showAllGoodIngredients, setShowAllGoodIngredients] = useState(false);
   const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
+  
+  // State untuk Pop-up Detail Bahan & Laporan (Klik)
+  const [activeIngredient, setActiveIngredient] = useState<IngredientDb | null>(null);
+  const [reportReason, setReportReason] = useState(""); // <-- TAMBAHAN BARU: State untuk input teks keluhan
+  const [isReporting, setIsReporting] = useState(false);
 
-  const handleReportIngredient = (ingName: string) => alert(`Bahan "${ingName}" dilaporkan ke Admin.`);
+  // Mencegah auto-report menembak berkali-kali
+  const hasAutoReported = useRef(false);
+
+  // 1. LOGIKA AUTO-REPORT BAHAN ASING (Sistem Otomatis)
+  useEffect(() => {
+    if (!hasAutoReported.current && result.engineResult.unknownIngredients.length > 0) {
+      hasAutoReported.current = true;
+      
+      // Kirim laporan ke API secara diam-diam di background
+      result.engineResult.unknownIngredients.forEach((ingName) => {
+        fetch('/api/admin/reportbahan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: ingName }) // Tidak pakai type="mismatch"
+        }).catch(err => console.error("Gagal auto-report:", err));
+      });
+    }
+  }, [result]);
+
+  // Fungsi untuk menutup modal dan membersihkan form laporan
+  const closeModal = () => {
+    setActiveIngredient(null);
+    setReportReason("");
+  };
+
+  // 2. LOGIKA LAPORKAN KETIDAKSESUAIAN (Pengguna Manual)
+  const handleReportMismatch = async (ingName: string) => {
+    if (!reportReason.trim()) return; // Keamanan tambahan agar tidak mengirim string kosong
+
+    setIsReporting(true);
+    try {
+      await fetch('/api/admin/reportbahan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: "mismatch", // <-- TAMBAHAN BARU: Agar masuk ke tabel IngredientReport
+          ingredientName: ingName, 
+          reason: reportReason 
+        })
+      });
+      alert(`Terima kasih! Ketidaksesuaian pada bahan "${ingName}" telah diteruskan ke tim ahli kami.`);
+      closeModal();
+    } catch (error) {
+      alert("Maaf, terjadi kesalahan saat mengirim laporan.");
+    } finally {
+      setIsReporting(false);
+    }
+  };
 
   // Logika Penyortiran Bahan
   const orderMap: Record<string, number> = { TOXIC: 1, HARSH: 2, BUFFER: 3, BASIC: 4 };
@@ -124,6 +177,58 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
 
   return (
     <div className="space-y-6">
+
+      {/* POP-UP MODAL UNTUK DETAIL BAHAN TERDETEKSI */}
+      {activeIngredient && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={closeModal}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()} // Mencegah klik di dalam modal menutup modal
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h4 className="font-black text-lg text-slate-900 capitalize">{activeIngredient.name}</h4>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200 mt-1 inline-block">
+                  {activeIngredient.functionalCategory.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full transition-colors font-bold">
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-sm font-medium text-slate-600 leading-relaxed mb-4">
+              {activeIngredient.benefits || "Penjelasan belum tersedia untuk bahan ini."}
+            </p>
+
+            {/* TAMBAHAN BARU: TEXTAREA KELUHAN */}
+            <div className="mb-6 bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <label htmlFor="reportReason" className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-2">
+                Detail Ketidaksesuaian <span className="text-rose-500">*</span>
+              </label>
+              <textarea 
+                id="reportReason"
+                rows={3}
+                placeholder="Contoh: Bahan ini seharusnya tidak aman untuk ibu hamil..."
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none text-sm font-medium focus:ring-2 focus:ring-rose-400 bg-white resize-none transition-all text-slate-900 placeholder-slate-400"
+              />
+            </div>
+            
+            <button
+              onClick={() => handleReportMismatch(activeIngredient.name)}
+              disabled={isReporting || !reportReason.trim()}
+              className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-colors flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isReporting ? "Mengirim Laporan..." : "Laporkan Ketidaksesuaian Data 🚩"}
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       {/* 1. KESIMPULAN FOKUS PRODUK V3 */}
       {(result.engineResult.primaryProductFocus || (result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0)) && (
         <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
@@ -164,7 +269,9 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
       {(sortedDetectedIngredients.length > 0 || result.engineResult.unknownIngredients.length > 0) && (
         <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h3 className="text-base font-black text-slate-800">Bahan Terdeteksi Sistem</h3>
+            <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+              Bahan Terdeteksi Sistem <span className="text-[10px] font-medium text-slate-400 bg-white px-2 py-1 rounded border border-slate-200 hidden sm:inline-block">Klik bahan untuk detail</span>
+            </h3>
             <span className="bg-white text-slate-600 font-bold text-xs px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
               Total: {sortedDetectedIngredients.length + result.engineResult.unknownIngredients.length} Bahan
             </span>
@@ -172,16 +279,20 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           
           <div className="flex flex-wrap gap-2.5">
             {sortedDetectedIngredients.map((ing, idx) => {
-              let style = "bg-white text-slate-600 border-slate-200";
-              if (ing.isKeyActive) style = "bg-emerald-100 text-emerald-800 border-emerald-200";
-              if (ing.type === "TOXIC") style = "bg-rose-100 text-rose-800 border-rose-200";
-              if (ing.type === "HARSH") style = "bg-orange-100 text-orange-800 border-orange-200";
-              if (ing.type === "BUFFER") style = "bg-blue-100 text-blue-800 border-blue-200";
+              let style = "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100";
+              if (ing.isKeyActive) style = "bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200";
+              if (ing.type === "TOXIC") style = "bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-200";
+              if (ing.type === "HARSH") style = "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200";
+              if (ing.type === "BUFFER") style = "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200";
               
               return (
-                <span key={idx} className={`px-3 py-1.5 border rounded-lg text-xs font-bold capitalize shadow-sm transition-all hover:-translate-y-0.5 ${style}`}>
+                <button 
+                  key={idx} 
+                  onClick={() => setActiveIngredient(ing)} // <-- Membuka modal saat diklik
+                  className={`px-3 py-1.5 border rounded-lg text-xs font-bold capitalize shadow-sm transition-all hover:-translate-y-0.5 active:scale-95 ${style}`}
+                >
                   {ing.name}
-                </span>
+                </button>
               );
             })}
           </div>
@@ -191,27 +302,33 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
             <div className="mt-6 border-t border-slate-200 pt-5">
               <button 
                 onClick={() => setShowUnknownIngredients(!showUnknownIngredients)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-amber-300 rounded-xl shadow-sm text-amber-800 text-sm font-bold hover:bg-amber-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-amber-300 rounded-xl shadow-sm text-amber-800 text-sm font-bold hover:bg-amber-50 transition-colors w-full sm:w-auto"
               >
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
                 </span>
                 <span>Bahan Asing Ditemukan ({result.engineResult.unknownIngredients.length})</span>
-                <span className="ml-2 text-amber-500">{showUnknownIngredients ? '▲' : '▼'}</span>
+                <span className="ml-auto sm:ml-2 text-amber-500">{showUnknownIngredients ? '▲' : '▼'}</span>
               </button>
 
               {showUnknownIngredients && (
                 <div className="mt-4 p-5 bg-white rounded-2xl border border-amber-200 shadow-sm animate-in slide-in-from-top-2">
-                  <div className="bg-amber-50 p-4 rounded-xl text-sm text-slate-700 font-medium leading-relaxed mb-4 border border-amber-100">
-                    {result.analysis.aiUnknownAnalysis}
+                  
+                  {/* Tampilan Baru yang lebih menenangkan & Otomatis */}
+                  <div className="bg-amber-50/50 p-4 rounded-xl text-sm text-amber-900 font-medium leading-relaxed mb-5 border border-amber-100 flex gap-4 items-start">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <p className="font-bold mb-1 text-amber-800">Telah Dilaporkan Secara Otomatis</p>
+                      <p>Sistem menemukan bahan asing pada formulasi ini. Jangan khawatir, sistem kami telah merekam dan mengirimkannya secara otomatis ke tim ahli untuk ditinjau dan dimasukkan ke dalam Kamus Induk.</p>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Daftar Bahan:</span>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mr-2 w-full sm:w-auto mb-2 sm:mb-0">Daftar Bahan Asing:</span>
                     {result.engineResult.unknownIngredients.map((ing, idx) => (
-                      <div key={idx} className="flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
-                        <span className="text-xs font-bold text-slate-700">{ing}</span>
-                        <button onClick={() => handleReportIngredient(ing)} className="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 hover:bg-rose-100 transition-colors">Laporkan 🚩</button>
+                      <div key={idx} className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 shadow-inner">
+                        <span className="text-xs font-bold text-slate-500 lowercase">{ing}</span>
                       </div>
                     ))}
                   </div>

@@ -178,3 +178,13 @@ model UnknownIngredient {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Menangkap laporan ketidaksesuaian bahan dari pengguna (Manual)
+model IngredientReport {
+  id             String   @id @default(cuid())
+  ingredientName String   // Nama bahan yang dilaporkan
+  reason         String   @db.Text // Detail keluhan dari pengguna
+  isReviewed     Boolean  @default(false)
+  
+  createdAt      DateTime @default(now())
+}
