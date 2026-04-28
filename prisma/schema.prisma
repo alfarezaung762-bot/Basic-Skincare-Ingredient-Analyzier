@@ -52,6 +52,7 @@ model User {
   // Relasi ke tabel spesifik aplikasi kita
   profile       Profile?
   histories     AnalysisHistory[]
+  reviews       ProductReview[] // Relasi baru untuk ulasan komunitas
 }
 
 model VerificationToken {
@@ -187,4 +188,41 @@ model IngredientReport {
   isReviewed     Boolean  @default(false)
   
   createdAt      DateTime @default(now())
+}
+
+// ==========================================
+// 4. KATALOG PRODUK AFILIASI & REKOMENDASI (V4.3 Final)
+// ==========================================
+
+model ProductCatalog {
+  id              String          @id @default(cuid())
+  namaProduk      String
+  tipeProduk      ProductType
+  gambarUrl       String          @db.Text
+  tautanAfiliasi  String          @db.Text
+  komposisiAsli   String          @db.Text
+  fokusProduk     String          // Menyimpan hasil pilihan kotak centang
+  isPinKreator    Boolean         @default(false)
+  masalahKulitPin String?         // Kategori masalah kulit khusus untuk rekomendasi utama
+  catatanKreator  String?         @db.Text // Alasan rekomendasi dari administrator (opsional)
+
+  reviews         ProductReview[] // Relasi balik ke tabel ulasan komunitas
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+// Tabel baru khusus untuk interaksi ulasan dari pengguna
+model ProductReview {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId       String
+  product         ProductCatalog @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  rating          Int            // Menyimpan angka 1 sampai 5
+  komentar        String         @db.Text // Teks ulasan dibatasi maksimal 30 kata dari sisi antarmuka
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }

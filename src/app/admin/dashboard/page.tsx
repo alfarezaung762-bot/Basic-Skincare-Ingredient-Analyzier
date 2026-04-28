@@ -165,13 +165,21 @@ export default function AdminDashboard() {
           </button>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex gap-3">
-          <Link href="/admin/dashboard" className="px-6 py-3 font-bold text-sm rounded-xl transition-all bg-slate-900 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+       {/* Menu Navigasi Utama */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-3">
+          {/* Tab Aktif */}
+          <div className="px-6 py-3 font-bold text-sm rounded-xl transition-all bg-slate-900 text-white shadow-lg cursor-default">
             📚 Kamus Bahan Utama
-          </Link>
+          </div>
+          
+          {/* Tab Pusat Tinjauan */}
           <Link href="/admin/reportbahan" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
-            <span>❓ Review Bahan Baru</span>
-            <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">Baru</span>
+            <span>❓ Pusat Tinjauan</span>
+          </Link>
+          
+          {/* Tab Katalog Produk */}
+          <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+            <span>🛒 Katalog Produk</span>
           </Link>
         </motion.div>
 

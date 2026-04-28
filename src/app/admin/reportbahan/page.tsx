@@ -207,10 +207,12 @@ export default function AdminReportBahan() {
         </div>
 
         {/* Menu Navigasi (Dengan 2 Lencana Real-time) */}
-        <div className="flex gap-2">
-          <Link href="/admin/dashboard" className="px-6 py-3 font-bold text-sm rounded-xl transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-3">
+          <Link href="/admin/dashboard" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
             📚 Kamus Bahan Utama
           </Link>
+          
+          {/* Tab Aktif */}
           <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-3 bg-slate-900 text-white shadow-lg cursor-default">
             <span>❓ Pusat Tinjauan</span>
             <div className="flex gap-1">
@@ -222,7 +224,11 @@ export default function AdminReportBahan() {
               </span>
             </div>
           </div>
-        </div>
+
+          <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+            <span>🛒 Katalog Produk</span>
+          </Link>
+        </motion.div>
 
         {/* Konten Utama */}
         <div className="bg-white/90 backdrop-blur-sm min-h-[500px] p-6 md:p-8 rounded-3xl shadow-sm border border-white">
