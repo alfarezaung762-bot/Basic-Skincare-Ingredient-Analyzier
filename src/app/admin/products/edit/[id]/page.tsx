@@ -14,6 +14,9 @@ export default function EditProductPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  // STATE BARU: Mengecek apakah pengguna hanya pemantau
+  const [isViewer, setIsViewer] = useState(false);
+
   const [formData, setFormData] = useState({
     namaProduk: "",
     tipeProduk: "FACEWASH",
@@ -25,7 +28,6 @@ export default function EditProductPage() {
     catatanKreator: "",
   });
 
-  // State Khusus Gambar Baru & Crop ✂️
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
@@ -40,46 +42,69 @@ export default function EditProductPage() {
     "Eksfoliasi & Tekstur Pori-pori": false,
   });
 
-  // Penarikan Data Lama
+  // ========================================================
+  // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & TARIK DATA
+  // ========================================================
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    if (!profileString) {
       router.push("/admin/login");
       return;
     }
 
-    if (params.id) {
-      fetch("/api/admin/products")
-        .then((res) => res.json())
-        .then((data) => {
-          const product = data.find((p: any) => p.id === params.id);
-          if (product) {
-            setFormData({
-              namaProduk: product.namaProduk,
-              tipeProduk: product.tipeProduk,
-              gambarUrl: product.gambarUrl || "", // Menyimpan URL gambar lama
-              tautanAfiliasi: product.tautanAfiliasi,
-              komposisiAsli: product.komposisiAsli,
-              isPinKreator: product.isPinKreator,
-              masalahKulitPin: product.masalahKulitPin || "",
-              catatanKreator: product.catatanKreator || "",
-            });
+    try {
+      const profile = JSON.parse(profileString);
+      const isSuperAdmin = profile.role === "SUPERADMIN";
+      const isViewOnly = profile.role === "VIEWER";
+      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KATALOG");
 
-            if (product.fokusProduk) {
-              const selectedFocuses = product.fokusProduk.split(", ");
-              setFocuses((prev) => {
-                const newFocuses = { ...prev };
-                selectedFocuses.forEach((focus: string) => {
-                  if (focus in newFocuses) {
-                    newFocuses[focus as keyof typeof focuses] = true;
-                  }
-                });
-                return newFocuses;
+      // Tolak jika bukan Superadmin, bukan Viewer, dan tidak punya izin Manage Katalog
+      if (!isSuperAdmin && !isViewOnly && !hasPermission) {
+        alert("Akses Ditolak: Anda tidak memiliki wewenang di Katalog Produk.");
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      setIsViewer(isViewOnly);
+
+      // Lanjutkan penarikan data jika lolos keamanan
+      if (params.id) {
+        fetch("/api/admin/products")
+          .then((res) => res.json())
+          .then((data) => {
+            const product = data.find((p: any) => p.id === params.id);
+            if (product) {
+              setFormData({
+                namaProduk: product.namaProduk,
+                tipeProduk: product.tipeProduk,
+                gambarUrl: product.gambarUrl || "",
+                tautanAfiliasi: product.tautanAfiliasi,
+                komposisiAsli: product.komposisiAsli,
+                isPinKreator: product.isPinKreator,
+                masalahKulitPin: product.masalahKulitPin || "",
+                catatanKreator: product.catatanKreator || "",
               });
+
+              if (product.fokusProduk) {
+                const selectedFocuses = product.fokusProduk.split(", ");
+                setFocuses((prev) => {
+                  const newFocuses = { ...prev };
+                  selectedFocuses.forEach((focus: string) => {
+                    if (focus in newFocuses) {
+                      newFocuses[focus as keyof typeof focuses] = true;
+                    }
+                  });
+                  return newFocuses;
+                });
+              }
             }
-          }
-        })
-        .catch((err) => console.error("Gagal menarik data produk", err));
+          })
+          .catch((err) => console.error("Gagal menarik data produk", err));
+      }
+    } catch (error) {
+      sessionStorage.clear();
+      router.push("/admin/login");
     }
   }, [router, params.id]);
 
@@ -98,7 +123,6 @@ export default function EditProductPage() {
 
   const catatanWordCount = formData.catatanKreator.trim() === "" ? 0 : formData.catatanKreator.trim().split(/\s+/).length;
 
-  // Logika Pilih & Potong File Baru
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
       setCrop(undefined); 
@@ -118,7 +142,6 @@ export default function EditProductPage() {
     const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/jpeg'));
     const data = new FormData();
     data.append("file", blob);
-    // GANTI TEKS DI BAWAH DENGAN NAMA UPLOAD PRESET CLOUDINARY MILIKMU
     data.append("upload_preset", "skincare_katalog"); 
 
     const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
@@ -131,6 +154,13 @@ export default function EditProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Pencegahan ganda jika Viewer mencoba meretas fungsi submit
+    if (isViewer) {
+      alert("Mode Pemantau: Anda tidak diizinkan menyimpan perubahan data.");
+      return;
+    }
+
     setIsLoading(true);
     setMessage({ type: "", text: "" });
 
@@ -152,9 +182,8 @@ export default function EditProductPage() {
     }
 
     try {
-      let finalImageUrl = formData.gambarUrl; // Default: Gunakan tautan gambar yang lama
+      let finalImageUrl = formData.gambarUrl; 
 
-      // Jika ada file baru yang dipilih dan dipotong, proses ke Cloudinary
       if (completedCrop && imgRef.current) {
         const canvas = document.createElement('canvas');
         const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
@@ -172,11 +201,10 @@ export default function EditProductPage() {
       const payloadData = {
         id: params.id, 
         ...formData,
-        gambarUrl: finalImageUrl, // Menimpa gambar jika ada yang baru
+        gambarUrl: finalImageUrl, 
         fokusProduk: selectedFocuses,
       };
 
-      // MENGGUNAKAN METODE PUT UNTUK MEMPERBARUI
       const res = await fetch("/api/admin/products", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -208,7 +236,14 @@ export default function EditProductPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Ubah Data Produk ✍️</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Perbarui informasi produk afiliasi di bawah ini.</p>
+          <p className="text-sm text-slate-500 mb-6 font-medium">Perbarui informasi produk afiliasi di bawah ini.</p>
+
+          {/* PERINGATAN VIEWER */}
+          {isViewer && (
+            <div className="p-4 mb-6 rounded-xl text-sm font-bold border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-2">
+              <span>👁️</span> Anda masuk dalam mode Pemantau (Read-Only). Perubahan tidak dapat disimpan.
+            </div>
+          )}
 
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
@@ -222,7 +257,6 @@ export default function EditProductPage() {
             <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
               <div className="flex flex-col md:flex-row gap-6 md:items-start">
                 
-                {/* Menampilkan Gambar Saat Ini jika tidak ada file baru yang dipilih */}
                 {!imgSrc && (
                   <div className="shrink-0 max-w-[150px]">
                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Foto Saat Ini:</p>
@@ -238,28 +272,27 @@ export default function EditProductPage() {
                         <span className="text-3xl">📦</span>
                       )}
                     </div>
-                    {/* Menampilkan Teks URL Gambar agar jelas */}
-                    <p className="text-[9px] text-blue-500 mt-2 truncate w-full" title={formData.gambarUrl}>
-                      {formData.gambarUrl || "Belum ada tautan gambar"}
-                    </p>
                   </div>
                 )}
 
-                <div className="flex-1">
-                  <label htmlFor="fotoUpload" className="text-xs font-bold uppercase text-slate-700">Ganti Foto Produk (Opsional)</label>
-                  <p className="text-[10px] font-medium text-slate-500 mb-3">Biarkan kosong jika tidak ingin mengubah foto. Sistem akan memotong otomatis 1:1.</p>
-                  <input 
-                    id="fotoUpload"
-                    title="Pilih foto produk baru"
-                    type="file" 
-                    accept="image/*" 
-                    onChange={onSelectFile} 
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                  />
-                </div>
+                {/* Sembunyikan unggah foto baru jika VIEWER */}
+                {!isViewer && (
+                  <div className="flex-1">
+                    <label htmlFor="fotoUpload" className="text-xs font-bold uppercase text-slate-700">Ganti Foto Produk (Opsional)</label>
+                    <p className="text-[10px] font-medium text-slate-500 mb-3">Biarkan kosong jika tidak ingin mengubah foto. Sistem akan memotong otomatis 1:1.</p>
+                    <input 
+                      id="fotoUpload"
+                      title="Pilih foto produk baru"
+                      type="file" 
+                      accept="image/*" 
+                      onChange={onSelectFile} 
+                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
               
-              {imgSrc && (
+              {imgSrc && !isViewer && (
                 <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner mt-4">
                   <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={1}>
                     <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[300px] rounded-lg border border-slate-200" />
@@ -281,11 +314,11 @@ export default function EditProductPage() {
                 <input 
                   id="namaProduk"
                   required 
+                  disabled={isViewer}
                   type="text" 
-                  placeholder="Contoh: Skintific 5X Ceramide Moisturizer" 
                   value={formData.namaProduk} 
                   onChange={(e) => setFormData({...formData, namaProduk: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 transition-all" 
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 transition-all disabled:bg-slate-100 disabled:text-slate-500" 
                 />
               </div>
               <div className="space-y-2">
@@ -293,9 +326,10 @@ export default function EditProductPage() {
                 <select 
                   id="tipeProduk"
                   title="Tipe Produk"
+                  disabled={isViewer}
                   value={formData.tipeProduk} 
                   onChange={(e) => setFormData({...formData, tipeProduk: e.target.value})} 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500"
                 >
                   <option value="FACEWASH">Sabun Cuci Muka (Facewash)</option>
                   <option value="MOISTURIZER">Pelembap (Moisturizer)</option>
@@ -310,11 +344,11 @@ export default function EditProductPage() {
               <input 
                 id="tautanAfiliasi"
                 required 
+                disabled={isViewer}
                 type="url" 
-                placeholder="https://..." 
                 value={formData.tautanAfiliasi} 
                 onChange={(e) => setFormData({...formData, tautanAfiliasi: e.target.value})}
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500" 
               />
             </div>
 
@@ -324,16 +358,16 @@ export default function EditProductPage() {
               <textarea 
                 id="komposisiAsli"
                 required 
+                disabled={isViewer}
                 rows={4} 
-                placeholder="Tempel seluruh komposisi produk di sini, pastikan memisahkan setiap bahan dengan tanda koma..." 
                 value={formData.komposisiAsli} 
                 onChange={(e) => setFormData({...formData, komposisiAsli: e.target.value})} 
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500" 
               />
             </div>
 
             {/* Fokus Produk */}
-            <div className="space-y-3 pt-4 border-t border-slate-100">
+            <div className={`space-y-3 pt-4 border-t border-slate-100 ${isViewer ? 'opacity-80 pointer-events-none' : ''}`}>
               <label className="text-xs font-bold text-slate-700 uppercase">Fokus Perawatan (Pilih minimal satu)</label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(Object.keys(focuses) as Array<keyof typeof focuses>).map((focus) => (
@@ -342,9 +376,10 @@ export default function EditProductPage() {
                       id={`focus-${focus}`}
                       title={`Pilih fokus ${focus}`}
                       type="checkbox" 
+                      disabled={isViewer}
                       checked={focuses[focus]} 
                       onChange={() => handleFocusChange(focus)} 
-                      className="w-5 h-5 accent-blue-600" 
+                      className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" 
                     />
                     <span className="text-sm font-bold text-slate-800">{focus}</span>
                   </label>
@@ -354,14 +389,15 @@ export default function EditProductPage() {
 
             {/* Pin Kreator */}
             <div className="space-y-6 pt-6 border-t border-slate-100">
-              <label htmlFor="isPinKreator" className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 cursor-pointer transition-colors">
+              <label htmlFor="isPinKreator" className={`flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 cursor-pointer transition-colors ${isViewer ? 'opacity-80 pointer-events-none' : ''}`}>
                 <input 
                   id="isPinKreator"
                   title="Jadikan Pin Kreator"
                   type="checkbox" 
+                  disabled={isViewer}
                   checked={formData.isPinKreator} 
                   onChange={(e) => setFormData({...formData, isPinKreator: e.target.checked})} 
-                  className="w-6 h-6 accent-amber-600" 
+                  className="w-6 h-6 accent-amber-600 disabled:cursor-not-allowed" 
                 />
                 <span className="text-base font-black text-amber-800 tracking-tight">📌 Jadikan Rekomendasi Utama (Pin Kreator)</span>
               </label>
@@ -374,9 +410,10 @@ export default function EditProductPage() {
                       id="masalahKulitPin"
                       title="Pilih Masalah Kulit Sasaran"
                       required={formData.isPinKreator} 
+                      disabled={isViewer}
                       value={formData.masalahKulitPin} 
                       onChange={(e) => setFormData({...formData, masalahKulitPin: e.target.value})} 
-                      className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white text-slate-900 outline-none text-sm font-medium focus:ring-2 focus:ring-amber-500"
+                      className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white text-slate-900 outline-none text-sm font-medium focus:ring-2 focus:ring-amber-500 disabled:bg-amber-100 disabled:text-amber-800"
                     >
                       <option value="">-- Pilih Masalah Kulit Sasaran --</option>
                       <option value="Mencerahkan & Bekas Jerawat">Mencerahkan & Bekas Jerawat</option>
@@ -398,11 +435,11 @@ export default function EditProductPage() {
                     <textarea 
                       id="catatanKreator"
                       required={formData.isPinKreator} 
+                      disabled={isViewer}
                       rows={3} 
-                      placeholder="Jelaskan mengapa produk ini sangat direkomendasikan..." 
                       value={formData.catatanKreator} 
                       onChange={handleCatatanChange} 
-                      className="w-full px-4 py-3 rounded-xl border border-amber-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-amber-500" 
+                      className="w-full px-4 py-3 rounded-xl border border-amber-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 focus:ring-2 focus:ring-amber-500 disabled:bg-amber-100 disabled:text-amber-800" 
                     />
                   </div>
                 </motion.div>
@@ -411,10 +448,10 @@ export default function EditProductPage() {
 
             <button 
               type="submit" 
-              disabled={isLoading} 
-              className="w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={isLoading || isViewer} 
+              className={`w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg ${isViewer ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
             >
-              {isLoading ? "Menyimpan Pembaruan..." : "Simpan Perubahan Data ✍️"}
+              {isLoading ? "Menyimpan Pembaruan..." : isViewer ? "Hanya Pantau (Read-Only) 👁️" : "Simpan Perubahan Data ✍️"}
             </button>
           </form>
         </motion.div>

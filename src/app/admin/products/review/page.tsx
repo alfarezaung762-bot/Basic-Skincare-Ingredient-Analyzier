@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Mendefinisikan kerangka data ulasan
 interface Review {
   id: string;
   rating: number;
@@ -18,7 +17,7 @@ interface Review {
   };
   product: {
     namaProduk: string;
-    gambarUrl: string; // <-- Wajib ada agar foto produk bisa ditarik
+    gambarUrl: string; 
   };
 }
 
@@ -27,16 +26,42 @@ export default function AdminReviewsDashboard() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // STATE: Menyimpan nama produk yang sedang dibuka modalnya (Views)
+  // STATE KEAMANAN & HAK AKSES
+  const [isViewer, setIsViewer] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false); // <-- GEMBOK LAYAR (Solusi Celah Keamanan)
+
+  // STATE MODAL
   const [activeProduct, setActiveProduct] = useState<string | null>(null);
 
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    if (!profileString) {
       router.push("/admin/login");
       return;
     }
-    fetchReviews();
+
+    try {
+      const profile = JSON.parse(profileString);
+      const isSuperAdmin = profile.role === "SUPERADMIN";
+      const isViewOnly = profile.role === "VIEWER";
+      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_ULASAN");
+
+      if (!isSuperAdmin && !isViewOnly && !hasPermission) {
+        alert("Akses Ditolak: Anda tidak berwenang memoderasi ulasan.");
+        router.push("/admin/dashboard");
+        return; // Hentikan proses, isAuthorized tetap false
+      }
+
+      // JIKA LOLOS PENGECEKAN: Buka gembok layar dan tarik data
+      setIsViewer(isViewOnly);
+      setIsAuthorized(true); 
+      fetchReviews();
+
+    } catch (error) {
+      sessionStorage.clear();
+      router.push("/admin/login");
+    }
   }, [router]);
 
   const fetchReviews = async () => {
@@ -55,10 +80,13 @@ export default function AdminReviewsDashboard() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("isAdminAuth");
+    sessionStorage.removeItem("adminProfile");
     router.push("/admin/login");
   };
 
   const handleDelete = async (id: string, userName: string) => {
+    if (isViewer) return; 
+
     if (!window.confirm(`Peringatan: Yakin ingin menghapus ulasan dari "${userName}" secara permanen? Tindakan ini tidak bisa dibatalkan.`)) return;
 
     try {
@@ -88,7 +116,6 @@ export default function AdminReviewsDashboard() {
     visible: { opacity: 1, x: 0 },
   };
 
-  // Mengelompokkan ulasan berdasarkan nama produk
   const groupedReviews = reviews.reduce((acc, review) => {
     const prodName = review.product.namaProduk;
     if (!acc[prodName]) acc[prodName] = [];
@@ -96,16 +123,29 @@ export default function AdminReviewsDashboard() {
     return acc;
   }, {} as Record<string, Review[]>);
 
-  // Data ulasan khusus untuk produk yang sedang dibuka di Modal
   const activeReviews = activeProduct ? groupedReviews[activeProduct] || [] : [];
 
-  // Jika semua ulasan di produk tersebut dihapus, tutup otomatis modalnya
   useEffect(() => {
     if (activeProduct && activeReviews.length === 0) {
       setActiveProduct(null);
     }
   }, [activeReviews.length, activeProduct]);
 
+
+  // ========================================================
+  // LAYAR KOSONG: Tampil sebelum izin dipastikan (Mencegah UI Flash)
+  // ========================================================
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // ========================================================
+  // RENDER UTAMA JIKA IZIN DITERIMA
+  // ========================================================
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12 relative overflow-hidden">
       <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 pointer-events-none"></div>
@@ -136,6 +176,8 @@ export default function AdminReviewsDashboard() {
           <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
             <span>🛒 Katalog Produk</span>
           </Link>
+          
+          {/* TAB AKTIF */}
           <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-2 bg-slate-900 text-white shadow-lg cursor-default">
             <span>⭐ Moderasi Ulasan</span>
             <span className="bg-amber-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
@@ -174,11 +216,10 @@ export default function AdminReviewsDashboard() {
                 <motion.tbody variants={containerVariants} initial="hidden" animate="visible" className="divide-y divide-slate-100">
                   {Object.entries(groupedReviews).map(([prodName, prodReviews]) => {
                     const avgRating = (prodReviews.reduce((acc, r) => acc + r.rating, 0) / prodReviews.length).toFixed(1);
-                    const imageUrl = prodReviews[0]?.product?.gambarUrl; // Menarik foto produk
+                    const imageUrl = prodReviews[0]?.product?.gambarUrl; 
 
                     return (
                       <motion.tr variants={itemVariants} key={prodName} className="hover:bg-blue-50/30 transition-colors group">
-                        {/* Kolom 1: Foto dan Nama Produk */}
                         <td className="p-4">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 overflow-hidden flex shrink-0 items-center justify-center p-1">
@@ -192,7 +233,6 @@ export default function AdminReviewsDashboard() {
                           </div>
                         </td>
 
-                        {/* Kolom 2: Rating dan Jumlah */}
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded border border-amber-100">
@@ -205,7 +245,6 @@ export default function AdminReviewsDashboard() {
                           </div>
                         </td>
 
-                        {/* Kolom 3: Tombol Buka Modal */}
                         <td className="p-4 text-right">
                           <button 
                             onClick={() => setActiveProduct(prodName)} 
@@ -224,7 +263,6 @@ export default function AdminReviewsDashboard() {
         </motion.div>
       </div>
 
-      {/* MODAL / VIEW KHUSUS MODERASI ULASAN */}
       <AnimatePresence>
         {activeProduct && (
           <motion.div 
@@ -237,17 +275,15 @@ export default function AdminReviewsDashboard() {
               className="bg-slate-50 w-full max-w-3xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
               <div className="p-6 bg-white border-b border-slate-200 flex justify-between items-center sticky top-0 z-10 shadow-sm">
                 <button onClick={() => setActiveProduct(null)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-full font-black transition-all">✕</button>
                 <div className="text-center flex-1 px-4">
                   <h2 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate">{activeProduct}</h2>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total {activeReviews.length} Ulasan Komunitas</p>
                 </div>
-                <div className="w-10"></div> {/* Spacer */}
+                <div className="w-10"></div>
               </div>
 
-              {/* Modal Body (Daftar Ulasan) */}
               <div className="overflow-y-auto flex-1 p-6 md:p-8 space-y-4 custom-scrollbar">
                 {activeReviews.map((review, i) => (
                   <motion.div 
@@ -275,12 +311,16 @@ export default function AdminReviewsDashboard() {
                     </div>
 
                     <div className="flex items-end justify-end shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0 mt-2 sm:mt-0">
-                      <button 
-                        onClick={() => handleDelete(review.id, review.user.name || "Pengguna")}
-                        className="w-full sm:w-auto bg-white text-rose-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white border border-rose-200 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
-                      >
-                        <span>🗑️</span> Hapus
-                      </button>
+                      {!isViewer ? (
+                        <button 
+                          onClick={() => handleDelete(review.id, review.user.name || "Pengguna")}
+                          className="w-full sm:w-auto bg-white text-rose-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white border border-rose-200 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                        >
+                          <span>🗑️</span> Hapus
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-400 italic bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">Hanya Pantau</span>
+                      )}
                     </div>
                   </motion.div>
                 ))}

@@ -16,6 +16,9 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
   const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  // STATE BARU: Untuk mengecek apakah pengguna hanya pemantau
+  const [isViewer, setIsViewer] = useState(false);
+
   const [blacklistedTypes, setBlacklistedTypes] = useState({
     Normal: false,
     Kering: false,
@@ -32,86 +35,109 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
     "Eksfoliasi & Tekstur Pori-pori": false,
   });
 
-  // STATE V3.1: Tambahan aiContext dan isVerified
   const [formData, setFormData] = useState({
     name: "",
     aliases: "", 
     type: "BASIC",
     functionalCategory: "UMUM", 
     benefits: "",
-    aiContext: "", // <-- Konteks AI
+    aiContext: "", 
     comedogenicRating: 0,
     safeForPregnancy: true,
     safeForSensitive: true,
     isKeyActive: false,
     strengthLevel: 1,
     blacklistReason: "",
-    isVerified: false, // <-- Status Verifikasi
+    isVerified: false, 
   });
 
+  // ========================================================
+  // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & TARIK DATA
+  // ========================================================
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    if (!profileString) {
       router.push("/admin/login");
       return;
     }
 
-    const fetchOldData = async () => {
-      try {
-        const res = await fetch(`/api/ingredients/${ingredientId}`);
-        if (res.ok) {
-          const data = await res.json();
-          
-          setFormData({
-            name: data.name, 
-            aliases: data.aliases || "", 
-            type: data.type, 
-            functionalCategory: data.functionalCategory || "UMUM",
-            benefits: data.benefits,
-            aiContext: data.aiContext || "", // Menarik data AI Context
-            comedogenicRating: data.comedogenicRating || 0, 
-            safeForPregnancy: data.safeForPregnancy ?? true,
-            safeForSensitive: data.safeForSensitive ?? true,
-            isKeyActive: data.isKeyActive || false,
-            strengthLevel: data.strengthLevel || 1,
-            blacklistReason: data.blacklistReason || "",
-            isVerified: data.isVerified || false, // Menarik data Verifikasi
-          });
-          
-          if (data.targetFocus) {
-            const dbFocuses = data.targetFocus.split(",");
-            setFocuses(prev => {
-              const newFocuses = { ...prev };
-              dbFocuses.forEach((f: string) => {
-                const cleanF = f.trim() as keyof typeof focuses;
-                if (newFocuses[cleanF] !== undefined) newFocuses[cleanF] = true;
-              });
-              return newFocuses;
-            });
-          }
+    try {
+      const profile = JSON.parse(profileString);
+      const isSuperAdmin = profile.role === "SUPERADMIN";
+      const isViewOnly = profile.role === "VIEWER";
+      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
 
-          if (data.blacklistedSkinTypes) {
-            const dbBlacklists = data.blacklistedSkinTypes.split(",");
-            setBlacklistedTypes(prev => {
-              const newBlacklists = { ...prev };
-              dbBlacklists.forEach((b: string) => {
-                const cleanB = b.trim() as keyof typeof blacklistedTypes;
-                if (newBlacklists[cleanB] !== undefined) newBlacklists[cleanB] = true;
-              });
-              return newBlacklists;
-            });
-          }
-        } else {
-          setMessage({ type: "error", text: "Bahan tidak ditemukan." });
-        }
-      } catch (error) {
-        setMessage({ type: "error", text: "Gagal menarik data dari server." });
-      } finally {
-        setIsFetching(false);
+      // Tolak jika bukan Superadmin, bukan Viewer, dan tidak punya izin Manage Kamus
+      if (!isSuperAdmin && !isViewOnly && !hasPermission) {
+        alert("Akses Ditolak: Anda tidak memiliki wewenang di Kamus Bahan.");
+        router.push("/admin/login");
+        return;
       }
-    };
-    
-    fetchOldData();
+
+      setIsViewer(isViewOnly);
+
+      const fetchOldData = async () => {
+        try {
+          const res = await fetch(`/api/ingredients/${ingredientId}`);
+          if (res.ok) {
+            const data = await res.json();
+            
+            setFormData({
+              name: data.name, 
+              aliases: data.aliases || "", 
+              type: data.type, 
+              functionalCategory: data.functionalCategory || "UMUM",
+              benefits: data.benefits,
+              aiContext: data.aiContext || "",
+              comedogenicRating: data.comedogenicRating || 0, 
+              safeForPregnancy: data.safeForPregnancy ?? true,
+              safeForSensitive: data.safeForSensitive ?? true,
+              isKeyActive: data.isKeyActive || false,
+              strengthLevel: data.strengthLevel || 1,
+              blacklistReason: data.blacklistReason || "",
+              isVerified: data.isVerified || false,
+            });
+            
+            if (data.targetFocus) {
+              const dbFocuses = data.targetFocus.split(",");
+              setFocuses(prev => {
+                const newFocuses = { ...prev };
+                dbFocuses.forEach((f: string) => {
+                  const cleanF = f.trim() as keyof typeof focuses;
+                  if (newFocuses[cleanF] !== undefined) newFocuses[cleanF] = true;
+                });
+                return newFocuses;
+              });
+            }
+
+            if (data.blacklistedSkinTypes) {
+              const dbBlacklists = data.blacklistedSkinTypes.split(",");
+              setBlacklistedTypes(prev => {
+                const newBlacklists = { ...prev };
+                dbBlacklists.forEach((b: string) => {
+                  const cleanB = b.trim() as keyof typeof blacklistedTypes;
+                  if (newBlacklists[cleanB] !== undefined) newBlacklists[cleanB] = true;
+                });
+                return newBlacklists;
+              });
+            }
+          } else {
+            setMessage({ type: "error", text: "Bahan tidak ditemukan." });
+          }
+        } catch (error) {
+          setMessage({ type: "error", text: "Gagal menarik data dari server." });
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      
+      fetchOldData();
+
+    } catch (error) {
+      sessionStorage.clear();
+      router.push("/admin/login");
+    }
   }, [ingredientId, router]); 
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -156,6 +182,13 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // BLOKIR JIKA VIEWER (Pencegahan Ganda di sisi fungsi)
+    if (isViewer) {
+      alert("Mode Pemantau: Anda tidak diizinkan menyimpan perubahan data.");
+      return;
+    }
+
     setIsLoading(true);
     setMessage({ type: "", text: "" });
 
@@ -223,6 +256,13 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
           <h1 className="text-2xl font-black text-slate-900 mb-2">Edit Bahan ✍️</h1>
           <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.1: Perbarui data bahan ke versi terbaru.</p>
 
+          {/* PERINGATAN VIEWER */}
+          {isViewer && (
+            <div className="p-4 mb-6 rounded-xl text-sm font-bold border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-2">
+              <span>👁️</span> Anda masuk dalam mode Pemantau (Read-Only). Perubahan tidak dapat disimpan.
+            </div>
+          )}
+
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
               {message.text}
@@ -235,11 +275,11 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2 md:col-span-1">
                 <label htmlFor="name" className="text-xs font-bold text-slate-700 uppercase">Nama (INCI)</label>
-                <input id="name" required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm font-medium text-slate-900 bg-white" title="Peringatan: Hati-hati saat mengubah nama INCI" />
+                <input id="name" required disabled={isViewer} type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm font-medium text-slate-900 bg-white disabled:bg-slate-50 disabled:text-slate-500" title="Peringatan: Hati-hati saat mengubah nama INCI" />
               </div>
               <div className="space-y-2">
                 <label htmlFor="type" className="text-xs font-bold text-slate-700 uppercase">Sifat Kimia</label>
-                <select id="type" value={formData.type} onChange={handleTypeChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600">
+                <select id="type" value={formData.type} disabled={isViewer} onChange={handleTypeChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-50 disabled:text-slate-500">
                   <option value="BASIC">BASIC (Standar)</option>
                   <option value="BUFFER">BUFFER (Penenang)</option>
                   <option value="HARSH">HARSH (Keras/Asam)</option>
@@ -254,7 +294,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                   id="strengthLevel" 
                   value={formData.strengthLevel} 
                   onChange={(e) => setFormData({...formData, strengthLevel: parseInt(e.target.value)})} 
-                  disabled={formData.type !== "HARSH" && formData.type !== "BUFFER"}
+                  disabled={formData.type !== "HARSH" && formData.type !== "BUFFER" || isViewer}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   <option value={1}>1 - Rendah/Lembut</option>
@@ -270,7 +310,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                   id="functionalCategory" 
                   value={formData.functionalCategory} 
                   onChange={(e) => setFormData({...formData, functionalCategory: e.target.value})} 
-                  disabled={isToxic}
+                  disabled={isToxic || isViewer}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   <option value="UMUM">UMUM (Lainnya)</option>
@@ -287,11 +327,11 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
               <div className="space-y-2 md:col-span-3">
                 <label htmlFor="aliases" className="text-xs font-bold text-slate-700 uppercase">Sinonim / Alias</label>
-                <input id="aliases" type="text" value={formData.aliases} onChange={(e) => setFormData({...formData, aliases: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600" />
+                <input id="aliases" disabled={isViewer} type="text" value={formData.aliases} onChange={(e) => setFormData({...formData, aliases: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-50 disabled:text-slate-500" />
               </div>
               <div className={`md:col-span-1 pt-4 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
                 <label className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 cursor-pointer'}`}>
-                  <input type="checkbox" checked={formData.isKeyActive} disabled={isToxic} onChange={(e) => setFormData({...formData, isKeyActive: e.target.checked})} className="w-5 h-5 accent-yellow-600 disabled:cursor-not-allowed" />
+                  <input type="checkbox" checked={formData.isKeyActive} disabled={isToxic || isViewer} onChange={(e) => setFormData({...formData, isKeyActive: e.target.checked})} className="w-5 h-5 accent-yellow-600 disabled:cursor-not-allowed" />
                   <span className={`text-sm font-bold ${isToxic ? 'text-slate-400' : 'text-yellow-800'}`}>⭐ Bahan Aktif Utama</span>
                 </label>
               </div>
@@ -303,14 +343,14 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                 <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
                   <span>📱</span> {isToxic ? "Alasan Berbahaya (Singkat)" : "Manfaat Singkat (Untuk Pengguna)"} <span className="text-rose-500">*</span>
                 </label>
-                <textarea id="benefits" required rows={2} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white ${isToxic ? 'border-rose-200 text-rose-900 focus:ring-rose-500 focus:border-transparent placeholder-rose-300' : 'border-slate-200 text-slate-900 focus:ring-blue-600'}`} />
+                <textarea id="benefits" disabled={isViewer} required rows={2} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white disabled:bg-slate-100 disabled:text-slate-500 ${isToxic ? 'border-rose-200 text-rose-900 focus:ring-rose-500' : 'border-slate-200 text-slate-900 focus:ring-blue-600'}`} />
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="aiContext" className="text-xs font-bold text-purple-700 uppercase flex items-center gap-2">
                   <span>🤖</span> Analisis Mendalam (Khusus Mesin AI) <span className="text-slate-400 font-normal lowercase tracking-normal">(Opsional)</span>
                 </label>
-                <textarea id="aiContext" rows={3} placeholder="Tuliskan mekanisme kimia, pH optimal, pantangan campuran, atau data klinis mendalam. AI akan menggunakan ini sebagai konteks tersembunyi..." value={formData.aiContext} onChange={(e) => setFormData({...formData, aiContext: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-purple-200 outline-none text-sm font-medium resize-none focus:ring-2 focus:ring-purple-500 bg-purple-50/30 text-purple-950 placeholder-purple-300" />
+                <textarea id="aiContext" disabled={isViewer} rows={3} value={formData.aiContext} onChange={(e) => setFormData({...formData, aiContext: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-purple-200 outline-none text-sm font-medium resize-none focus:ring-2 focus:ring-purple-500 bg-purple-50/30 text-purple-950 disabled:opacity-70 disabled:cursor-not-allowed" />
               </div>
             </div>
 
@@ -318,14 +358,14 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
             <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-100 ${isToxic ? 'opacity-50' : ''}`}>
               <div className="space-y-2">
                 <label htmlFor="comedogenicRating" className="text-xs font-bold text-slate-700 uppercase">Komedogenik (0-5)</label>
-                <input id="comedogenicRating" type="number" min="0" max="5" disabled={isToxic} value={formData.comedogenicRating} onChange={(e) => setFormData({...formData, comedogenicRating: parseInt(e.target.value)})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" />
+                <input id="comedogenicRating" type="number" min="0" max="5" disabled={isToxic || isViewer} value={formData.comedogenicRating} onChange={(e) => setFormData({...formData, comedogenicRating: parseInt(e.target.value)})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" />
               </div>
-              <div className={`flex items-center gap-2 pt-6 ${isToxic ? 'pointer-events-none' : 'cursor-pointer'}`}>
-                <input type="checkbox" id="preg" checked={formData.safeForPregnancy} disabled={isToxic} onChange={(e) => setFormData({...formData, safeForPregnancy: e.target.checked})} className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" />
+              <div className={`flex items-center gap-2 pt-6 ${isToxic || isViewer ? 'pointer-events-none' : 'cursor-pointer'}`}>
+                <input type="checkbox" id="preg" checked={formData.safeForPregnancy} disabled={isToxic || isViewer} onChange={(e) => setFormData({...formData, safeForPregnancy: e.target.checked})} className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" />
                 <label htmlFor="preg" className="text-sm font-bold text-slate-700">Aman Bumil 🤰</label>
               </div>
-              <div className={`flex items-center gap-2 pt-6 ${isToxic ? 'pointer-events-none' : 'cursor-pointer'}`}>
-                <input type="checkbox" id="sens" checked={formData.safeForSensitive} disabled={isToxic} onChange={(e) => setFormData({...formData, safeForSensitive: e.target.checked})} className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" />
+              <div className={`flex items-center gap-2 pt-6 ${isToxic || isViewer ? 'pointer-events-none' : 'cursor-pointer'}`}>
+                <input type="checkbox" id="sens" checked={formData.safeForSensitive} disabled={isToxic || isViewer} onChange={(e) => setFormData({...formData, safeForSensitive: e.target.checked})} className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" />
                 <label htmlFor="sens" className="text-sm font-bold text-slate-700">Aman Sensitif 🌡️</label>
               </div>
             </div>
@@ -336,7 +376,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {(Object.keys(focuses) as Array<keyof typeof focuses>).map((focus) => (
                   <label key={focus} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 cursor-pointer'}`}>
-                    <input type="checkbox" disabled={isToxic} checked={focuses[focus]} onChange={() => handleFocusChange(focus)} className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" />
+                    <input type="checkbox" disabled={isToxic || isViewer} checked={focuses[focus]} onChange={() => handleFocusChange(focus)} className="w-5 h-5 accent-blue-600 disabled:cursor-not-allowed" />
                     <span className={`text-sm font-bold ${isToxic ? 'text-slate-400' : 'text-slate-800'}`}>{focus}</span>
                   </label>
                 ))}
@@ -351,7 +391,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {(Object.keys(blacklistedTypes) as Array<keyof typeof blacklistedTypes>).map((type) => (
                   <label key={type} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : blacklistedTypes[type] ? 'bg-red-50 border-red-300 cursor-pointer' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 cursor-pointer'}`}>
-                    <input type="checkbox" disabled={isToxic} checked={blacklistedTypes[type]} onChange={() => handleBlacklistChange(type)} className="w-5 h-5 accent-red-600 disabled:cursor-not-allowed" />
+                    <input type="checkbox" disabled={isToxic || isViewer} checked={blacklistedTypes[type]} onChange={() => handleBlacklistChange(type)} className="w-5 h-5 accent-red-600 disabled:cursor-not-allowed" />
                     <span className={`text-sm font-bold ${isToxic ? 'text-slate-400' : blacklistedTypes[type] ? 'text-red-700' : 'text-slate-700'}`}>{type}</span>
                   </label>
                 ))}
@@ -360,13 +400,13 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               {hasBlacklist && !isToxic && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3">
                   <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
-                  <textarea id="blacklistReason" required rows={2} placeholder="Wajib isi: Mengapa tipe kulit tersebut dilarang keras memakai bahan ini?" value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 placeholder-red-300" />
+                  <textarea id="blacklistReason" required disabled={isViewer} rows={2} value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 disabled:opacity-70 disabled:cursor-not-allowed" />
                 </motion.div>
               )}
             </div>
 
             {/* BARIS 7: KOTAK VERIFIKASI KHUSUS EDIT */}
-            <div className="pt-6 border-t border-slate-100">
+            <div className={`pt-6 border-t border-slate-100 ${isViewer ? 'pointer-events-none opacity-80' : ''}`}>
               <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${formData.isVerified ? 'bg-emerald-50 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${formData.isVerified ? 'bg-emerald-500 text-white' : 'bg-white border-2 border-slate-300'}`}>
                   {formData.isVerified && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
@@ -379,13 +419,16 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                     Bahan yang terverifikasi akan ditandai hijau di dasbor utama dan siap digunakan oleh mesin AI.
                   </span>
                 </div>
-                {/* Input checkbox tersembunyi, state diubah dengan mengklik seluruh kotak label */}
-                <input type="checkbox" className="hidden" checked={formData.isVerified} onChange={(e) => setFormData({...formData, isVerified: e.target.checked})} />
+                <input type="checkbox" disabled={isViewer} className="hidden" checked={formData.isVerified} onChange={(e) => setFormData({...formData, isVerified: e.target.checked})} />
               </label>
             </div>
 
-            <button type="submit" disabled={isLoading} className={`w-full py-4 mt-4 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-300 shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
-              {isLoading ? "Menyimpan ke Database..." : isToxic ? "Simpan Bahan Berbahaya 🚨" : "Simpan Perubahan 💾"}
+            <button 
+              type="submit" 
+              disabled={isLoading || isViewer} 
+              className={`w-full py-4 mt-4 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+            >
+              {isLoading ? "Menyimpan..." : isViewer ? "Hanya Pantau (Read-Only) 👁️" : isToxic ? "Simpan Bahan Berbahaya 🚨" : "Simpan Perubahan 💾"}
             </button>
           </form>
         </motion.div>
@@ -393,4 +436,3 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
     </div>
   );
 }
-

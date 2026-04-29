@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-// Interface V3.1 (Ditambah aiContext untuk deteksi indikator Robot)
 interface Ingredient {
   id: string;
   name: string;
@@ -25,13 +24,16 @@ export default function AdminDashboard() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   
-  // STATE FILTER & SORT (Nilai awal standar)
+  // STATE BARU: Menyimpan status hak akses untuk UI
+  const [isViewer, setIsViewer] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false); // <-- Tambahan untuk tombol Manajemen Akun
+  
+  // STATE FILTER & SORT 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterVerified, setFilterVerified] = useState("ALL"); 
   const [filterCategory, setFilterCategory] = useState("ALL"); 
   const [sortBy, setSortBy] = useState("NEWEST"); 
 
-  // 1. MEMBACA MEMORI: Menarik data filter yang tersimpan saat halaman dimuat
   useEffect(() => {
     const savedSearch = sessionStorage.getItem("admin_search");
     const savedVerified = sessionStorage.getItem("admin_verified");
@@ -44,7 +46,6 @@ export default function AdminDashboard() {
     if (savedSort) setSortBy(savedSort);
   }, []);
 
-  // 2. MENYIMPAN MEMORI: Menyimpan filter ke memori browser setiap kali ada perubahan
   useEffect(() => {
     sessionStorage.setItem("admin_search", searchQuery);
     sessionStorage.setItem("admin_verified", filterVerified);
@@ -52,13 +53,35 @@ export default function AdminDashboard() {
     sessionStorage.setItem("admin_sort", sortBy);
   }, [searchQuery, filterVerified, filterCategory, sortBy]);
 
-  // Pengecekan Autentikasi dan Pengambilan Data Utama
+  // PENGAMANAN HALAMAN (ROUTE GUARD) & TARIK DATA
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    if (!profileString) {
       router.push("/admin/login");
-    } else {
+      return;
+    }
+
+    try {
+      const profile = JSON.parse(profileString);
+      const superAdminCheck = profile.role === "SUPERADMIN";
+      const isViewOnly = profile.role === "VIEWER";
+      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
+
+      if (!superAdminCheck && !isViewOnly && !hasPermission) {
+        alert("Akses Ditolak: Anda tidak memiliki wewenang untuk mengelola Kamus Bahan.");
+        router.push("/admin/login");
+        return;
+      }
+
+      setIsViewer(isViewOnly);
+      setIsSuperAdmin(superAdminCheck); // <-- Simpan status Superadmin ke state
+      
       fetchIngredients();
+
+    } catch (error) {
+      sessionStorage.clear();
+      router.push("/admin/login");
     }
   }, [router]);
 
@@ -78,10 +101,13 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("isAdminAuth");
+    sessionStorage.removeItem("adminProfile");
     router.push("/admin/login");
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (isViewer) return; 
+    
     if (!window.confirm(`Yakin ingin menghapus "${name}"?`)) return;
 
     try {
@@ -167,20 +193,31 @@ export default function AdminDashboard() {
 
        {/* Menu Navigasi Utama */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-3">
-          {/* Tab Aktif */}
-          <div className="px-6 py-3 font-bold text-sm rounded-xl transition-all bg-slate-900 text-white shadow-lg cursor-default">
-            📚 Kamus Bahan Utama
+          <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-2 transition-all bg-slate-900 text-white shadow-lg cursor-default">
+            <span>📚 Kamus Bahan Utama</span>
+            <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+              {ingredients.length}
+            </span>
           </div>
           
-          {/* Tab Pusat Tinjauan */}
           <Link href="/admin/reportbahan" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
             <span>❓ Pusat Tinjauan</span>
           </Link>
           
-          {/* Tab Katalog Produk */}
           <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
             <span>🛒 Katalog Produk</span>
           </Link>
+
+          <Link href="/admin/products/review" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+            <span>⭐ Moderasi Ulasan</span>
+          </Link>
+
+          {/* PERENDERAN BERSYARAT: Tombol Manajemen Akun Khusus Superadmin */}
+          {isSuperAdmin && (
+            <Link href="/admin/management" className="ml-auto px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 hover:shadow-md">
+              <span>👑 Manajemen Akun</span>
+            </Link>
+          )}
         </motion.div>
 
         <motion.div 
@@ -201,12 +238,15 @@ export default function AdminDashboard() {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 bg-white placeholder-slate-400 focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-inner"
                 />
               </div>
-              <Link 
-                href="/admin/dashboard/create"
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
-              >
-                <span>✨</span> Tambah Baru
-              </Link>
+              
+              {!isViewer && (
+                <Link 
+                  href="/admin/dashboard/create"
+                  className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                  <span>✨</span> Tambah Baru
+                </Link>
+              )}
             </div>
           </div>
 
@@ -285,7 +325,6 @@ export default function AdminDashboard() {
                       onClick={() => handleRowClick(item.id)} 
                       className={`cursor-pointer transition-colors group ${item.isVerified ? 'bg-emerald-50/60 hover:bg-emerald-100/60' : 'hover:bg-blue-50/50'}`}
                     >
-                      {/* KOLOM STATUS (READ ONLY, DENGAN BADGE CANTIK) */}
                       <td className="p-4">
                         {item.isVerified ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
@@ -300,7 +339,6 @@ export default function AdminDashboard() {
                         )}
                       </td>
 
-                      {/* NAMA BAHAN (DITAMBAH INDIKATOR IKON ROBOT AI) */}
                       <td className="p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors capitalize">
                         <div className="flex items-center gap-2">
                           {item.name}
@@ -348,15 +386,19 @@ export default function AdminDashboard() {
                       <td className="p-4 text-slate-600 truncate max-w-[150px]">{item.benefits}</td>
                       
                       <td className="p-4 text-right whitespace-nowrap">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation(); 
-                            handleDelete(item.id, item.name);
-                          }} 
-                          className="text-red-500 font-bold hover:text-red-700 transition-colors bg-red-50/50 hover:bg-red-100 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200"
-                        >
-                          Hapus
-                        </button>
+                        {!isViewer ? (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); 
+                              handleDelete(item.id, item.name);
+                            }} 
+                            className="text-red-500 font-bold hover:text-red-700 transition-colors bg-red-50/50 hover:bg-red-100 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200"
+                          >
+                            Hapus
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-400 italic">Hanya Pantau</span>
+                        )}
                       </td>
                     </motion.tr>
                   ))}

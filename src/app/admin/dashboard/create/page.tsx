@@ -11,10 +11,10 @@ export default function CreateIngredientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // STATE BARU: Menyimpan daftar nama DAN alias bahan yang sudah ada di database
+  // STATE: Menyimpan daftar nama DAN alias bahan yang sudah ada di database
   const [existingNames, setExistingNames] = useState<string[]>([]);
   const [nameError, setNameError] = useState("");
-  const [aliasError, setAliasError] = useState(""); // State baru untuk error alias
+  const [aliasError, setAliasError] = useState("");
 
   const [blacklistedTypes, setBlacklistedTypes] = useState({
     Normal: false,
@@ -48,51 +48,65 @@ export default function CreateIngredientPage() {
     blacklistReason: "",
   });
 
+  // ========================================================
+  // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & TARIK DATA AWAL
+  // ========================================================
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    if (!profileString) {
       router.push("/admin/login");
       return;
     }
 
-    // Mengambil daftar nama dan alias dari API saat halaman dimuat
-    fetch("/api/ingredients")
-      .then(res => res.json())
-      .then(data => {
-        let allUsedNames: string[] = [];
-        
-        data.forEach((item: any) => {
-          // Masukkan nama utama
-          allUsedNames.push(item.name.toLowerCase().trim());
-          
-          // Pecah dan masukkan semua alias jika ada
-          if (item.aliases) {
-            const itemAliases = item.aliases.split(',').map((a: string) => a.toLowerCase().trim());
-            allUsedNames = [...allUsedNames, ...itemAliases];
-          }
-        });
-        
-        // Hapus duplikat dari array (jaga-jaga) dan simpan ke state
-        const finalExistingNames = Array.from(new Set(allUsedNames));
-        setExistingNames(finalExistingNames);
+    try {
+      const profile = JSON.parse(profileString);
+      const isSuperAdmin = profile.role === "SUPERADMIN";
+      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
 
-        // ========================================================
-        // LOGIKA AUTO-FILL DARI URL (Blueprint 3.3)
-        // ========================================================
-        const params = new URLSearchParams(window.location.search);
-        const urlName = params.get("name");
-        
-        if (urlName) {
-          const cleanUrlName = urlName.toLowerCase().trim();
-          setFormData(prev => ({ ...prev, name: cleanUrlName }));
+      // Tolak jika bukan Superadmin dan tidak punya hak kelola Kamus
+      if (!isSuperAdmin && !hasPermission) {
+        alert("Akses Ditolak: Anda tidak memiliki izin untuk menambah bahan baru.");
+        router.push("/admin/login");
+        return;
+      }
+
+      // Jika lolos pengecekan, ambil daftar nama dan alias dari API
+      fetch("/api/ingredients")
+        .then(res => res.json())
+        .then(data => {
+          let allUsedNames: string[] = [];
           
-          // Langsung lakukan validasi real-time
-          if (finalExistingNames.includes(cleanUrlName)) {
-            setNameError("⚠️ Bahan ini ternyata sudah terdaftar di kamus!");
+          data.forEach((item: any) => {
+            allUsedNames.push(item.name.toLowerCase().trim());
+            if (item.aliases) {
+              const itemAliases = item.aliases.split(',').map((a: string) => a.toLowerCase().trim());
+              allUsedNames = [...allUsedNames, ...itemAliases];
+            }
+          });
+          
+          const finalExistingNames = Array.from(new Set(allUsedNames));
+          setExistingNames(finalExistingNames);
+
+          // LOGIKA AUTO-FILL DARI URL (Blueprint 3.3)
+          const params = new URLSearchParams(window.location.search);
+          const urlName = params.get("name");
+          
+          if (urlName) {
+            const cleanUrlName = urlName.toLowerCase().trim();
+            setFormData(prev => ({ ...prev, name: cleanUrlName }));
+            
+            if (finalExistingNames.includes(cleanUrlName)) {
+              setNameError("⚠️ Bahan ini ternyata sudah terdaftar di kamus!");
+            }
           }
-        }
-      })
-      .catch(err => console.error("Gagal memuat daftar nama bahan", err));
+        })
+        .catch(err => console.error("Gagal memuat daftar nama bahan", err));
+
+    } catch (error) {
+      sessionStorage.clear();
+      router.push("/admin/login");
+    }
   }, [router]);
 
   // LOGIKA VALIDASI NAMA (INCI)
@@ -112,16 +126,12 @@ export default function CreateIngredientPage() {
     const val = e.target.value;
     setFormData({ ...formData, aliases: val });
 
-    // Jika kosong, hilangkan error
     if (!val.trim()) {
       setAliasError("");
       return;
     }
 
-    // Pecah inputan user berdasarkan koma, bersihkan spasi
     const typedAliases = val.split(',').map(a => a.toLowerCase().trim()).filter(a => a !== "");
-    
-    // Cari apakah ada kata yang bentrok dengan database
     const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));
 
     if (duplicateAliases.length > 0) {
@@ -215,23 +225,18 @@ export default function CreateIngredientPage() {
       if (res.ok) {
         setMessage({ type: "success", text: "Bahan berhasil ditambahkan ke kamus! ✨" });
         
-        // ========================================================
         // LOGIKA HAPUS LAPORAN OTOMATIS (Blueprint 3.3)
-        // ========================================================
         const params = new URLSearchParams(window.location.search);
         const urlName = params.get("name");
         
         if (urlName) {
-          // Cari bahan di tabel laporan berdasarkan nama
           fetch(`/api/admin/reportbahan`)
             .then(res => res.json())
             .then(data => {
-               // Ambil dari unknownReports karena ini berasal dari Tab Bahan Asing
                const unknownReports = data.unknownReports || [];
                const reportToClear = unknownReports.find((r: any) => r.name.toLowerCase() === urlName.toLowerCase());
                
                if(reportToClear) {
-                 // Kirim request DELETE dengan tipe "unknown"
                  fetch(`/api/admin/reportbahan?id=${reportToClear.id}&type=unknown`, { method: "DELETE" });
                }
             })
@@ -271,8 +276,8 @@ export default function CreateIngredientPage() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
       <div className="max-w-4xl mx-auto">
-        <Link href="/admin/reportbahan" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
-          ← Kembali ke Dasbor Laporan
+        <Link href="/admin/dashboard" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
+          ← Kembali ke Dasbor Kamus
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
@@ -448,7 +453,6 @@ export default function CreateIngredientPage() {
               )}
             </div>
 
-            {/* Tombol dikunci jika ada error Nama ATAU Alias */}
             <button 
               type="submit" 
               disabled={isLoading || nameError !== "" || aliasError !== ""} 

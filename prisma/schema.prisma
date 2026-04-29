@@ -52,7 +52,7 @@ model User {
   // Relasi ke tabel spesifik aplikasi kita
   profile       Profile?
   histories     AnalysisHistory[]
-  reviews       ProductReview[] // Relasi baru untuk ulasan komunitas
+  reviews       ProductReview[] 
 }
 
 model VerificationToken {
@@ -79,37 +79,59 @@ enum ProductType {
   SUNSCREEN
 }
 
-// TIPE BAHAN UNTUK LOGIKA MATEMATIKA AI
 enum IngredientType {
-  TOXIC    // Bahan dilarang/berbahaya mutlak
-  HARSH    // Bahan keras/aktif yang butuh penenang
-  BUFFER   // Bahan penenang/pereda inflamasi
-  BASIC    // Bahan standar (Pelarut, pengawet aman, tekstur)
+  TOXIC    
+  HARSH    
+  BUFFER   
+  BASIC    
 }
 
-// KATEGORI FUNGSIONAL KHUSUS
 enum FunctionalCategory {
   SURFAKTAN
   UV_FILTER
-  PELEMBAP_HUMEKTAN  // Berbasis air (ringan)
-  PELEMBAP_EMOLIEN   // Berbasis lemak (menengah)
-  PELEMBAP_OKLUSIF   // Berbasis minyak/lilin (tebal)
+  PELEMBAP_HUMEKTAN  
+  PELEMBAP_EMOLIEN   
+  PELEMBAP_OKLUSIF   
   UMUM
 }
+
+// ==========================================
+// 3. ADMIN ROLE-BASED ACCESS CONTROL (RBAC)
+// ==========================================
+
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+  VIEWER
+}
+
+model AdminAccount {
+  id          String    @id @default(cuid())
+  username    String    @unique
+  password    String    
+  role        AdminRole @default(VIEWER)
+  permissions String[]  // Menyimpan daftar akses: MANAGE_KAMUS, MANAGE_TINJAUAN, dll
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ==========================================
+// 4. MAIN DATA MODELS
+// ==========================================
 
 model Profile {
   id                  String        @id @default(cuid())
   userId              String        @unique
   user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  skinType            String        // Contoh: Kering, Berminyak, Kombinasi, Normal (bisa gabung Sensitif)
+  skinType            String        
   age                 Int
   severity            SeverityLevel
   
-  // Diubah menjadi String biasa agar bisa menyimpan banyak teks yang dipisah koma
   primaryFocus        String        
   
-  allergies           String?       // Disimpan sebagai string yang dipisahkan koma
+  allergies           String?       
   isPregnantOrNursing Boolean       @default(false) 
 
   createdAt           DateTime      @default(now())
@@ -125,42 +147,35 @@ model AnalysisHistory {
   productType      ProductType
   ingredientsInput String      @db.Text 
   
-  matchScore       Int         // 0-100
-  safetyScore      Int         // 0-100
-  aiResponse       Json        // Menyimpan Penjelasan AI & Rekomendasi
+  matchScore       Int         
+  safetyScore      Int         
+  aiResponse       Json        
   
   isSaved          Boolean     @default(false) 
 
   createdAt        DateTime    @default(now())
 }
 
-// ==========================================
-// 3. INGREDIENT DICTIONARY & UNKNOWN INGREDIENTS
-// ==========================================
-
 model IngredientDictionary {
   id                   String             @id @default(cuid())
-  name                 String             @unique // Nama bahan (huruf kecil semua)
+  name                 String             @unique 
   type                 IngredientType     @default(BASIC) 
   functionalCategory   FunctionalCategory @default(UMUM) 
   
   benefits             String             @db.Text 
   warnings             String?            @db.Text 
-  comedogenicRating    Int                @default(0) // Skala 0-5
-  aliases              String?            // Sinonim beda bahasa, dipisah koma
+  comedogenicRating    Int                @default(0) 
+  aliases              String?            
   
-  // Keamanan Khusus
   safeForPregnancy     Boolean            @default(true) 
   safeForSensitive     Boolean            @default(true) 
   
-  // --- FITUR BARU V3 ---
   isKeyActive          Boolean            @default(false)
   strengthLevel        Int                @default(1)
   blacklistedSkinTypes String?            @db.Text
   blacklistReason      String?            @db.Text
-  isVerified           Boolean            @default(false) // Field baru untuk menyimpan status ceklis
-  aiContext            String?            @db.Text // Analisis Mendalam Khusus Mesin AI
-  // ---------------------
+  isVerified           Boolean            @default(false) 
+  aiContext            String?            @db.Text 
   
   goodForSkinTypes     String?        
   targetFocus          String?        
@@ -169,10 +184,9 @@ model IngredientDictionary {
   updatedAt            DateTime           @updatedAt
 }
 
-// Menangkap bahan asing hasil input user yang belum ada di Database
 model UnknownIngredient {
   id          String   @id @default(cuid())
-  name        String   @unique // Nama bahan yang tidak dikenali
+  name        String   @unique 
   reportCount Int      @default(1) 
   isReviewed  Boolean  @default(false) 
   
@@ -180,19 +194,14 @@ model UnknownIngredient {
   updatedAt   DateTime @updatedAt
 }
 
-// Menangkap laporan ketidaksesuaian bahan dari pengguna (Manual)
 model IngredientReport {
   id             String   @id @default(cuid())
-  ingredientName String   // Nama bahan yang dilaporkan
-  reason         String   @db.Text // Detail keluhan dari pengguna
+  ingredientName String   
+  reason         String   @db.Text 
   isReviewed     Boolean  @default(false)
   
   createdAt      DateTime @default(now())
 }
-
-// ==========================================
-// 4. KATALOG PRODUK AFILIASI & REKOMENDASI (V4.3 Final)
-// ==========================================
 
 model ProductCatalog {
   id              String          @id @default(cuid())
@@ -201,28 +210,27 @@ model ProductCatalog {
   gambarUrl       String          @db.Text
   tautanAfiliasi  String          @db.Text
   komposisiAsli   String          @db.Text
-  fokusProduk     String          // Menyimpan hasil pilihan kotak centang
+  fokusProduk     String          
   isPinKreator    Boolean         @default(false)
-  masalahKulitPin String?         // Kategori masalah kulit khusus untuk rekomendasi utama
-  catatanKreator  String?         @db.Text // Alasan rekomendasi dari administrator (opsional)
+  masalahKulitPin String?         
+  catatanKreator  String?         @db.Text 
 
-  reviews         ProductReview[] // Relasi balik ke tabel ulasan komunitas
+  reviews         ProductReview[] 
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
 
-// Tabel baru khusus untuk interaksi ulasan dari pengguna
 model ProductReview {
-  id              String         @id @default(cuid())
-  userId          String
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId       String
-  product         ProductCatalog @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     ProductCatalog @relation(fields: [productId], references: [id], onDelete: Cascade)
   
-  rating          Int            // Menyimpan angka 1 sampai 5
-  komentar        String         @db.Text // Teks ulasan dibatasi maksimal 30 kata dari sisi antarmuka
+  rating      Int            
+  komentar    String         @db.Text 
 
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }

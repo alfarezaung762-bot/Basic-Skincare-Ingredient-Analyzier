@@ -9,15 +9,38 @@ export default function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Tambahan state loading
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === "admin" && password === "admin") {
-      // Simpan tiket masuk sementara di memori browser
-      sessionStorage.setItem("isAdminAuth", "true");
-      router.push("/admin/dashboard");
-    } else {
-      setLoginError("ID atau Password salah!");
+    setLoginError("");
+    setIsLoading(true);
+
+    try {
+      // Mengirim data ke API yang baru kita buat di Tahap 2
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // 1. Menyimpan "Kartu Identitas" lengkap dari database (Peran & Hak Akses)
+        sessionStorage.setItem("adminProfile", JSON.stringify(data.user));
+        
+        // 2. Menyimpan kunci lama agar halaman dasbor saat ini tidak rusak/menendangmu keluar selama masa transisi
+        sessionStorage.setItem("isAdminAuth", "true"); 
+        
+        router.push("/admin/dashboard");
+      } else {
+        setLoginError(data.message || "ID atau Password salah!");
+      }
+    } catch (error) {
+      setLoginError("Terjadi kesalahan pada koneksi server. Coba lagi.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,8 +66,9 @@ export default function AdminLogin() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full  text-slate-900 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-black text-sm font-medium"
+              className="w-full text-slate-900 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-black text-sm font-medium"
               placeholder="Masukkan ID"
+              required
             />
           </div>
           <div>
@@ -55,12 +79,17 @@ export default function AdminLogin() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-black text-sm font-medium text-slate-900"
               placeholder="••••••••"
+              required
             />
           </div>
         </div>
 
-        <button type="submit" className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-slate-800 transition-all active:scale-95">
-          Masuk Dasbor
+        <button 
+          type="submit" 
+          disabled={isLoading} 
+          className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
+        >
+          {isLoading ? "Memeriksa Identitas..." : "Masuk Dasbor"}
         </button>
       </form>
     </div>

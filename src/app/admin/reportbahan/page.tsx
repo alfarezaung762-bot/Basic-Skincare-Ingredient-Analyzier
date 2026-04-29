@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Interface untuk Laporan Sistem (Bahan Asing)
 interface UnknownReport {
   id: string;
   name: string;
@@ -14,7 +13,6 @@ interface UnknownReport {
   createdAt: string;
 }
 
-// Interface untuk Laporan Pengguna (Ketidaksesuaian)
 interface MismatchReport {
   id: string;
   ingredientName: string;
@@ -25,36 +23,62 @@ interface MismatchReport {
 export default function AdminReportBahan() {
   const router = useRouter();
   
-  // STATE DATA
   const [unknownReports, setUnknownReports] = useState<UnknownReport[]>([]);
   const [mismatchReports, setMismatchReports] = useState<MismatchReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // STATE NAVIGASI & MODAL
+  // STATE BARU: Keamanan & Hak Akses Lintas Batas
+  const [isViewer, setIsViewer] = useState(false);
+  const [canManageKamus, setCanManageKamus] = useState(false);
+
   const [activeTab, setActiveTab] = useState<"SYSTEM" | "USER">("SYSTEM");
   const [selectedIngredient, setSelectedIngredient] = useState<string | null>(null);
 
-  // Pengecekan Keamanan & Tarik Data API secara Real-time (Polling)
+  // ========================================================
+  // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & POLLING DATA
+  // ========================================================
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    if (!profileString) {
       router.push("/admin/login");
       return;
     }
-    
-    // 1. Tarikan Pertama (Menampilkan animasi loading)
-    fetchReports(true);
 
-    // 2. Polling: Tarik data secara diam-diam setiap 5 detik
-    const intervalId = setInterval(() => {
-      fetchReports(false); // False = Jangan tampilkan animasi loading
-    }, 5000);
+    try {
+      const profile = JSON.parse(profileString);
+      const isSuperAdmin = profile.role === "SUPERADMIN";
+      const isViewOnly = profile.role === "VIEWER";
+      const hasTinjauanAccess = profile.permissions && profile.permissions.includes("MANAGE_TINJAUAN");
+      const hasKamusAccess = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
 
-    // Bersihkan interval jika admin berpindah halaman
-    return () => clearInterval(intervalId);
+      // Tolak jika bukan Superadmin, bukan Viewer, dan tidak punya izin Manage Tinjauan
+      if (!isSuperAdmin && !isViewOnly && !hasTinjauanAccess) {
+        alert("Akses Ditolak: Anda tidak memiliki wewenang memantau Pusat Tinjauan.");
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      // Tetapkan status Hak Akses ke dalam State
+      setIsViewer(isViewOnly);
+      // Seseorang bisa menekan tombol Buat/Edit Kamus JIKA mereka Superadmin ATAU punya izin Kamus (dan BUKAN Viewer)
+      setCanManageKamus((isSuperAdmin || hasKamusAccess) && !isViewOnly);
+
+      // Mulai Tarik Data
+      fetchReports(true);
+
+      const intervalId = setInterval(() => {
+        fetchReports(false); 
+      }, 5000);
+
+      return () => clearInterval(intervalId);
+
+    } catch (error) {
+      sessionStorage.clear();
+      router.push("/admin/login");
+    }
   }, [router]);
 
-  // Modifikasi fungsi agar bisa menerima parameter 'isInitial'
   const fetchReports = async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
     
@@ -74,11 +98,13 @@ export default function AdminReportBahan() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("isAdminAuth");
+    sessionStorage.removeItem("adminProfile");
     router.push("/admin/login");
   };
 
-  // Hapus Laporan Bahan Asing (Sistem)
   const handleDeleteUnknown = async (id: string, name: string) => {
+    if (isViewer) return; // Cegah Viewer jika memaksa fungsi
+    
     if (!window.confirm(`Abaikan dan hapus bahan "${name}" dari antrean sistem?`)) return;
     try {
       const res = await fetch(`/api/admin/reportbahan?id=${id}&type=unknown`, { method: "DELETE" });
@@ -88,38 +114,35 @@ export default function AdminReportBahan() {
     }
   };
 
-  // Hapus SEMUA Laporan Ketidaksesuaian untuk satu bahan (Pengguna)
   const handleDeleteMismatchGroup = async (ingredientName: string) => {
+    if (isViewer) return; // Cegah Viewer jika memaksa fungsi
+
     if (!window.confirm(`Abaikan dan hapus semua laporan pengguna terkait "${ingredientName}"?`)) return;
     
-    // Ambil semua ID laporan untuk bahan ini
     const reportsToDelete = mismatchReports.filter(r => r.ingredientName === ingredientName);
     
     try {
-      // Hapus satu per satu secara paralel
       await Promise.all(
         reportsToDelete.map(r => 
           fetch(`/api/admin/reportbahan?id=${r.id}&type=mismatch`, { method: "DELETE" })
         )
       );
       
-      // Update UI
       setMismatchReports(prev => prev.filter(r => r.ingredientName !== ingredientName));
-      setSelectedIngredient(null); // Tutup modal
+      setSelectedIngredient(null); 
     } catch (error) {
       alert("Terjadi kesalahan saat menghapus laporan pengguna.");
     }
   };
 
-  // LOGIKA PENGELOMPOKAN CERDAS (Anti-Spam Tampilan)
   const groupedMismatch = mismatchReports.reduce((acc, report) => {
     if (!acc[report.ingredientName]) acc[report.ingredientName] = [];
     acc[report.ingredientName].push(report);
     return acc;
   }, {} as Record<string, MismatchReport[]>);
 
-  // Trik Edit Cepat: Set pencarian ke Session Storage, lalu lempar ke Dasbor Utama
   const handleQuickEdit = (ingredientName: string) => {
+    if (!canManageKamus) return; // Cegah jika tidak ada akses
     sessionStorage.setItem("admin_search", ingredientName);
     router.push("/admin/dashboard");
   };
@@ -135,7 +158,6 @@ export default function AdminReportBahan() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12 relative overflow-hidden">
-      {/* Latar Belakang Estetik */}
       <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 pointer-events-none"></div>
 
       {/* POP-UP MODAL TINJAUAN KELUHAN */}
@@ -159,7 +181,6 @@ export default function AdminReportBahan() {
                 <button onClick={() => setSelectedIngredient(null)} className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full transition-colors font-bold">✕</button>
               </div>
               
-              {/* Daftar Keluhan (Bisa di-scroll jika banyak) */}
               <div className="overflow-y-auto pr-2 space-y-3 mb-6 flex-1">
                 {groupedMismatch[selectedIngredient]?.map((report, idx) => (
                   <div key={report.id} className="bg-rose-50/50 p-4 rounded-xl border border-rose-100 relative">
@@ -172,19 +193,32 @@ export default function AdminReportBahan() {
                 ))}
               </div>
               
+              {/* AKSI MODAL DENGAN PERENDERAN BERSYARAT */}
               <div className="flex gap-3 shrink-0 pt-4 border-t border-slate-100 mt-auto">
-                <button 
-                  onClick={() => handleDeleteMismatchGroup(selectedIngredient)}
-                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl border border-slate-200 transition-colors shadow-sm"
-                >
-                  🗑️ Abaikan Semua
-                </button>
-                <button 
-                  onClick={() => handleQuickEdit(selectedIngredient)}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-transparent transition-colors shadow-sm"
-                >
-                  ✍️ Cari & Edit Bahan
-                </button>
+                {!isViewer && (
+                  <button 
+                    onClick={() => handleDeleteMismatchGroup(selectedIngredient)}
+                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl border border-slate-200 transition-colors shadow-sm active:scale-95"
+                  >
+                    🗑️ Abaikan Semua
+                  </button>
+                )}
+                
+                {canManageKamus && (
+                  <button 
+                    onClick={() => handleQuickEdit(selectedIngredient)}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-transparent transition-colors shadow-sm active:scale-95"
+                  >
+                    ✍️ Cari & Edit Bahan
+                  </button>
+                )}
+
+                {/* Info jika tidak ada tombol yang bisa ditekan oleh Viewer */}
+                {isViewer && !canManageKamus && (
+                  <div className="flex-1 py-3 text-center text-xs font-bold text-slate-400 italic bg-slate-50 rounded-xl border border-slate-100">
+                    Mode Pemantau: Aksi dinonaktifkan
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
@@ -212,7 +246,6 @@ export default function AdminReportBahan() {
             📚 Kamus Bahan Utama
           </Link>
           
-          {/* Tab Aktif */}
           <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-3 bg-slate-900 text-white shadow-lg cursor-default">
             <span>❓ Pusat Tinjauan</span>
             <div className="flex gap-1">
@@ -228,12 +261,15 @@ export default function AdminReportBahan() {
           <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
             <span>🛒 Katalog Produk</span>
           </Link>
+
+          <Link href="/admin/products/review" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+            <span>⭐ Moderasi Ulasan</span>
+          </Link>
         </motion.div>
 
         {/* Konten Utama */}
         <div className="bg-white/90 backdrop-blur-sm min-h-[500px] p-6 md:p-8 rounded-3xl shadow-sm border border-white">
           
-          {/* TAB NAVIGASI */}
           <div className="flex gap-4 mb-8 border-b border-slate-100 pb-4">
             <button 
               onClick={() => setActiveTab("SYSTEM")}
@@ -258,7 +294,6 @@ export default function AdminReportBahan() {
             </div>
           ) : (
             <>
-              {/* === TAB 1: LAPORAN SISTEM === */}
               {activeTab === "SYSTEM" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                   <p className="text-sm text-slate-500 mb-6 font-medium">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
@@ -290,10 +325,21 @@ export default function AdminReportBahan() {
                               <td className="p-4 text-slate-500 font-medium text-xs">{new Date(report.createdAt).toLocaleDateString('id-ID')}</td>
                               <td className="p-4 text-right">
                                 <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => handleDeleteUnknown(report.id, report.name)} className="text-slate-400 hover:text-red-600 font-bold text-xs px-2 py-1">🗑️ Abaikan</button>
-                                  <Link href={`/admin/dashboard/create?name=${encodeURIComponent(report.name)}`} className="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 shadow-sm active:scale-95 flex items-center gap-1.5">
-                                    <span>✨</span> Buat Kamus
-                                  </Link>
+                                  
+                                  {/* PERENDERAN BERSYARAT: Tombol Abaikan/Hapus */}
+                                  {!isViewer ? (
+                                    <button onClick={() => handleDeleteUnknown(report.id, report.name)} className="text-slate-400 hover:text-red-600 font-bold text-xs px-2 py-1">🗑️ Abaikan</button>
+                                  ) : (
+                                    <span className="text-[10px] font-bold text-slate-400 italic mr-2">Hanya Pantau</span>
+                                  )}
+
+                                  {/* PERENDERAN BERSYARAT: Tombol Buat Kamus (Hanya jika punya izin Kamus) */}
+                                  {canManageKamus && (
+                                    <Link href={`/admin/dashboard/create?name=${encodeURIComponent(report.name)}`} className="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 shadow-sm active:scale-95 flex items-center gap-1.5">
+                                      <span>✨</span> Buat Kamus
+                                    </Link>
+                                  )}
+
                                 </div>
                               </td>
                             </motion.tr>
@@ -305,7 +351,6 @@ export default function AdminReportBahan() {
                 </motion.div>
               )}
 
-              {/* === TAB 2: LAPORAN PENGGUNA === */}
               {activeTab === "USER" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                   <p className="text-sm text-slate-500 mb-6 font-medium">Bahan terdaftar yang dilaporkan memiliki ketidaksesuaian fungsi atau manfaat oleh pengguna.</p>
@@ -351,7 +396,6 @@ export default function AdminReportBahan() {
               )}
             </>
           )}
-
         </div>
       </div>
     </div>

@@ -13,7 +13,6 @@ export default function CreateProductPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // State untuk Identitas Produk
   const [formData, setFormData] = useState({
     namaProduk: "",
     tipeProduk: "FACEWASH",
@@ -24,13 +23,11 @@ export default function CreateProductPage() {
     catatanKreator: "",
   });
 
-  // State khusus Gambar & Crop
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
-  // State khusus untuk 6 Kotak Centang Fokus Produk
   const [focuses, setFocuses] = useState({
     "Mencerahkan & Bekas Jerawat": false,
     "Merawat Jerawat & Sebum": false,
@@ -40,19 +37,40 @@ export default function CreateProductPage() {
     "Eksfoliasi & Tekstur Pori-pori": false,
   });
 
+  // ========================================================
+  // 1. PENGAMANAN HALAMAN (ROUTE GUARD)
+  // ========================================================
   useEffect(() => {
-    const isAuth = sessionStorage.getItem("isAdminAuth");
-    if (!isAuth) {
+    const profileString = sessionStorage.getItem("adminProfile");
+    
+    // Jika belum login, tendang ke halaman login
+    if (!profileString) {
+      router.push("/admin/login");
+      return;
+    }
+
+    try {
+      const profile = JSON.parse(profileString);
+      const isSuperAdmin = profile.role === "SUPERADMIN";
+      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KATALOG");
+
+      // Tolak jika bukan Superadmin dan tidak punya izin Manage Katalog
+      // VIEWER otomatis akan tertolak di sini
+      if (!isSuperAdmin && !hasPermission) {
+        alert("Akses Ditolak: Anda tidak memiliki izin untuk menambah produk ke katalog.");
+        router.push("/admin/dashboard");
+        return;
+      }
+    } catch (error) {
+      sessionStorage.clear();
       router.push("/admin/login");
     }
   }, [router]);
 
-  // Fungsi mengubah state kotak centang
   const handleFocusChange = (focus: keyof typeof focuses) => {
     setFocuses((prev) => ({ ...prev, [focus]: !prev[focus] }));
   };
 
-  // Fungsi Logika Pembatas Kata Khusus Catatan Kreator
   const handleCatatanChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const inputText = e.target.value;
     const wordCount = inputText.trim() === "" ? 0 : inputText.trim().split(/\s+/).length;
@@ -63,7 +81,6 @@ export default function CreateProductPage() {
 
   const catatanWordCount = formData.catatanKreator.trim() === "" ? 0 : formData.catatanKreator.trim().split(/\s+/).length;
 
-  // Handler Pilih File Gambar
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
       setCrop(undefined); 
@@ -73,14 +90,12 @@ export default function CreateProductPage() {
     }
   }
 
-  // Inisialisasi Crop Rasio 1:1
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
     const crop = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 1, width, height), width, height);
     setCrop(crop);
   }
 
-  // Fungsi Unggah ke Cloudinary
   async function uploadToCloudinary(canvas: HTMLCanvasElement) {
     const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/jpeg'));
     const data = new FormData();
@@ -118,7 +133,6 @@ export default function CreateProductPage() {
       return;
     }
 
-    // Validasi Gambar Harus Dipotong
     if (!completedCrop || !imgRef.current) {
       setMessage({ type: "error", text: "Kegagalan: Anda harus mengunggah dan memotong foto produk!" });
       setIsLoading(false);
@@ -126,7 +140,6 @@ export default function CreateProductPage() {
     }
 
     try {
-      // 1. Eksekusi Pemotongan Gambar di Layar
       const canvas = document.createElement('canvas');
       const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
       const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
@@ -138,10 +151,8 @@ export default function CreateProductPage() {
       
       ctx.drawImage(imgRef.current, completedCrop.x * scaleX, completedCrop.y * scaleY, completedCrop.width * scaleX, completedCrop.height * scaleY, 0, 0, completedCrop.width, completedCrop.height);
       
-      // 2. Unggah Gambar ke Cloudinary
       const finalImageUrl = await uploadToCloudinary(canvas);
 
-      // 3. Simpan Seluruh Data ke Database Neon
       const payloadData = {
         ...formData,
         gambarUrl: finalImageUrl,
@@ -189,7 +200,6 @@ export default function CreateProductPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             
-            {/* Bagian Input Gambar & Cropper */}
             <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
               <label htmlFor="fotoUpload" className="text-xs font-bold uppercase text-slate-700">Foto Produk (Akan dipotong otomatis 1:1)</label>
               <input 
@@ -211,7 +221,6 @@ export default function CreateProductPage() {
               )}
             </div>
 
-            {/* Bagian 1: Identitas Produk */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
               <div className="space-y-2">
                 <label htmlFor="namaProduk" className="text-xs font-bold text-slate-700 uppercase">Nama Lengkap & Merek</label>
@@ -241,7 +250,6 @@ export default function CreateProductPage() {
               </div>
             </div>
 
-            {/* Bagian 2: Tautan Afiliasi */}
             <div className="space-y-2">
               <label htmlFor="tautanAfiliasi" className="text-xs font-bold text-slate-700 uppercase">Tautan Pembelian (Afiliasi)</label>
               <input 
@@ -255,7 +263,6 @@ export default function CreateProductPage() {
               />
             </div>
 
-            {/* Bagian 3: Komposisi */}
             <div className="space-y-2">
               <label htmlFor="komposisiAsli" className="text-xs font-bold text-slate-700 uppercase">Daftar Komposisi Penuh (Ingredients)</label>
               <textarea 
@@ -269,7 +276,6 @@ export default function CreateProductPage() {
               />
             </div>
 
-            {/* Bagian 4: Kotak Centang Fokus */}
             <div className="space-y-3 pt-4 border-t border-slate-100">
               <label className="text-xs font-bold text-slate-700 uppercase">Fokus Perawatan (Pilih minimal satu)</label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -289,7 +295,6 @@ export default function CreateProductPage() {
               </div>
             </div>
 
-            {/* Bagian 5: Pin Kreator Khusus */}
             <div className="space-y-6 pt-6 border-t border-slate-100">
               <label htmlFor="isPinKreator" className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 cursor-pointer transition-colors">
                 <input 
