@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+// FUNGSI NORMALISASI TEKS: Menghapus semua spasi, dash, dan underscore untuk pencocokan yang akurat
+const normalizeString = (str: string) => {
+  if (!str) return "";
+  return str.toLowerCase().replace(/[\s\-_]+/g, "");
+};
+
 export default function EditIngredientPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   
@@ -16,8 +22,12 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
   const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // STATE BARU: Untuk mengecek apakah pengguna hanya pemantau
   const [isViewer, setIsViewer] = useState(false);
+
+  // STATE VALIDASI NAMA & ALIAS
+  const [existingNames, setExistingNames] = useState<string[]>([]);
+  const [nameError, setNameError] = useState("");
+  const [aliasError, setAliasError] = useState("");
 
   const [blacklistedTypes, setBlacklistedTypes] = useState({
     Normal: false,
@@ -68,7 +78,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       const isViewOnly = profile.role === "VIEWER";
       const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
 
-      // Tolak jika bukan Superadmin, bukan Viewer, dan tidak punya izin Manage Kamus
       if (!isSuperAdmin && !isViewOnly && !hasPermission) {
         alert("Akses Ditolak: Anda tidak memiliki wewenang di Kamus Bahan.");
         router.push("/admin/login");
@@ -77,12 +86,19 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
 
       setIsViewer(isViewOnly);
 
-      const fetchOldData = async () => {
+      const fetchData = async () => {
         try {
-          const res = await fetch(`/api/ingredients/${ingredientId}`);
-          if (res.ok) {
-            const data = await res.json();
+          // Tarik data bahan saat ini DAN seluruh daftar bahan untuk validasi
+          const [singleRes, allRes] = await Promise.all([
+            fetch(`/api/ingredients/${ingredientId}`),
+            fetch("/api/ingredients")
+          ]);
+
+          if (singleRes.ok && allRes.ok) {
+            const data = await singleRes.json();
+            const allData = await allRes.json();
             
+            // 1. Set Data Form
             setFormData({
               name: data.name, 
               aliases: data.aliases || "", 
@@ -122,6 +138,20 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                 return newBlacklists;
               });
             }
+
+            // 2. Kumpulkan Semua Nama/Alias untuk Pengecekan Duplikasi (KECUALI bahan ini sendiri)
+            let allUsedNames: string[] = [];
+            allData.forEach((item: any) => {
+              if (item.id !== ingredientId) {
+                allUsedNames.push(normalizeString(item.name));
+                if (item.aliases) {
+                  const itemAliases = item.aliases.split(',').map((a: string) => normalizeString(a));
+                  allUsedNames = [...allUsedNames, ...itemAliases];
+                }
+              }
+            });
+            setExistingNames(Array.from(new Set(allUsedNames)));
+
           } else {
             setMessage({ type: "error", text: "Bahan tidak ditemukan." });
           }
@@ -132,13 +162,48 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
         }
       };
       
-      fetchOldData();
+      fetchData();
 
     } catch (error) {
       sessionStorage.clear();
       router.push("/admin/login");
     }
   }, [ingredientId, router]); 
+
+  // LOGIKA VALIDASI NAMA (INCI) DENGAN NORMALISASI
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFormData({ ...formData, name: val });
+
+    if (existingNames.includes(normalizeString(val))) {
+      setNameError("⚠️ Nama ini sudah dipakai oleh bahan lain di kamus!");
+    } else {
+      setNameError("");
+    }
+  };
+
+  // LOGIKA VALIDASI ALIAS DENGAN NORMALISASI
+  const handleAliasesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFormData({ ...formData, aliases: val });
+
+    if (!val.trim()) {
+      setAliasError("");
+      return;
+    }
+
+    const typedAliases = val.split(',')
+      .map(a => normalizeString(a))
+      .filter(a => a !== "");
+      
+    const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));
+
+    if (duplicateAliases.length > 0) {
+      setAliasError(`⚠️ Terdapat alias yang menabrak bahan lain.`);
+    } else {
+      setAliasError("");
+    }
+  };
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value;
@@ -183,11 +248,12 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // BLOKIR JIKA VIEWER (Pencegahan Ganda di sisi fungsi)
     if (isViewer) {
       alert("Mode Pemantau: Anda tidak diizinkan menyimpan perubahan data.");
       return;
     }
+
+    if (nameError || aliasError) return;
 
     setIsLoading(true);
     setMessage({ type: "", text: "" });
@@ -254,9 +320,8 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Edit Bahan ✍️</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.1: Perbarui data bahan ke versi terbaru.</p>
+          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.3: Perbarui data bahan ke versi terbaru (Normalisasi Aktif).</p>
 
-          {/* PERINGATAN VIEWER */}
           {isViewer && (
             <div className="p-4 mb-6 rounded-xl text-sm font-bold border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-2">
               <span>👁️</span> Anda masuk dalam mode Pemantau (Read-Only). Perubahan tidak dapat disimpan.
@@ -271,11 +336,26 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
 
           <form onSubmit={handleSubmit} className="space-y-8">
             
-            {/* BARIS 1: NAMA, KATEGORI, KEKUATAN, FUNGSI */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2 md:col-span-1">
                 <label htmlFor="name" className="text-xs font-bold text-slate-700 uppercase">Nama (INCI)</label>
-                <input id="name" required disabled={isViewer} type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 outline-none transition-all text-sm font-medium text-slate-900 bg-white disabled:bg-slate-50 disabled:text-slate-500" title="Peringatan: Hati-hati saat mengubah nama INCI" />
+                <input 
+                  id="name" 
+                  required 
+                  disabled={isViewer} 
+                  type="text" 
+                  value={formData.name} 
+                  onChange={handleNameChange} 
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm font-medium bg-white disabled:bg-slate-50 disabled:text-slate-500 ${
+                    nameError 
+                      ? 'border-rose-300 text-rose-900 focus:ring-rose-500 bg-rose-50' 
+                      : 'border-slate-200 text-slate-900 focus:ring-blue-600'
+                  }`} 
+                  title="Peringatan: Hati-hati saat mengubah nama INCI" 
+                />
+                {nameError && (
+                  <p className="text-[11px] font-bold text-rose-600 mt-1 animate-pulse">{nameError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="type" className="text-xs font-bold text-slate-700 uppercase">Sifat Kimia</label>
@@ -287,7 +367,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                 </select>
               </div>
 
-              {/* LEVEL KEKUATAN */}
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
                 <label htmlFor="strengthLevel" className="text-xs font-bold text-slate-700 uppercase">Level Kekuatan</label>
                 <select 
@@ -303,7 +382,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                 </select>
               </div>
 
-              {/* FUNGSI KHUSUS */}
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
                 <label htmlFor="functionalCategory" className="text-xs font-bold text-slate-700 uppercase">Fungsi Khusus</label>
                 <select 
@@ -323,11 +401,24 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* BARIS 2: ALIAS & CEKLIS BINTANG UTAMA */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
               <div className="space-y-2 md:col-span-3">
                 <label htmlFor="aliases" className="text-xs font-bold text-slate-700 uppercase">Sinonim / Alias</label>
-                <input id="aliases" disabled={isViewer} type="text" value={formData.aliases} onChange={(e) => setFormData({...formData, aliases: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-50 disabled:text-slate-500" />
+                <input 
+                  id="aliases" 
+                  disabled={isViewer} 
+                  type="text" 
+                  value={formData.aliases} 
+                  onChange={handleAliasesChange} 
+                  className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium focus:ring-2 transition-all disabled:bg-slate-50 disabled:text-slate-500 ${
+                    aliasError 
+                      ? 'bg-amber-50 border-amber-300 text-amber-900 focus:ring-amber-500' 
+                      : 'bg-white border-slate-200 text-slate-900 focus:ring-blue-600'
+                  }`} 
+                />
+                {aliasError && (
+                  <p className="text-[11px] font-bold text-amber-600 mt-1 animate-pulse">{aliasError}</p>
+                )}
               </div>
               <div className={`md:col-span-1 pt-4 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
                 <label className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isToxic ? 'bg-slate-100 border-slate-200' : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 cursor-pointer'}`}>
@@ -337,7 +428,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* BARIS 3: MANFAAT (DIPISAH UI & AI) */}
             <div className="grid grid-cols-1 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
               <div className="space-y-2">
                 <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
@@ -354,7 +444,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* BARIS 4: KOMEDOGENIK & KEAMANAN */}
             <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-slate-100 ${isToxic ? 'opacity-50' : ''}`}>
               <div className="space-y-2">
                 <label htmlFor="comedogenicRating" className="text-xs font-bold text-slate-700 uppercase">Komedogenik (0-5)</label>
@@ -370,7 +459,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* BARIS 5: MULTI FOKUS */}
             <div className={`space-y-3 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
               <label className="text-xs font-bold text-slate-700 uppercase">Fokus Perawatan (Bisa lebih dari 1)</label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -383,7 +471,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* BARIS 6: BLACKLIST MUTLAK */}
             <div className={`space-y-3 pt-6 border-t border-slate-100 ${isToxic ? 'opacity-50 pointer-events-none' : ''}`}>
               <label className="text-xs font-black text-red-600 uppercase flex items-center gap-2">
                 🚫 Dilarang Keras Untuk (Blacklist Mutlak)
@@ -405,7 +492,6 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               )}
             </div>
 
-            {/* BARIS 7: KOTAK VERIFIKASI KHUSUS EDIT */}
             <div className={`pt-6 border-t border-slate-100 ${isViewer ? 'pointer-events-none opacity-80' : ''}`}>
               <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${formData.isVerified ? 'bg-emerald-50 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${formData.isVerified ? 'bg-emerald-500 text-white' : 'bg-white border-2 border-slate-300'}`}>
@@ -425,7 +511,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
 
             <button 
               type="submit" 
-              disabled={isLoading || isViewer} 
+              disabled={isLoading || isViewer || nameError !== "" || aliasError !== ""} 
               className={`w-full py-4 mt-4 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
             >
               {isLoading ? "Menyimpan..." : isViewer ? "Hanya Pantau (Read-Only) 👁️" : isToxic ? "Simpan Bahan Berbahaya 🚨" : "Simpan Perubahan 💾"}
