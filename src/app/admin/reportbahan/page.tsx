@@ -157,8 +157,7 @@ export default function AdminReportBahan() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12 relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12 relative overflow-hidden">
 
       {/* POP-UP MODAL TINJAUAN KELUHAN */}
       <AnimatePresence>
@@ -225,10 +224,10 @@ export default function AdminReportBahan() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* Header Admin */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <span>🎛️</span> Admin Control Panel
@@ -241,34 +240,34 @@ export default function AdminReportBahan() {
         </div>
 
         {/* Menu Navigasi (Dengan 2 Lencana Real-time) */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-3">
-          <Link href="/admin/dashboard" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
+          <Link href="/admin/dashboard" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             📚 Kamus Bahan Utama
           </Link>
           
-          <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-3 bg-slate-900 text-white shadow-lg cursor-default">
+          <div className="px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
             <span>❓ Pusat Tinjauan</span>
-            <div className="flex gap-1">
-              <span title="Laporan Sistem" className="bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm transition-all duration-300">
+            <div className="flex gap-1 ml-1">
+              <span title="Laporan Sistem" className="bg-slate-700 text-white text-[10px] px-2 py-0.5 rounded-md transition-all duration-300">
                 🤖 {unknownReports.length}
               </span>
-              <span title="Laporan Pengguna" className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm transition-all duration-300">
+              <span title="Laporan Pengguna" className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-md transition-all duration-300">
                 👤 {Object.keys(groupedMismatch).length}
               </span>
             </div>
           </div>
 
-          <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+          <Link href="/admin/products" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+          <Link href="/admin/products/review" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
         </motion.div>
 
         {/* Konten Utama */}
-        <div className="bg-white/90 backdrop-blur-sm min-h-[500px] p-6 md:p-8 rounded-3xl shadow-sm border border-white">
+        <div className="bg-white min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
           
           <div className="flex gap-4 mb-8 border-b border-slate-100 pb-4">
             <button 

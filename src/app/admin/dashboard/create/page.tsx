@@ -255,23 +255,30 @@ export default function CreateIngredientPage() {
 
         setMessage({ type: "success", text: "Bahan berhasil ditambahkan ke kamus! ✨" });
         
-        const params = new URLSearchParams(window.location.search);
-        const urlName = params.get("name");
-        
-        if (urlName) {
-          fetch(`/api/admin/reportbahan`)
-            .then(res => res.json())
-            .then(data => {
-               const unknownReports = data.unknownReports || [];
-               // Gunakan normalisasi saat menghapus report otomatis
-               const reportToClear = unknownReports.find((r: any) => normalizeString(r.name) === normalizeString(urlName));
-               
-               if(reportToClear) {
-                 fetch(`/api/admin/reportbahan?id=${reportToClear.id}&type=unknown`, { method: "DELETE" });
+        // Hapus laporan otomatis yang cocok dengan nama atau alias bahan yang baru dibuat
+        fetch(`/api/admin/reportbahan`)
+          .then(res => res.json())
+          .then(data => {
+             const unknownReports = data.unknownReports || [];
+             
+             // Kumpulkan nama utama dan alias yang sudah dinormalisasi
+             const submittedNames = [normalizeString(formData.name)];
+             if (formData.aliases) {
+               formData.aliases.split(',').forEach(a => {
+                 const cleanAlias = normalizeString(a);
+                 if (cleanAlias) submittedNames.push(cleanAlias);
+               });
+             }
+
+             // Hapus semua report yang match
+             unknownReports.forEach((r: any) => {
+               if (submittedNames.includes(normalizeString(r.name))) {
+                 fetch(`/api/admin/reportbahan?id=${r.id}&type=unknown`, { method: "DELETE" })
+                   .catch(err => console.error("Gagal menghapus laporan otomatis:", err));
                }
-            })
-            .catch(err => console.error("Gagal menghapus laporan otomatis:", err));
-        }
+             });
+          })
+          .catch(err => console.error("Gagal menarik laporan untuk pembersihan otomatis:", err));
 
         setFormData({
           name: "", aliases: "", type: "BASIC", functionalCategory: "UMUM", 
@@ -303,13 +310,13 @@ export default function CreateIngredientPage() {
   const isToxic = formData.type === "TOXIC";
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
         <Link href="/admin/dashboard" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Kamus
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Bahan Baru 🧪</h1>
           <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.3: Terhubung ke Otomatisasi Laporan Sistem.</p>
 

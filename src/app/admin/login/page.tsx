@@ -28,8 +28,29 @@ export default function AdminLogin() {
 
       if (res.ok) {
         sessionStorage.setItem("adminProfile", JSON.stringify(data.user));
-        sessionStorage.setItem("isAdminAuth", "true"); 
-        
+        sessionStorage.setItem("isAdminAuth", "true");
+
+        // --- LOG ACTION ---
+        try {
+          const loginTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+          const loginDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+          await fetch("/api/admin/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              adminName: data.user.username || "Unknown",
+              adminEmail: data.user.username || "Unknown",
+              adminRole: data.user.role,
+              action: "LOGIN",
+              entity: "AUTH",
+              details: `Berhasil masuk ke dalam sistem pada tanggal ${loginDate} jam ${loginTime}`,
+            }),
+          });
+        } catch (e) {
+          console.error("Gagal menyimpan log login:", e);
+        }
+        // --- END LOG ACTION ---
+
         // ==========================================================
         // SMART REDIRECT: Melempar admin sesuai dengan hak aksesnya
         // ==========================================================
@@ -59,41 +80,22 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
-      
-      {/* ANIMASI LATAR BELAKANG (GLASSMORPHISM BLOBS) */}
-      <motion.div 
-        animate={{ 
-          scale: [1, 1.2, 1], 
-          x: [0, 50, 0],
-          y: [0, 30, 0] 
-        }} 
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }} 
-        className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-blue-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-40 pointer-events-none"
-      />
-      <motion.div 
-        animate={{ 
-          scale: [1, 1.3, 1], 
-          x: [0, -60, 0],
-          y: [0, -40, 0] 
-        }} 
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }} 
-        className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-purple-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-40 pointer-events-none"
-      />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 flex items-center justify-center p-4 relative overflow-hidden">
+
 
       {/* KARTU FORMULIR LOGIN */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="relative z-10 w-full max-w-md"
       >
-        <form onSubmit={handleLogin} className="bg-white/70 backdrop-blur-2xl p-10 rounded-[2.5rem] shadow-[0_10px_40px_rgb(0,0,0,0.08)] border border-white space-y-8">
-          
+        <form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 space-y-8">
+
           <div className="text-center space-y-2">
-            <motion.div 
-              initial={{ scale: 0 }} 
-              animate={{ scale: 1 }} 
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
               className="w-20 h-20 bg-slate-900 rounded-3xl mx-auto flex items-center justify-center shadow-lg shadow-slate-900/20 mb-6"
             >
@@ -105,7 +107,7 @@ export default function AdminLogin() {
 
           <AnimatePresence>
             {loginError && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0, y: -10 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -10 }}
@@ -127,13 +129,13 @@ export default function AdminLogin() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-200 bg-white/50 focus:bg-white outline-none text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:ring-0 transition-all duration-300"
+                  className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-200 bg-slate-50 focus:bg-white outline-none text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:ring-0 transition-all duration-300"
                   placeholder="Masukkan ID Anda"
                   required
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-700 uppercase tracking-widest pl-1">Kata Sandi</label>
               <div className="relative">
@@ -144,7 +146,7 @@ export default function AdminLogin() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-200 bg-white/50 focus:bg-white outline-none text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:ring-0 transition-all duration-300"
+                  className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-200 bg-slate-50 focus:bg-white outline-none text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:ring-0 transition-all duration-300"
                   placeholder="••••••••"
                   required
                 />
@@ -152,9 +154,9 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={isLoading} 
+          <button
+            type="submit"
+            disabled={isLoading}
             className="w-full py-4 bg-slate-900 text-white text-sm font-black rounded-2xl hover:bg-black hover:shadow-xl hover:shadow-slate-900/20 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             {isLoading ? (

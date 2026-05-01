@@ -131,15 +131,13 @@ export default function AdminManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12 relative overflow-hidden">
-      {/* Efek Latar Belakang */}
-      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-30 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12 relative overflow-hidden">
       <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-[120px] opacity-30 pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/50">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <span>👑</span> Pusat Manajemen Akun
@@ -162,7 +160,7 @@ export default function AdminManagement() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* KOLOM KIRI: FORMULIR TAMBAH AKUN */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-100">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
               <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-lg shadow-md">
                 ➕
@@ -248,10 +246,10 @@ export default function AdminManagement() {
           </motion.div>
 
           {/* KOLOM KANAN: TABEL DAFTAR ADMIN */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 border border-white h-fit">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-black text-slate-900">Daftar Admin Aktif</h2>
-              <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">{users.length} Akun</span>
+              <span className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center gap-2">{users.length} Akun</span>
             </div>
             
             {isLoading ? (

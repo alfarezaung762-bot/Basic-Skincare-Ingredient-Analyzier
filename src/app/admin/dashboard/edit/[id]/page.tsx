@@ -61,6 +61,8 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
     isVerified: false, 
   });
 
+  const [initialData, setInitialData] = useState<any>(null);
+
   // ========================================================
   // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & TARIK DATA
   // ========================================================
@@ -99,6 +101,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
             const allData = await allRes.json();
             
             // 1. Set Data Form
+            setInitialData(data);
             setFormData({
               name: data.name, 
               aliases: data.aliases || "", 
@@ -296,6 +299,28 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
         if (profileStr) {
           try {
             const profile = JSON.parse(profileStr);
+            
+            // --- DETEKSI PERUBAHAN ---
+            const changedFields = [];
+            if (initialData) {
+              if (formData.name !== initialData.name) changedFields.push("Nama (INCI)");
+              if (formData.aliases !== (initialData.aliases || "")) changedFields.push("Sinonim / Alias");
+              if (formData.type !== initialData.type) changedFields.push("Sifat Kimia");
+              if (formData.functionalCategory !== (initialData.functionalCategory || "UMUM")) changedFields.push("Fungsi Khusus");
+              if (formData.benefits !== initialData.benefits) changedFields.push("Manfaat Singkat");
+              if (formData.aiContext !== (initialData.aiContext || "")) changedFields.push("Analisis Mendalam");
+              if (formData.comedogenicRating !== (initialData.comedogenicRating || 0)) changedFields.push("Komedogenik");
+              if (formData.safeForPregnancy !== (initialData.safeForPregnancy ?? true)) changedFields.push("Aman Bumil 🤰");
+              if (formData.safeForSensitive !== (initialData.safeForSensitive ?? true)) changedFields.push("Aman Sensitif 🌡️");
+              if (formData.isKeyActive !== (initialData.isKeyActive || false)) changedFields.push("Bahan Aktif Utama ⭐");
+              if (finalStrengthLevel !== (initialData.strengthLevel || 1)) changedFields.push("Level Kekuatan");
+              if (formData.blacklistReason !== (initialData.blacklistReason || "")) changedFields.push("Alasan Blacklist");
+              if (formData.isVerified !== (initialData.isVerified || false)) changedFields.push("Verifikasi ✅");
+              if (targetFocus !== (initialData.targetFocus || "")) changedFields.push("Fokus Perawatan");
+              if (blacklistedSkinTypes !== (initialData.blacklistedSkinTypes || "")) changedFields.push("Dilarang Keras Untuk");
+            }
+            const changeText = changedFields.length > 0 ? ` (Perubahan: ${changedFields.join(", ")})` : "";
+
             await fetch("/api/admin/log", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -305,7 +330,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                 adminRole: profile.role,
                 action: "UPDATE",
                 entity: "INGREDIENT",
-                details: `Mengubah data bahan: ${formData.name}`,
+                details: `Mengubah data bahan: ${formData.name}${changeText}`,
               }),
             });
           } catch (e) {
@@ -335,13 +360,13 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
   if (isFetching) return <div className="min-h-screen flex items-center justify-center text-slate-500 font-bold">Memuat data bahan...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
         <Link href="/admin/dashboard" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
           ← Batal & Kembali
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Edit Bahan ✍️</h1>
           <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.3: Perbarui data bahan ke versi terbaru (Normalisasi Aktif).</p>
 
@@ -535,7 +560,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
             <button 
               type="submit" 
               disabled={isLoading || isViewer || nameError !== "" || aliasError !== ""} 
-              className={`w-full py-4 mt-4 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+              className={`w-full py-4 mt-4 font-bold rounded-2xl transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed shadow-md text-lg ${isToxic ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-900 hover:bg-black text-white'}`}
             >
               {isLoading ? "Menyimpan..." : isViewer ? "Hanya Pantau (Read-Only) 👁️" : isToxic ? "Simpan Bahan Berbahaya 🚨" : "Simpan Perubahan 💾"}
             </button>

@@ -15,24 +15,24 @@ interface Ingredient {
   isKeyActive: boolean;
   benefits: string;
   isVerified: boolean;
-  aiContext: string | null; 
-  createdAt: string; 
+  aiContext: string | null;
+  createdAt: string;
 }
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  
+
   // STATE BARU: Menyimpan status hak akses untuk UI
   const [isViewer, setIsViewer] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false); // <-- Tambahan untuk tombol Manajemen Akun
-  
+
   // STATE FILTER & SORT 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterVerified, setFilterVerified] = useState("ALL"); 
-  const [filterCategory, setFilterCategory] = useState("ALL"); 
-  const [sortBy, setSortBy] = useState("NEWEST"); 
+  const [filterVerified, setFilterVerified] = useState("ALL");
+  const [filterCategory, setFilterCategory] = useState("ALL");
+  const [sortBy, setSortBy] = useState("NEWEST");
 
   useEffect(() => {
     const savedSearch = sessionStorage.getItem("admin_search");
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   // PENGAMANAN HALAMAN (ROUTE GUARD) & TARIK DATA
   useEffect(() => {
     const profileString = sessionStorage.getItem("adminProfile");
-    
+
     if (!profileString) {
       router.push("/admin/login");
       return;
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
 
       setIsViewer(isViewOnly);
       setIsSuperAdmin(superAdminCheck); // <-- Simpan status Superadmin ke state
-      
+
       fetchIngredients();
 
     } catch (error) {
@@ -106,8 +106,8 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (isViewer) return; 
-    
+    if (isViewer) return;
+
     if (!window.confirm(`Yakin ingin menghapus "${name}"?`)) return;
 
     try {
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
       if (filterCategory !== "ALL") {
         if (filterCategory === "HERO" && !item.isKeyActive) return false;
         if (filterCategory !== "HERO") {
-          if (item.isKeyActive) return false; 
+          if (item.isKeyActive) return false;
           if (item.type !== filterCategory) return false;
         }
       }
@@ -192,79 +192,74 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden p-6 md:p-12">
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden p-4 md:p-8 lg:p-12">
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-        
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/50"
-        >
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <span>🎛️</span> Admin Control Panel
             </h1>
             <p className="text-sm text-slate-500 font-medium">Kelola database bahan untuk logika Analyzer AI.</p>
           </div>
-          <button onClick={handleLogout} className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all border border-red-100 hover:border-red-500 shadow-sm active:scale-95">
+          <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
             Logout
           </button>
-        </motion.div>
+        </div>
 
-       {/* Menu Navigasi Utama */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-3">
-          <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-2 transition-all bg-slate-900 text-white shadow-lg cursor-default">
+        {/* Menu Navigasi Utama */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
+          <div className="px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 transition-all bg-slate-900 text-white shadow-md cursor-default">
             <span>📚 Kamus Bahan Utama</span>
-            <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+            <span className="bg-slate-700 text-white text-[10px] px-2 py-0.5 rounded-md">
               {ingredients.length}
             </span>
           </div>
-          
-          <Link href="/admin/reportbahan" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+
+          <Link href="/admin/reportbahan" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>❓ Pusat Tinjauan</span>
           </Link>
-          
-          <Link href="/admin/products" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+
+          <Link href="/admin/products" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+          <Link href="/admin/products/review" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Akun Khusus Superadmin */}
           {isSuperAdmin && (
-            <Link href="/admin/management" className="ml-auto px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 hover:shadow-md">
+            <Link href="/admin/management" className="ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
         </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-md min-h-[500px] p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60"
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
+          className="bg-white min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200"
         >
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
             <h2 className="text-xl font-bold text-slate-900">Daftar Bahan Terverifikasi</h2>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
               <div className="relative flex-1 sm:w-72">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-                <input 
-                  type="text" 
-                  placeholder="Cari nama atau alias..." 
+                <input
+                  type="text"
+                  placeholder="Cari nama atau alias..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 bg-white placeholder-slate-400 focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-inner"
                 />
               </div>
-              
+
               {!isViewer && (
-                <Link 
+                <Link
                   href="/admin/dashboard/create"
-                  className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   <span>✨</span> Tambah Baru
                 </Link>
@@ -334,17 +329,17 @@ export default function AdminDashboard() {
                     <th className="p-4 whitespace-nowrap text-right">Aksi</th>
                   </tr>
                 </thead>
-                <motion.tbody 
+                <motion.tbody
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
                   className="divide-y divide-slate-100 bg-white"
                 >
                   {processedIngredients.map((item) => (
-                    <motion.tr 
-                      variants={itemVariants} 
-                      key={item.id} 
-                      onClick={() => handleRowClick(item.id)} 
+                    <motion.tr
+                      variants={itemVariants}
+                      key={item.id}
+                      onClick={() => handleRowClick(item.id)}
                       className={`cursor-pointer transition-colors group ${item.isVerified ? 'bg-emerald-50/60 hover:bg-emerald-100/60' : 'hover:bg-blue-50/50'}`}
                     >
                       <td className="p-4">
@@ -361,15 +356,20 @@ export default function AdminDashboard() {
                         )}
                       </td>
 
-                      <td className="p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors capitalize">
-                        <div className="flex items-center gap-2">
+                      <td className="p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors capitalize whitespace-nowrap">
+                        <div className="flex items-center justify-between gap-4 min-w-[180px]">
                           {item.name}
                           {item.aiContext && (
-                            <span title="Telah dilengkapi Konteks AI" className="text-sm drop-shadow-sm">🤖</span>
+                            <span title="Telah dilengkapi Konteks AI" className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              AI
+                            </span>
                           )}
                         </div>
                       </td>
-                      
+
                       <td className="p-4 text-xs font-medium text-slate-500">
                         {item.aliases ? (
                           <div className="flex flex-wrap gap-1">
@@ -384,16 +384,15 @@ export default function AdminDashboard() {
 
                       <td className="p-4">
                         {item.isKeyActive ? (
-                          <span className="text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm whitespace-nowrap">
                             ⭐ BINTANG UTAMA
                           </span>
                         ) : (
-                          <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border ${
-                            item.type === 'TOXIC' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                          <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border ${item.type === 'TOXIC' ? 'bg-rose-100 text-rose-800 border-rose-200' :
                             item.type === 'HARSH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                            item.type === 'BUFFER' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                            'bg-slate-100 text-slate-600 border-slate-200'
-                          }`}>
+                              item.type === 'BUFFER' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}>
                             {item.type}
                           </span>
                         )}
@@ -404,16 +403,16 @@ export default function AdminDashboard() {
                           {formatCategory(item.functionalCategory)}
                         </span>
                       </td>
-                      
+
                       <td className="p-4 text-slate-600 truncate max-w-[150px]">{item.benefits}</td>
-                      
+
                       <td className="p-4 text-right whitespace-nowrap">
                         {!isViewer ? (
-                          <button 
+                          <button
                             onClick={(e) => {
-                              e.stopPropagation(); 
+                              e.stopPropagation();
                               handleDelete(item.id, item.name);
-                            }} 
+                            }}
                             className="text-red-500 font-bold hover:text-red-700 transition-colors bg-red-50/50 hover:bg-red-100 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200"
                           >
                             Hapus

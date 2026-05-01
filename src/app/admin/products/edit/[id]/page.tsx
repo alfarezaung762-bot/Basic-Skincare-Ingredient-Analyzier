@@ -28,6 +28,8 @@ export default function EditProductPage() {
     catatanKreator: "",
   });
 
+  const [initialData, setInitialData] = useState<any>(null);
+
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
@@ -75,6 +77,7 @@ export default function EditProductPage() {
           .then((data) => {
             const product = data.find((p: any) => p.id === params.id);
             if (product) {
+              setInitialData(product);
               setFormData({
                 namaProduk: product.namaProduk,
                 tipeProduk: product.tipeProduk,
@@ -217,6 +220,22 @@ export default function EditProductPage() {
         if (profileStr) {
           try {
             const profile = JSON.parse(profileStr);
+            
+            // --- DETEKSI PERUBAHAN ---
+            const changedFields = [];
+            if (initialData) {
+              if (formData.namaProduk !== initialData.namaProduk) changedFields.push("Nama Lengkap & Merek");
+              if (formData.tipeProduk !== initialData.tipeProduk) changedFields.push("Tipe Kategori Produk");
+              if (finalImageUrl !== (initialData.gambarUrl || "")) changedFields.push("Gambar Produk");
+              if (formData.tautanAfiliasi !== initialData.tautanAfiliasi) changedFields.push("Tautan Pembelian (Afiliasi)");
+              if (formData.komposisiAsli !== initialData.komposisiAsli) changedFields.push("Daftar Komposisi Penuh (Ingredients)");
+              if (formData.isPinKreator !== initialData.isPinKreator) changedFields.push("Pin Kreator");
+              if (formData.masalahKulitPin !== (initialData.masalahKulitPin || "")) changedFields.push("Tombol Pelatuk");
+              if (formData.catatanKreator !== (initialData.catatanKreator || "")) changedFields.push("Catatan Pribadi Kreator");
+              if (selectedFocuses !== (initialData.fokusProduk || "")) changedFields.push("Fokus Perawatan");
+            }
+            const changeText = changedFields.length > 0 ? ` (Perubahan: ${changedFields.join(", ")})` : "";
+
             await fetch("/api/admin/log", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -226,7 +245,7 @@ export default function EditProductPage() {
                 adminRole: profile.role,
                 action: "UPDATE",
                 entity: "PRODUCT",
-                details: `Mengubah data produk: ${formData.namaProduk}`,
+                details: `Mengubah data produk: ${formData.namaProduk}${changeText}`,
               }),
             });
           } catch (e) {
@@ -251,13 +270,13 @@ export default function EditProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
         <Link href="/admin/products" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Produk
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Ubah Data Produk ✍️</h1>
           <p className="text-sm text-slate-500 mb-6 font-medium">Perbarui informasi produk afiliasi di bawah ini.</p>
 
@@ -472,7 +491,7 @@ export default function EditProductPage() {
             <button 
               type="submit" 
               disabled={isLoading || isViewer} 
-              className={`w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg ${isViewer ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+              className={`w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg ${isViewer ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-slate-900 hover:bg-black text-white'}`}
             >
               {isLoading ? "Menyimpan Pembaruan..." : isViewer ? "Hanya Pantau (Read-Only) 👁️" : "Simpan Perubahan Data ✍️"}
             </button>

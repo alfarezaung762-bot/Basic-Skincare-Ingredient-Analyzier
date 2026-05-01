@@ -22,6 +22,10 @@ export default function AdminHistoryLog() {
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Filter state
+  const [filterAction, setFilterAction] = useState("ALL");
+  const [filterEntity, setFilterEntity] = useState("ALL");
+
   // 1. PENGAMANAN HALAMAN (ROUTE GUARD KHUSUS SUPERADMIN)
   useEffect(() => {
     const profileString = sessionStorage.getItem("adminProfile");
@@ -62,6 +66,7 @@ export default function AdminHistoryLog() {
 
   const getActionColor = (action: string) => {
     switch (action) {
+      case "LOGIN": return "bg-purple-100 text-purple-800 border-purple-200";
       case "CREATE": return "bg-emerald-100 text-emerald-800 border-emerald-200";
       case "UPDATE": return "bg-blue-100 text-blue-800 border-blue-200";
       case "DELETE": return "bg-rose-100 text-rose-800 border-rose-200";
@@ -80,16 +85,19 @@ export default function AdminHistoryLog() {
     }).format(date);
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12 relative overflow-hidden">
-      {/* Efek Latar Belakang */}
-      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-30 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-[120px] opacity-30 pointer-events-none"></div>
+  const filteredLogs = logs.filter(log => {
+    if (filterAction !== "ALL" && log.action !== filterAction) return false;
+    if (filterEntity !== "ALL" && log.entity !== filterEntity) return false;
+    return true;
+  });
 
-      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12 relative overflow-hidden">
+
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/50">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <span>📜</span> Histori Aktivitas Admin
@@ -107,17 +115,44 @@ export default function AdminHistoryLog() {
         </motion.div>
 
         {/* TABEL LOG */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 border border-white h-fit">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-black text-slate-900">Catatan Tindakan</h2>
-            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">{logs.length} Aktivitas</span>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 h-fit">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-xl font-black text-slate-900">Catatan Tindakan</h2>
+              <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200 inline-block mt-2">{filteredLogs.length} Aktivitas Ditampilkan</span>
+            </div>
+            
+            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
+              <select 
+                value={filterAction} 
+                onChange={(e) => setFilterAction(e.target.value)}
+                className="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-slate-900"
+              >
+                <option value="ALL">Semua Aksi</option>
+                <option value="LOGIN">LOGIN</option>
+                <option value="CREATE">CREATE</option>
+                <option value="UPDATE">UPDATE</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+              
+              <select 
+                value={filterEntity} 
+                onChange={(e) => setFilterEntity(e.target.value)}
+                className="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-slate-900"
+              >
+                <option value="ALL">Semua Kategori</option>
+                <option value="AUTH">AUTH (Akses)</option>
+                <option value="INGREDIENT">INGREDIENT (Bahan)</option>
+                <option value="PRODUCT">PRODUCT (Katalog)</option>
+              </select>
+            </div>
           </div>
           
           {isLoading ? (
             <div className="flex justify-center py-20 opacity-50">
               <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
             </div>
-          ) : logs.length === 0 ? (
+          ) : filteredLogs.length === 0 ? (
             <div className="text-center py-20 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
               <span className="text-4xl block mb-4 opacity-50">📭</span>
               <p className="text-slate-500 font-medium">Belum ada histori aktivitas admin.</p>
@@ -136,7 +171,7 @@ export default function AdminHistoryLog() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   <AnimatePresence>
-                    {logs.map((log) => (
+                    {filteredLogs.map((log) => (
                       <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={log.id} className="hover:bg-slate-50/80 transition-colors group">
                         
                         <td className="p-5 whitespace-nowrap text-xs font-medium text-slate-500">

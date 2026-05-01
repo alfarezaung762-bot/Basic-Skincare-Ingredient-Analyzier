@@ -146,12 +146,11 @@ export default function AdminProductsDashboard() {
   // RENDER UTAMA (SETELAH IZIN LOLOS)
   // ========================================================
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12 relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12 relative overflow-hidden">
 
-      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <span>🎛️</span> Admin Control Panel
@@ -163,37 +162,37 @@ export default function AdminProductsDashboard() {
           </button>
         </div>
 
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-3">
-          <Link href="/admin/dashboard" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
+          <Link href="/admin/dashboard" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             📚 Kamus Bahan Utama
           </Link>
           
-          <Link href="/admin/reportbahan" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+          <Link href="/admin/reportbahan" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>❓ Pusat Tinjauan</span>
           </Link>
 
-          <div className="px-6 py-3 font-bold text-sm rounded-xl flex items-center gap-2 bg-slate-900 text-white shadow-lg cursor-default">
+          <div className="px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
             <span>🛒 Katalog Produk</span>
-            <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+            <span className="bg-slate-700 text-white text-[10px] px-2 py-0.5 rounded-md">
               {products.length}
             </span>
           </div>
 
-          <Link href="/admin/products/review" className="px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-white/80 backdrop-blur-sm text-slate-600 border border-slate-200 hover:bg-slate-100 hover:shadow-md">
+          <Link href="/admin/products/review" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {isSuperAdmin && (
-            <Link href="/admin/management" className="ml-auto px-6 py-3 font-bold text-sm rounded-xl transition-all flex items-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 hover:shadow-md">
+            <Link href="/admin/management" className="ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
         </motion.div>
         
         <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="bg-white/90 backdrop-blur-sm min-h-[500px] p-6 md:p-8 rounded-3xl shadow-sm border border-white"
+          initial={{ opacity: 0, y: 10 }} 
+          animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
+          className="bg-white min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
@@ -206,7 +205,7 @@ export default function AdminProductsDashboard() {
             {!isViewer && (
               <Link 
                 href="/admin/products/create" 
-                className="bg-blue-600 text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center gap-2"
+                className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center gap-2"
               >
                 <span>➕</span> Tambah Produk Baru
               </Link>

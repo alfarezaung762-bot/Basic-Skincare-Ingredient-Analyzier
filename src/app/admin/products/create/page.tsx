@@ -205,13 +205,13 @@ export default function CreateProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
         <Link href="/admin/products" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Produk
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Produk Baru 🛍️</h1>
           <p className="text-sm text-slate-500 mb-8 font-medium">Lengkapi data produk afiliasi untuk dicocokkan oleh sistem cerdas.</p>
 
@@ -377,7 +377,7 @@ export default function CreateProductPage() {
             <button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg bg-slate-900 hover:bg-slate-800 text-white"
+              className="w-full py-4 mt-8 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 shadow-md text-lg bg-slate-900 hover:bg-black text-white"
             >
               {isLoading ? "Mengunggah Gambar & Menyimpan..." : "Simpan Produk ke Katalog 🛒"}
             </button>
