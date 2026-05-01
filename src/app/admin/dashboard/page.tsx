@@ -113,6 +113,28 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
       if (res.ok) {
+        // --- LOG ACTION ---
+        const profileStr = sessionStorage.getItem("adminProfile");
+        if (profileStr) {
+          try {
+            const profile = JSON.parse(profileStr);
+            await fetch("/api/admin/log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                adminName: profile.username || "Unknown",
+                adminEmail: profile.username || "Unknown",
+                adminRole: profile.role,
+                action: "DELETE",
+                entity: "INGREDIENT",
+                details: `Menghapus bahan: ${name}`,
+              }),
+            });
+          } catch (e) {
+            console.error("Gagal menyimpan log:", e);
+          }
+        }
+        // --- END LOG ACTION ---
         setIngredients((prev) => prev.filter((item) => item.id !== id));
       } else {
         alert("Gagal menghapus bahan.");

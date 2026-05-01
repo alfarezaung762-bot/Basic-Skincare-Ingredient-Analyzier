@@ -147,6 +147,9 @@ export default function AdminManagement() {
             <p className="text-sm text-slate-500 font-medium mt-1">Sistem kendali tertinggi untuk mengelola hak akses administrator.</p>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/admin/management/histori" className="px-5 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-sm rounded-xl transition-all shadow-sm">
+              📜 Histori Aktivitas
+            </Link>
             <Link href="/admin/dashboard" className="px-5 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-sm rounded-xl transition-all shadow-sm">
               Kembali ke Dasbor
             </Link>

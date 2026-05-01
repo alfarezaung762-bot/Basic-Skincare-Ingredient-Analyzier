@@ -166,6 +166,29 @@ export default function CreateProductPage() {
       });
 
       if (res.ok) {
+        // --- LOG ACTION ---
+        const profileStr = sessionStorage.getItem("adminProfile");
+        if (profileStr) {
+          try {
+            const profile = JSON.parse(profileStr);
+            await fetch("/api/admin/log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                adminName: profile.username || "Unknown",
+                adminEmail: profile.username || "Unknown",
+                adminRole: profile.role,
+                action: "CREATE",
+                entity: "PRODUCT",
+                details: `Menambahkan produk baru: ${formData.namaProduk}`,
+              }),
+            });
+          } catch (e) {
+            console.error("Gagal menyimpan log:", e);
+          }
+        }
+        // --- END LOG ACTION ---
+
         setMessage({ type: "success", text: "Katalog produk berhasil ditambahkan ke dalam sistem! 🛒" });
         setTimeout(() => {
           router.push("/admin/products");

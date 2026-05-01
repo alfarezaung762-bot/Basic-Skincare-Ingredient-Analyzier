@@ -212,6 +212,29 @@ export default function EditProductPage() {
       });
 
       if (res.ok) {
+        // --- LOG ACTION ---
+        const profileStr = sessionStorage.getItem("adminProfile");
+        if (profileStr) {
+          try {
+            const profile = JSON.parse(profileStr);
+            await fetch("/api/admin/log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                adminName: profile.username || "Unknown",
+                adminEmail: profile.username || "Unknown",
+                adminRole: profile.role,
+                action: "UPDATE",
+                entity: "PRODUCT",
+                details: `Mengubah data produk: ${formData.namaProduk}`,
+              }),
+            });
+          } catch (e) {
+            console.error("Gagal menyimpan log:", e);
+          }
+        }
+        // --- END LOG ACTION ---
+
         setMessage({ type: "success", text: "Perubahan produk berhasil disimpan! 🛒" });
         setTimeout(() => {
           router.push("/admin/products");

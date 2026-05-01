@@ -222,15 +222,31 @@ model ProductCatalog {
 }
 
 model ProductReview {
-  id          String         @id @default(cuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId   String
-  product     ProductCatalog @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   ProductCatalog @relation(fields: [productId], references: [id], onDelete: Cascade)
   
-  rating      Int            
-  komentar    String         @db.Text 
+  rating    Int            
+  komentar  String         @db.Text 
 
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+// ==========================================
+// 5. AUDIT LOG & ADMIN HISTORY (TAHAP 1)
+// ==========================================
+
+model AdminLog {
+  id          String   @id @default(cuid())
+  adminName   String   // Nama admin yang melakukan aksi
+  adminEmail  String   // Email atau username admin
+  adminRole   String   // Role (SUPERADMIN, ADMIN, VIEWER)
+  action      String   // LOGIN, CREATE, UPDATE, DELETE
+  entity      String   // INGREDIENT, PRODUCT, REVIEW, AUTH
+  details     String   @db.Text // Deskripsi lengkap (ex: "Menambahkan bahan Salicylic Acid")
+  
+  createdAt   DateTime @default(now())
 }

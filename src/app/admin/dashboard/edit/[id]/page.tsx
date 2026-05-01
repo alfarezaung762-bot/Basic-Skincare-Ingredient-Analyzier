@@ -291,6 +291,29 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       });
 
       if (res.ok) {
+        // --- LOG ACTION ---
+        const profileStr = sessionStorage.getItem("adminProfile");
+        if (profileStr) {
+          try {
+            const profile = JSON.parse(profileStr);
+            await fetch("/api/admin/log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                adminName: profile.username || "Unknown",
+                adminEmail: profile.username || "Unknown",
+                adminRole: profile.role,
+                action: "UPDATE",
+                entity: "INGREDIENT",
+                details: `Mengubah data bahan: ${formData.name}`,
+              }),
+            });
+          } catch (e) {
+            console.error("Gagal menyimpan log:", e);
+          }
+        }
+        // --- END LOG ACTION ---
+
         setMessage({ type: "success", text: "Bahan berhasil diupdate! Mengalihkan..." });
         setTimeout(() => {
           router.push("/admin/dashboard");

@@ -90,6 +90,28 @@ export default function AdminProductsDashboard() {
     try {
       const res = await fetch(`/api/admin/products?id=${id}`, { method: "DELETE" });
       if (res.ok) {
+        // --- LOG ACTION ---
+        const profileStr = sessionStorage.getItem("adminProfile");
+        if (profileStr) {
+          try {
+            const profile = JSON.parse(profileStr);
+            await fetch("/api/admin/log", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                adminName: profile.username || "Unknown",
+                adminEmail: profile.username || "Unknown",
+                adminRole: profile.role,
+                action: "DELETE",
+                entity: "PRODUCT",
+                details: `Menghapus produk: ${name}`,
+              }),
+            });
+          } catch (e) {
+            console.error("Gagal menyimpan log:", e);
+          }
+        }
+        // --- END LOG ACTION ---
         setProducts((prev) => prev.filter((product) => product.id !== id));
       } else {
         alert("Gagal menghapus produk.");
