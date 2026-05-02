@@ -252,31 +252,31 @@ export default function AdminReportBahan() {
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* Header Admin */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
               <span>🎛️</span> Admin Control Panel
             </h1>
-            <p className="text-sm text-slate-500 font-medium">Kelola antrean pelaporan bahan untuk AI.</p>
+            <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Kelola antrean pelaporan bahan untuk AI.</p>
           </div>
-          <div className="flex items-center justify-between md:justify-end gap-6">
-            <div className="text-right hidden sm:block">
+          <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100 mt-2 md:mt-0">
+            <div className="text-left md:text-right">
               <p className="text-sm font-black text-slate-900">{adminName}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
             </div>
-            <button onClick={handleLogout} className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
+            <button onClick={handleLogout} className="px-5 py-2 shrink-0 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
               Logout
             </button>
           </div>
         </div>
 
         {/* Menu Navigasi (Dengan 2 Lencana Real-time) */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
-          <Link href="/admin/dashboard" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-nowrap overflow-x-auto gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:pb-0 custom-scrollbar">
+          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>📚 Kamus Bahan Utama</span>
           </Link>
           
-          <div className="px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
+          <div className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
             <span>❓ Pusat Tinjauan</span>
             <div className="flex gap-1 ml-1">
               <span title="Laporan Sistem" className="bg-slate-700 text-white text-[10px] px-2 py-0.5 rounded-md transition-all duration-300">
@@ -288,16 +288,16 @@ export default function AdminReportBahan() {
             </div>
           </div>
 
-          <Link href="/admin/products" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {isSuperAdmin && (
-            <Link href="/admin/management" className="ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
+            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
