@@ -56,8 +56,8 @@ export type EngineResult = {
 // 2. FUNGSI PEMBERSIH & FUZZY MATCH (TETAP SAMA)
 // ==============================================================
 function sanitizeIngredients(rawText: string): string[] {
-  const cleanedText = rawText.replace(/[0-9]+%?/g, '').replace(/[\(\)\[\]\{\}\*]/g, '');
-  return cleanedText.split(',').map(item => item.trim().toLowerCase()).filter(item => item.length > 0);
+  const parts = rawText.replace(/[0-9]+%?/g, '').split(/[,;\n](?![^()]*\))/g);
+  return parts.map(item => item.replace(/[\(\)\[\]\{\}\*]/g, '').trim().toLowerCase()).filter(item => item.length > 0);
 }
 
 function levenshtein(a: string, b: string): number {
@@ -118,7 +118,7 @@ export function runScoringEngine(
     const matched = dictionary.find(dbItem => {
       if (isFuzzyMatch(inputItem, dbItem.name)) return true;
       if (dbItem.aliases) {
-        const aliasList = dbItem.aliases.split(',').map(a => a.trim().toLowerCase());
+        const aliasList = dbItem.aliases.split(/,(?![^()]*\))/g).map(a => a.replace(/[\(\)]/g, '').trim().toLowerCase());
         return aliasList.some(alias => isFuzzyMatch(inputItem, alias));
       }
       return false;

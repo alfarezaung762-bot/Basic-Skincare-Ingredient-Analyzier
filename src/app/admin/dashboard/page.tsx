@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 
 interface Ingredient {
   id: string;
@@ -27,6 +28,10 @@ export default function AdminDashboard() {
   // STATE BARU: Menyimpan status hak akses untuk UI
   const [isViewer, setIsViewer] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false); // <-- Tambahan untuk tombol Manajemen Akun
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   // STATE FILTER & SORT 
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,18 +69,20 @@ export default function AdminDashboard() {
 
     try {
       const profile = JSON.parse(profileString);
+      setAdminName(profile.username || "Admin");
+      setAdminRole(profile.role || "STAFF");
       const superAdminCheck = profile.role === "SUPERADMIN";
       const isViewOnly = profile.role === "VIEWER";
       const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
 
       if (!superAdminCheck && !isViewOnly && !hasPermission) {
-        alert("Akses Ditolak: Anda tidak memiliki wewenang untuk mengelola Kamus Bahan.");
-        router.push("/admin/login");
+        setAccessDeniedMessage("Anda tidak memiliki wewenang untuk mengelola Kamus Bahan.");
         return;
       }
 
       setIsViewer(isViewOnly);
       setIsSuperAdmin(superAdminCheck); // <-- Simpan status Superadmin ke state
+      setIsAuthorized(true);
 
       fetchIngredients();
 
@@ -191,6 +198,22 @@ export default function AdminDashboard() {
     visible: { opacity: 1, y: 0 },
   };
 
+  if (accessDeniedMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/login")} />
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden p-4 md:p-8 lg:p-12">
 
@@ -203,18 +226,30 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-sm text-slate-500 font-medium">Kelola database bahan untuk logika Analyzer AI.</p>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
-            Logout
-          </button>
+          <div className="flex items-center justify-between md:justify-end gap-6">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-black text-slate-900">{adminName}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
+            </div>
+            <button onClick={handleLogout} className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Menu Navigasi Utama */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
           <div className="px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 transition-all bg-slate-900 text-white shadow-md cursor-default">
             <span>📚 Kamus Bahan Utama</span>
-            <span className="bg-slate-700 text-white text-[10px] px-2 py-0.5 rounded-md">
-              {ingredients.length}
-            </span>
+            <div className="flex gap-1 ml-1">
+              <span title="Total Bahan" className="bg-slate-700 text-white text-[10px] px-2 py-0.5 rounded-md transition-all duration-300">
+                {ingredients.length}
+              </span>
+              <span title="Bahan Terverifikasi" className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 transition-all duration-300">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                {ingredients.filter(i => i.isVerified).length}
+              </span>
+            </div>
           </div>
 
           <Link href="/admin/reportbahan" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
@@ -373,8 +408,8 @@ export default function AdminDashboard() {
                       <td className="p-4 text-xs font-medium text-slate-500">
                         {item.aliases ? (
                           <div className="flex flex-wrap gap-1">
-                            {item.aliases.split(',').map((alias, i) => (
-                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias.trim()}</span>
+                            {item.aliases.split(/,(?![^()]*\))/g).map((alias, i) => (
+                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias.replace(/[\(\)]/g, '').trim()}</span>
                             ))}
                           </div>
                         ) : (

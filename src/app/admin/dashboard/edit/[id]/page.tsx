@@ -148,7 +148,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               if (item.id !== ingredientId) {
                 allUsedNames.push(normalizeString(item.name));
                 if (item.aliases) {
-                  const itemAliases = item.aliases.split(',').map((a: string) => normalizeString(a));
+                  const itemAliases = item.aliases.split(/,(?![^()]*\))/g).map((a: string) => normalizeString(a.replace(/[\(\)]/g, '')));
                   allUsedNames = [...allUsedNames, ...itemAliases];
                 }
               }
@@ -195,8 +195,8 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    const typedAliases = val.split(',')
-      .map(a => normalizeString(a))
+    const typedAliases = val.split(/,(?![^()]*\))/g)
+      .map(a => normalizeString(a.replace(/[\(\)]/g, '')))
       .filter(a => a !== "");
       
     const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));

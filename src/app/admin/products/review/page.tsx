@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 
 interface Review {
   id: string;
@@ -28,7 +29,11 @@ export default function AdminReviewsDashboard() {
   
   // STATE KEAMANAN & HAK AKSES
   const [isViewer, setIsViewer] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false); // <-- GEMBOK LAYAR (Solusi Celah Keamanan)
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   // STATE MODAL
   const [activeProduct, setActiveProduct] = useState<string | null>(null);
@@ -43,17 +48,19 @@ export default function AdminReviewsDashboard() {
 
     try {
       const profile = JSON.parse(profileString);
-      const isSuperAdmin = profile.role === "SUPERADMIN";
+      setAdminName(profile.username || "Admin");
+      setAdminRole(profile.role || "STAFF");
+      const superAdminCheck = profile.role === "SUPERADMIN";
       const isViewOnly = profile.role === "VIEWER";
       const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_ULASAN");
 
-      if (!isSuperAdmin && !isViewOnly && !hasPermission) {
-        alert("Akses Ditolak: Anda tidak berwenang memoderasi ulasan.");
-        router.push("/admin/dashboard");
-        return; // Hentikan proses, isAuthorized tetap false
+      if (!superAdminCheck && !isViewOnly && !hasPermission) {
+        setAccessDeniedMessage("Anda tidak berwenang memoderasi ulasan.");
+        return; // Hentikan proses
       }
 
       // JIKA LOLOS PENGECEKAN: Buka gembok layar dan tarik data
+      setIsSuperAdmin(superAdminCheck);
       setIsViewer(isViewOnly);
       setIsAuthorized(true); 
       fetchReviews();
@@ -135,6 +142,14 @@ export default function AdminReviewsDashboard() {
   // ========================================================
   // LAYAR KOSONG: Tampil sebelum izin dipastikan (Mencegah UI Flash)
   // ========================================================
+  if (accessDeniedMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/dashboard")} />
+      </div>
+    );
+  }
+
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -159,15 +174,21 @@ export default function AdminReviewsDashboard() {
             </h1>
             <p className="text-sm text-slate-500 font-medium">Etalase Manajemen Produk Afiliasi & Rekomendasi Pintar.</p>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
-            Logout
-          </button>
+          <div className="flex items-center justify-between md:justify-end gap-6">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-black text-slate-900">{adminName}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
+            </div>
+            <button onClick={handleLogout} className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* TAB NAVIGASI JALAN PINTAS */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
           <Link href="/admin/dashboard" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
-            📚 Kamus Bahan Utama
+            <span>📚 Kamus Bahan Utama</span>
           </Link>
           <Link href="/admin/reportbahan" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>❓ Pusat Tinjauan</span>
@@ -183,6 +204,12 @@ export default function AdminReviewsDashboard() {
               {reviews.length}
             </span>
           </div>
+
+          {isSuperAdmin && (
+            <Link href="/admin/management" className="ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
+              <span>👑 Manajemen Akun</span>
+            </Link>
+          )}
         </motion.div>
 
         {/* AREA KONTEN UTAMA DENGAN TABEL */}

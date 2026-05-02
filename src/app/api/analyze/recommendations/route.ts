@@ -5,8 +5,8 @@ import { runScoringEngine } from "../perhitunganlogic/scoringEngine";
 export const dynamic = "force-dynamic";
 
 function sanitize(text: string) {
-  return text.replace(/[0-9]+%?/g, '').replace(/[\(\)\[\]\{\}\*]/g, '')
-    .split(/[,\n;]/).map(i => i.trim().toLowerCase()).filter(i => i.length > 2);
+  const parts = text.replace(/[0-9]+%?/g, '').split(/[,;\n](?![^()]*\))/g);
+  return parts.map(i => i.replace(/[\(\)\[\]\{\}\*]/g, '').trim().toLowerCase()).filter(i => i.length > 2);
 }
 
 function levenshtein(a: string, b: string): number {

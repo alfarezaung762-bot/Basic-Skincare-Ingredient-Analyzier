@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 
 interface UnknownReport {
   id: string;
@@ -30,6 +31,11 @@ export default function AdminReportBahan() {
   // STATE BARU: Keamanan & Hak Akses Lintas Batas
   const [isViewer, setIsViewer] = useState(false);
   const [canManageKamus, setCanManageKamus] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   const [activeTab, setActiveTab] = useState<"SYSTEM" | "USER">("SYSTEM");
   const [selectedIngredient, setSelectedIngredient] = useState<string | null>(null);
@@ -47,22 +53,25 @@ export default function AdminReportBahan() {
 
     try {
       const profile = JSON.parse(profileString);
-      const isSuperAdmin = profile.role === "SUPERADMIN";
+      setAdminName(profile.username || "Admin");
+      setAdminRole(profile.role || "STAFF");
+      const superAdminCheck = profile.role === "SUPERADMIN";
       const isViewOnly = profile.role === "VIEWER";
       const hasTinjauanAccess = profile.permissions && profile.permissions.includes("MANAGE_TINJAUAN");
       const hasKamusAccess = profile.permissions && profile.permissions.includes("MANAGE_KAMUS");
 
       // Tolak jika bukan Superadmin, bukan Viewer, dan tidak punya izin Manage Tinjauan
-      if (!isSuperAdmin && !isViewOnly && !hasTinjauanAccess) {
-        alert("Akses Ditolak: Anda tidak memiliki wewenang memantau Pusat Tinjauan.");
-        router.push("/admin/dashboard");
+      if (!superAdminCheck && !isViewOnly && !hasTinjauanAccess) {
+        setAccessDeniedMessage("Anda tidak memiliki wewenang memantau Pusat Tinjauan.");
         return;
       }
 
       // Tetapkan status Hak Akses ke dalam State
       setIsViewer(isViewOnly);
+      setIsSuperAdmin(superAdminCheck);
       // Seseorang bisa menekan tombol Buat/Edit Kamus JIKA mereka Superadmin ATAU punya izin Kamus (dan BUKAN Viewer)
-      setCanManageKamus((isSuperAdmin || hasKamusAccess) && !isViewOnly);
+      setCanManageKamus((superAdminCheck || hasKamusAccess) && !isViewOnly);
+      setIsAuthorized(true);
 
       // Mulai Tarik Data
       fetchReports(true);
@@ -156,6 +165,22 @@ export default function AdminReportBahan() {
     visible: { opacity: 1, x: 0 },
   };
 
+  if (accessDeniedMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/dashboard")} />
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12 relative overflow-hidden">
 
@@ -234,15 +259,21 @@ export default function AdminReportBahan() {
             </h1>
             <p className="text-sm text-slate-500 font-medium">Kelola antrean pelaporan bahan untuk AI.</p>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
-            Logout
-          </button>
+          <div className="flex items-center justify-between md:justify-end gap-6">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-black text-slate-900">{adminName}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
+            </div>
+            <button onClick={handleLogout} className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Menu Navigasi (Dengan 2 Lencana Real-time) */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
           <Link href="/admin/dashboard" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
-            📚 Kamus Bahan Utama
+            <span>📚 Kamus Bahan Utama</span>
           </Link>
           
           <div className="px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
@@ -264,6 +295,12 @@ export default function AdminReportBahan() {
           <Link href="/admin/products/review" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
+
+          {isSuperAdmin && (
+            <Link href="/admin/management" className="ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
+              <span>👑 Manajemen Akun</span>
+            </Link>
+          )}
         </motion.div>
 
         {/* Konten Utama */}

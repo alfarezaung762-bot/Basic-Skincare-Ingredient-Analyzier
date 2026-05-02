@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 
 interface Product {
   id: string;
@@ -26,6 +27,9 @@ export default function AdminProductsDashboard() {
   const [isViewer, setIsViewer] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false); // <-- Gembok Layar Aktif
+  const [accessDeniedMessage, setAccessDeniedMessage] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   // ========================================================
   // 1. PENGAMANAN HALAMAN (ROUTE GUARD)
@@ -40,14 +44,15 @@ export default function AdminProductsDashboard() {
 
     try {
       const profile = JSON.parse(profileString);
+      setAdminName(profile.username || "Admin");
+      setAdminRole(profile.role || "STAFF");
       const superAdminCheck = profile.role === "SUPERADMIN";
       const isViewOnly = profile.role === "VIEWER";
       const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KATALOG");
 
       if (!superAdminCheck && !isViewOnly && !hasPermission) {
-        alert("Akses Ditolak: Anda tidak berwenang mengelola Katalog Produk.");
-        router.push("/admin/dashboard");
-        return; // Blokir di sini, layar putih tidak akan terbuka
+        setAccessDeniedMessage("Anda tidak berwenang mengelola Katalog Produk.");
+        return; // Blokir di sini
       }
 
       // JIKA LOLOS
@@ -134,6 +139,14 @@ export default function AdminProductsDashboard() {
   // ========================================================
   // LAYAR KOSONG: Tampil sebelum izin dipastikan (Mencegah UI Flash)
   // ========================================================
+  if (accessDeniedMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/dashboard")} />
+      </div>
+    );
+  }
+
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -157,14 +170,20 @@ export default function AdminProductsDashboard() {
             </h1>
             <p className="text-sm text-slate-500 font-medium">Etalase Manajemen Produk Afiliasi & Rekomendasi Pintar.</p>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
-            Logout
-          </button>
+          <div className="flex items-center justify-between md:justify-end gap-6">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-black text-slate-900">{adminName}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
+            </div>
+            <button onClick={handleLogout} className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
+              Logout
+            </button>
+          </div>
         </div>
 
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-wrap gap-2">
           <Link href="/admin/dashboard" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
-            📚 Kamus Bahan Utama
+            <span>📚 Kamus Bahan Utama</span>
           </Link>
           
           <Link href="/admin/reportbahan" className="px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">

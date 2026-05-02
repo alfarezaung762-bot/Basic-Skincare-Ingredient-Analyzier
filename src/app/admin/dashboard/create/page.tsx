@@ -86,7 +86,7 @@ export default function CreateIngredientPage() {
             allUsedNames.push(normalizeString(item.name));
             // Normalisasi setiap alias
             if (item.aliases) {
-              const itemAliases = item.aliases.split(',').map((a: string) => normalizeString(a));
+              const itemAliases = item.aliases.split(/,(?![^()]*\))/g).map((a: string) => normalizeString(a.replace(/[\(\)]/g, '')));
               allUsedNames = [...allUsedNames, ...itemAliases];
             }
           });
@@ -136,8 +136,8 @@ export default function CreateIngredientPage() {
       return;
     }
 
-    const typedAliases = val.split(',')
-      .map(a => normalizeString(a))
+    const typedAliases = val.split(/,(?![^()]*\))/g)
+      .map(a => normalizeString(a.replace(/[\(\)]/g, '')))
       .filter(a => a !== "");
       
     const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));
@@ -264,8 +264,8 @@ export default function CreateIngredientPage() {
              // Kumpulkan nama utama dan alias yang sudah dinormalisasi
              const submittedNames = [normalizeString(formData.name)];
              if (formData.aliases) {
-               formData.aliases.split(',').forEach(a => {
-                 const cleanAlias = normalizeString(a);
+               formData.aliases.split(/,(?![^()]*\))/g).forEach(a => {
+                 const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
                  if (cleanAlias) submittedNames.push(cleanAlias);
                });
              }
