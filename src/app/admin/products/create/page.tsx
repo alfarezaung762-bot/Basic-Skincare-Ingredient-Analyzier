@@ -27,6 +27,8 @@ export default function CreateProductPage() {
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [focuses, setFocuses] = useState({
     "Mencerahkan & Bekas Jerawat": false,
@@ -133,25 +135,14 @@ export default function CreateProductPage() {
       return;
     }
 
-    if (!completedCrop || !imgRef.current) {
-      setMessage({ type: "error", text: "Kegagalan: Anda harus mengunggah dan memotong foto produk!" });
+    if (uploadedImages.length === 0) {
+      setMessage({ type: "error", text: "Kegagalan: Anda harus mengunggah dan menambahkan minimal 1 foto produk!" });
       setIsLoading(false);
       return;
     }
 
     try {
-      const canvas = document.createElement('canvas');
-      const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-      const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-      canvas.width = completedCrop.width;
-      canvas.height = completedCrop.height;
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) throw new Error("Gagal memproses gambar");
-      
-      ctx.drawImage(imgRef.current, completedCrop.x * scaleX, completedCrop.y * scaleY, completedCrop.width * scaleX, completedCrop.height * scaleY, 0, 0, completedCrop.width, completedCrop.height);
-      
-      const finalImageUrl = await uploadToCloudinary(canvas);
+      const finalImageUrl = uploadedImages.join(",");
 
       const payloadData = {
         ...formData,
@@ -224,7 +215,29 @@ export default function CreateProductPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             
             <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
-              <label htmlFor="fotoUpload" className="text-xs font-bold uppercase text-slate-700">Foto Produk (Akan dipotong otomatis 1:1)</label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold uppercase text-slate-700">Galeri Foto Produk (Bisa lebih dari 1)</label>
+                <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">{uploadedImages.length} Foto Ditambahkan</span>
+              </div>
+              
+              {/* Daftar Foto yang Sudah Diunggah */}
+              {uploadedImages.length > 0 && (
+                <div className="flex flex-wrap gap-4 mb-4">
+                  {uploadedImages.map((url, idx) => (
+                    <div key={idx} className="relative w-24 h-24 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden group">
+                      <img src={url} alt={`Preview ${idx+1}`} className="w-full h-full object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <input 
                 id="fotoUpload"
                 title="Pilih foto produk"
@@ -235,11 +248,43 @@ export default function CreateProductPage() {
               />
               
               {imgSrc && (
-                <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner">
+                <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner border border-blue-100">
                   <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={1}>
                     <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[300px] rounded-lg border border-slate-200" />
                   </ReactCrop>
-                  <p className="text-[11px] font-medium text-slate-500">Geser area terang untuk menyesuaikan potongan.</p>
+                  <p className="text-[11px] font-medium text-slate-500">Geser area terang untuk menyesuaikan potongan gambar (Rasio 1:1).</p>
+                  
+                  <button
+                    type="button"
+                    disabled={isUploadingImage || !completedCrop}
+                    onClick={async () => {
+                      if (!completedCrop || !imgRef.current) return;
+                      setIsUploadingImage(true);
+                      try {
+                        const canvas = document.createElement('canvas');
+                        const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+                        const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+                        canvas.width = completedCrop.width;
+                        canvas.height = completedCrop.height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          ctx.drawImage(imgRef.current, completedCrop.x * scaleX, completedCrop.y * scaleY, completedCrop.width * scaleX, completedCrop.height * scaleY, 0, 0, completedCrop.width, completedCrop.height);
+                          const newUrl = await uploadToCloudinary(canvas);
+                          setUploadedImages(prev => [...prev, newUrl]);
+                          setImgSrc('');
+                          setCrop(undefined);
+                          setCompletedCrop(undefined);
+                        }
+                      } catch (error) {
+                        alert("Gagal mengunggah gambar. Silakan coba lagi.");
+                      } finally {
+                        setIsUploadingImage(false);
+                      }
+                    }}
+                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  >
+                    {isUploadingImage ? "Mengunggah Foto..." : "➕ Potong & Tambahkan ke Galeri"}
+                  </button>
                 </div>
               )}
             </div>

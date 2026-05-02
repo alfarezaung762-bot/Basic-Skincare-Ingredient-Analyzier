@@ -34,6 +34,8 @@ export default function EditProductPage() {
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [focuses, setFocuses] = useState({
     "Mencerahkan & Bekas Jerawat": false,
@@ -88,6 +90,10 @@ export default function EditProductPage() {
                 masalahKulitPin: product.masalahKulitPin || "",
                 catatanKreator: product.catatanKreator || "",
               });
+              
+              if (product.gambarUrl) {
+                setUploadedImages(product.gambarUrl.split(",").filter((u: string) => u.trim() !== ""));
+              }
 
               if (product.fokusProduk) {
                 const selectedFocuses = product.fokusProduk.split(", ");
@@ -184,22 +190,14 @@ export default function EditProductPage() {
       return;
     }
 
-    try {
-      let finalImageUrl = formData.gambarUrl; 
+    if (uploadedImages.length === 0) {
+      setMessage({ type: "error", text: "Kegagalan: Anda harus mengunggah dan menambahkan minimal 1 foto produk." });
+      setIsLoading(false);
+      return;
+    }
 
-      if (completedCrop && imgRef.current) {
-        const canvas = document.createElement('canvas');
-        const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-        const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-        canvas.width = completedCrop.width;
-        canvas.height = completedCrop.height;
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          ctx.drawImage(imgRef.current, completedCrop.x * scaleX, completedCrop.y * scaleY, completedCrop.width * scaleX, completedCrop.height * scaleY, 0, 0, completedCrop.width, completedCrop.height);
-          finalImageUrl = await uploadToCloudinary(canvas);
-        }
-      }
+    try {
+      const finalImageUrl = uploadedImages.join(",");
 
       const payloadData = {
         id: params.id, 
@@ -296,53 +294,85 @@ export default function EditProductPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* Bagian Edit Gambar & Cropper */}
-            <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
-              <div className="flex flex-col md:flex-row gap-6 md:items-start">
-                
-                {!imgSrc && (
-                  <div className="shrink-0 max-w-[150px]">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Foto Saat Ini:</p>
-                    <div className="w-32 h-32 rounded-xl border border-slate-300 overflow-hidden bg-white p-1 flex items-center justify-center">
-                      {formData.gambarUrl ? (
-                         <img 
-                           src={formData.gambarUrl} 
-                           alt="Produk Saat Ini" 
-                           className="w-full h-full object-cover rounded-lg" 
-                           onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=Rusak" }}
-                         />
-                      ) : (
-                        <span className="text-3xl">📦</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Sembunyikan unggah foto baru jika VIEWER */}
-                {!isViewer && (
-                  <div className="flex-1">
-                    <label htmlFor="fotoUpload" className="text-xs font-bold uppercase text-slate-700">Ganti Foto Produk (Opsional)</label>
-                    <p className="text-[10px] font-medium text-slate-500 mb-3">Biarkan kosong jika tidak ingin mengubah foto. Sistem akan memotong otomatis 1:1.</p>
-                    <input 
-                      id="fotoUpload"
-                      title="Pilih foto produk baru"
-                      type="file" 
-                      accept="image/*" 
-                      onChange={onSelectFile} 
-                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                    />
-                  </div>
-                )}
+            <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300 relative overflow-hidden">
+              {isViewer && <div className="absolute inset-0 bg-slate-100/50 cursor-not-allowed z-20"></div>}
+              
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold uppercase text-slate-700">Galeri Foto Produk (Bisa lebih dari 1)</label>
+                <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">{uploadedImages.length} Foto Ditambahkan</span>
               </div>
               
+              {/* Daftar Foto yang Sudah Diunggah */}
+              {uploadedImages.length > 0 && (
+                <div className="flex flex-wrap gap-4 mb-4">
+                  {uploadedImages.map((url, idx) => (
+                    <div key={idx} className="relative w-24 h-24 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden group">
+                      <img src={url} alt={`Preview ${idx+1}`} className="w-full h-full object-cover" />
+                      {!isViewer && (
+                        <button 
+                          type="button" 
+                          onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <input 
+                id="fotoUpload"
+                title="Pilih foto produk"
+                type="file" 
+                accept="image/*" 
+                onChange={onSelectFile} 
+                disabled={isViewer}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer disabled:opacity-50"
+              />
+              
               {imgSrc && !isViewer && (
-                <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner mt-4">
+                <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner border border-blue-100 mt-4">
                   <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={1}>
                     <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[300px] rounded-lg border border-slate-200" />
                   </ReactCrop>
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-[11px] font-medium text-slate-500">Geser area terang untuk menyesuaikan potongan.</p>
-                    <button type="button" onClick={() => {setImgSrc(''); setCompletedCrop(undefined)}} className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-all border border-red-200">
-                      Batal Ganti Foto
+                  <p className="text-[11px] font-medium text-slate-500">Geser area terang untuk menyesuaikan potongan gambar (Rasio 1:1).</p>
+                  
+                  <div className="flex gap-2 w-full">
+                    <button type="button" onClick={() => {setImgSrc(''); setCompletedCrop(undefined)}} className="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl font-bold text-xs hover:bg-red-100 transition-all border border-red-200">
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUploadingImage || !completedCrop}
+                      onClick={async () => {
+                        if (!completedCrop || !imgRef.current) return;
+                        setIsUploadingImage(true);
+                        try {
+                          const canvas = document.createElement('canvas');
+                          const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+                          const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+                          canvas.width = completedCrop.width;
+                          canvas.height = completedCrop.height;
+                          const ctx = canvas.getContext('2d');
+                          if (ctx) {
+                            ctx.drawImage(imgRef.current, completedCrop.x * scaleX, completedCrop.y * scaleY, completedCrop.width * scaleX, completedCrop.height * scaleY, 0, 0, completedCrop.width, completedCrop.height);
+                            const newUrl = await uploadToCloudinary(canvas);
+                            setUploadedImages(prev => [...prev, newUrl]);
+                            setImgSrc('');
+                            setCrop(undefined);
+                            setCompletedCrop(undefined);
+                          }
+                        } catch (error) {
+                          alert("Gagal mengunggah gambar. Silakan coba lagi.");
+                        } finally {
+                          setIsUploadingImage(false);
+                        }
+                      }}
+                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-all shadow-sm disabled:opacity-50"
+                    >
+                      {isUploadingImage ? "Menambahkan..." : "➕ Tambahkan"}
                     </button>
                   </div>
                 </div>
