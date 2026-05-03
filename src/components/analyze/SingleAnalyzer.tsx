@@ -105,7 +105,7 @@ export default function SingleAnalyzer() {
   return (
     // TAMBAHAN: Bungkus seluruh antarmuka dengan SessionProvider
     <SessionProvider>
-      <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
+      <div className="w-full max-w-5xl mx-auto space-y-8 pb-4">
         
         {/* === KOTAK FORMULIR === */}
         <div className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden">
