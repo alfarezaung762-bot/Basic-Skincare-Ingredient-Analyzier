@@ -40,9 +40,9 @@ export default async function HomePage() {
     include: { profile: true } // 👈 PENTING: Meminta Prisma sekalian mengambil data profil
   });
 
-  // 3. LOGIKA SATPAM: Jika User belum punya profil, otomatis tendang ke halaman isi profil
+  // 3. LOGIKA SATPAM: Jika User belum punya profil, otomatis tendang ke halaman kuesioner pertama
   if (!dbUser?.profile) {
-    redirect("/profile");
+    redirect("/profile/firstprofile");
   }
 
   // 4. Prioritaskan nama dari Database, jika kosong baru pakai dari Sesi

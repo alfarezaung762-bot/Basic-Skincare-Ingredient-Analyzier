@@ -269,7 +269,13 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
           <input id="allergies" type="text" value={formData.allergies} onChange={(e) => setFormData({ ...formData, allergies: e.target.value })} placeholder="Contoh: Fragrance, Alcohol..." className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm bg-gray-50/50 hover:bg-gray-50 shadow-inner" />
         </motion.div>
 
-        <motion.div variants={itemVariants} className="pt-4">
+        <motion.div variants={itemVariants} className="pt-4 space-y-3">
+          <Link
+            href="/profile/firstprofile"
+            className="w-full py-3 border-2 border-pink-200 bg-gradient-to-r from-rose-50 to-pink-50 text-pink-600 font-bold rounded-xl hover:from-rose-100 hover:to-pink-100 transition-all text-sm flex justify-center items-center gap-2 hover:border-pink-300"
+          >
+            ✨ Isi Ulang Profil lewat Kuesioner
+          </Link>
           <button type="submit" disabled={isLoading || !formData.age || !formData.name} className="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all transform active:scale-95 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] text-lg flex justify-center items-center">
             {isLoading ? (
               <span className="flex items-center gap-3">

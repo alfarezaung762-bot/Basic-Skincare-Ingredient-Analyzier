@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const QUIZ_STEPS = [
@@ -65,6 +65,8 @@ const QUIZ_STEPS = [
 
 export default function SkinQuizPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromPage = searchParams.get("from");
   const [phase, setPhase] = useState<"tutorial" | "quiz" | "calculating" | "result">("tutorial");
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -129,17 +131,23 @@ export default function SkinQuizPage() {
     if (finalResult) {
       localStorage.setItem("quizSkinType", finalResult.type);
     }
-    
     alert(`Tersimpan! Jenis kulitmu: ${finalResult?.type}`);
-    window.location.href = "/profile";
+    if (fromPage === "firstprofile") {
+      window.location.href = "/profile/firstprofile";
+    } else {
+      window.location.href = "/profile";
+    }
   };
 
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 overflow-hidden">
       
       <div className="w-full max-w-2xl mb-8">
-        <Link href="/profile" className="text-sm font-bold text-slate-500 hover:text-slate-900 flex items-center gap-2 mb-6 w-fit">
-          <span>←</span> Kembali ke Profil
+        <Link
+          href={fromPage === "firstprofile" ? "/profile/firstprofile" : "/profile"}
+          className="text-sm font-bold text-slate-500 hover:text-slate-900 flex items-center gap-2 mb-6 w-fit"
+        >
+          <span>←</span> Kembali ke {fromPage === "firstprofile" ? "Kuesioner Profil" : "Profil"}
         </Link>
         
         {phase === "quiz" && (
