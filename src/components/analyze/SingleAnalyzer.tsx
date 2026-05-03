@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SessionProvider } from "next-auth/react"; // <-- TAMBAHAN: Import SessionProvider
+// SessionProvider sudah disediakan secara global di layout.tsx
 // Impor Komponen Anak
 import SingleAnalyzerHasil, { FullAnalysisResponse, UserProfileSummary } from "./SingleAnalyzerHasil";
 import SingleAnalyzerHasil2 from "./SingleAnalyzerHasil2";
@@ -103,8 +103,6 @@ export default function SingleAnalyzer() {
   const ingredientCount = ingredients.split(',').filter(i => i.trim() !== '').length;
 
   return (
-    // TAMBAHAN: Bungkus seluruh antarmuka dengan SessionProvider
-    <SessionProvider>
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-4">
         
         {/* === KOTAK FORMULIR === */}
@@ -213,6 +211,5 @@ export default function SingleAnalyzer() {
         )}
 
       </div>
-    </SessionProvider>
   );
 }

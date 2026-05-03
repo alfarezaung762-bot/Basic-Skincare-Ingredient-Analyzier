@@ -1,34 +1,37 @@
 // src/app/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { LoginButton } from "@/components/AuthButtons";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import DashboardClient from "@/app/dashboard/DashboardClient";
 
 export default async function HomePage() {
-  // Mengecek sesi login di sisi server (Server-Side Rendering)
   const session = await getServerSession(authOptions);
 
-  // Jika BELUM login: Tampilkan Landing Page Minimalis
-  if (!session) {
-    return (
-      <main className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 font-sans text-center">
-        <div className="max-w-xl w-full space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-5xl font-extrabold tracking-tight text-gray-900">
-              SkinTech <span className="text-gray-400">Analyzer</span>
-            </h1>
-            <p className="text-lg text-gray-600 leading-relaxed">
-              Pahami setiap tetes skincare Anda. Analisis kecocokan bahan dengan teknologi AI berdasarkan profil unik kulit Anda.
-            </p>
-          </div>
-          <div className="flex justify-center pt-4">
-            <LoginButton />
-          </div>
-        </div>
-      </main>
-    );
+  // === BELUM LOGIN: Tampilkan Dashboard dalam mode Guest ===
+  if (!session || !session.user) {
+    return <DashboardClient displayName="Skincare Lover" isGuest={true} />;
   }
 
-  // Jika SUDAH login: Langsung arahkan ke dashboard baru
-  redirect("/dashboard");
+  // === SUDAH LOGIN: Cek profil kulit ===
+  const userId = (session.user as any).id;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { profile: true },
+  });
+
+  // Jika user tidak ditemukan di DB (sudah dihapus), tampilkan sebagai guest
+  if (!dbUser) {
+    return <DashboardClient displayName="Skincare Lover" isGuest={true} />;
+  }
+
+  // Jika belum punya profil kulit → arahkan ke kuesioner pertama
+  if (!dbUser.profile) {
+    redirect("/profile/firstprofile");
+  }
+
+  // Sudah login + punya profil → Dashboard penuh
+  const displayName = dbUser.name || session.user?.name || "User";
+  return <DashboardClient displayName={displayName} isGuest={false} />;
 }

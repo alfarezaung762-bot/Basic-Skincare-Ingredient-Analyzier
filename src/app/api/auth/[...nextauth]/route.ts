@@ -11,32 +11,56 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true, // Tambahkan baris ini
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   session: {
     strategy: "jwt",
+    maxAge: 15 * 60, // 15 menit — session JWT kedaluwarsa otomatis
   },
- callbacks: {
+  callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
+
+      // Validasi: cek apakah user masih ada di database
+      // Ini menangani kasus user dihapus admin → session otomatis invalid
+      if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { id: true },
+          });
+          if (!dbUser) {
+            // User sudah dihapus dari DB → kosongkan token
+            return { ...token, id: null, invalidUser: true };
+          }
+        } catch {
+          // DB error, biarkan token tetap valid sementara
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
+      // Jika user sudah dihapus (invalidUser), jangan set session user
+      if (token.invalidUser) {
+        return { ...session, user: undefined } as any;
+      }
       if (session.user) {
-        (session.user as any).id = token.id; 
+        (session.user as any).id = token.id;
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // PERBAIKAN: Biarkan user kembali ke beranda (Home) secara default setelah login
+      // Setelah login, selalu kembali ke halaman utama (dashboard)
+      // Logic pengecekan profil dilakukan di server component halaman utama
       return baseUrl;
     },
   },
   pages: {
-    signIn: "/", // Kita letakkan tombol login di halaman utama (Home)
+    signIn: "/", // Halaman login = halaman utama (pop-up modal)
   },
 };
 
