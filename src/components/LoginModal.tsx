@@ -33,7 +33,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
           >
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 md:p-10 relative">
-              
+
               {/* Close Button */}
               <button
                 onClick={onClose}
@@ -44,7 +44,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
               {/* Content */}
               <div className="text-center space-y-6">
-                
+
                 {/* Logo / Title */}
                 <div className="space-y-3">
                   <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
