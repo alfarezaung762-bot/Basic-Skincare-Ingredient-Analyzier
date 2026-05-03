@@ -1,7 +1,7 @@
 // src/app/quiz/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -63,7 +63,7 @@ const QUIZ_STEPS = [
   },
 ];
 
-export default function SkinQuizPage() {
+function QuizContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromPage = searchParams.get("from");
@@ -75,7 +75,6 @@ export default function SkinQuizPage() {
   const stepData = QUIZ_STEPS[currentStep];
   const progress = ((currentStep) / QUIZ_STEPS.length) * 100;
 
-  // PERBAIKAN: Fungsi ini sekarang menerima data finalAnswers secara langsung
   const calculateSkinType = (finalAnswers: Record<string, string>) => {
     setPhase("calculating");
     
@@ -102,7 +101,6 @@ export default function SkinQuizPage() {
         notes = "Keseimbangan air dan minyak di kulitmu sangat baik! Pertahankan dengan basic skincare.";
       }
 
-      // Membaca dari finalAnswers, bukan dari state yang tertinggal
       if (finalAnswers.sensitif === "sensitive") type += " & Sensitif";
 
       setFinalResult({ type, notes });
@@ -117,7 +115,6 @@ export default function SkinQuizPage() {
     if (currentStep < QUIZ_STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // PERBAIKAN: Kirim newAnswers agar AI membaca jawaban terbaru
       calculateSkinType(newAnswers); 
     }
   };
@@ -301,5 +298,17 @@ export default function SkinQuizPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function SkinQuizPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-slate-200 border-t-black rounded-full animate-spin"></div>
+      </div>
+    }>
+      <QuizContent />
+    </Suspense>
   );
 }
