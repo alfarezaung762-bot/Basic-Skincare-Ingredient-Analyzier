@@ -44,7 +44,7 @@ export default function DashboardClient({ displayName }: { displayName: string }
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full"
               >
                 {/* Menu 1: Single Ingredient */}
                 <button
@@ -90,7 +90,7 @@ export default function DashboardClient({ displayName }: { displayName: string }
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4"
+                className="space-y-4 w-full"
               >
                 <button
                   onClick={() => setActiveView("menu")}
@@ -112,7 +112,7 @@ export default function DashboardClient({ displayName }: { displayName: string }
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4"
+                className="space-y-4 w-full"
               >
                 <button
                   onClick={() => setActiveView("menu")}
@@ -131,21 +131,21 @@ export default function DashboardClient({ displayName }: { displayName: string }
       </div>
 
       {/* Footer Marquee Banner */}
-      <footer className="mt-16 w-full overflow-hidden border-t border-gray-200 py-8 bg-white flex flex-col items-center">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Dipercaya oleh berbagai brand terkemuka</p>
-        <div className="relative flex overflow-hidden group max-w-full w-full bg-white">
+      <footer className="mt-16 w-full overflow-hidden border-t border-gray-200 py-8 bg-white flex flex-col items-center shrink-0">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 text-center shrink-0">Dipercaya oleh berbagai brand terkemuka</p>
+        <div className="relative flex overflow-hidden group max-w-full w-full bg-white shrink-0">
           {/* We create two identical lists that scroll seamlessly */}
           <div className="py-2 animate-marquee flex items-center gap-16 pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
               <span key={`a-${i}`} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-pointer flex-shrink-0">
-                <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-12 w-auto object-cover rounded-md" />
+                <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-[50px] w-auto object-cover rounded-md" />
               </span>
             ))}
           </div>
           <div className="absolute top-0 py-2 animate-marquee2 flex items-center gap-16 pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
               <span key={`b-${i}`} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-pointer flex-shrink-0">
-                <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-12 w-auto object-cover rounded-md" />
+                <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-[50px] w-auto object-cover rounded-md" />
               </span>
             ))}
           </div>

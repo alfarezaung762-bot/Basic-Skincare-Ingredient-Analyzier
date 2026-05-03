@@ -5,6 +5,10 @@
   --foreground: #171717;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -36,9 +40,9 @@ body {
 }
 
 .animate-marquee {
-  animation: marquee 25s linear infinite;
+  animation: marquee 40s linear infinite;
 }
 
 .animate-marquee2 {
-  animation: marquee2 25s linear infinite;
+  animation: marquee2 40s linear infinite;
 }

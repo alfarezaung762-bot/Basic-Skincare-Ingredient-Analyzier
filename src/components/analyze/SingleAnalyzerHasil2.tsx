@@ -55,7 +55,7 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
   const getPulseColor = () => {
     if (ing.type === "TOXIC") return "bg-rose-500";
     if (ing.type === "HARSH") return "bg-orange-500";
-    return "bg-emerald-500"; 
+    return "bg-emerald-500";
   };
 
   let strengthBadge = null;
@@ -85,7 +85,7 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
         </div>
       </div>
       <p className="text-xs font-medium opacity-80 mb-5 leading-relaxed">{ing.benefits}</p>
-      
+
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-white/60 p-2 rounded-lg text-center border border-white">
           <span className="block text-[9px] font-bold uppercase opacity-60">Komedogenik</span>
@@ -108,7 +108,7 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
 export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisResponse }) {
   const [showAllGoodIngredients, setShowAllGoodIngredients] = useState(false);
   const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
-  
+
   // State untuk Pop-up Detail Bahan & Laporan (Klik)
   const [activeIngredient, setActiveIngredient] = useState<IngredientDb | null>(null);
   const [reportReason, setReportReason] = useState(""); // <-- TAMBAHAN BARU: State untuk input teks keluhan
@@ -121,7 +121,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
   useEffect(() => {
     if (!hasAutoReported.current && result.engineResult.unknownIngredients.length > 0) {
       hasAutoReported.current = true;
-      
+
       // Kirim laporan ke API secara diam-diam di background
       result.engineResult.unknownIngredients.forEach((ingName) => {
         fetch('/api/admin/reportbahan', {
@@ -148,10 +148,10 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
       await fetch('/api/admin/reportbahan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           type: "mismatch", // <-- TAMBAHAN BARU: Agar masuk ke tabel IngredientReport
-          ingredientName: ingName, 
-          reason: reportReason 
+          ingredientName: ingName,
+          reason: reportReason
         })
       });
       alert(`Terima kasih! Ketidaksesuaian pada bahan "${ingName}" telah diteruskan ke tim ahli kami.`);
@@ -198,7 +198,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
                 ✕
               </button>
             </div>
-            
+
             <p className="text-sm font-medium text-slate-600 leading-relaxed mb-4">
               {activeIngredient.benefits || "Penjelasan belum tersedia untuk bahan ini."}
             </p>
@@ -208,7 +208,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               <label htmlFor="reportReason" className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-2">
                 Detail Ketidaksesuaian <span className="text-rose-500">*</span>
               </label>
-              <textarea 
+              <textarea
                 id="reportReason"
                 rows={3}
                 placeholder="Contoh: Bahan ini seharusnya tidak aman untuk ibu hamil..."
@@ -217,7 +217,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
                 className="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none text-sm font-medium focus:ring-2 focus:ring-rose-400 bg-white resize-none transition-all text-slate-900 placeholder-slate-400"
               />
             </div>
-            
+
             <button
               onClick={() => handleReportMismatch(activeIngredient.name)}
               disabled={isReporting || !reportReason.trim()}
@@ -276,7 +276,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               Total: {sortedDetectedIngredients.length + result.engineResult.unknownIngredients.length} Bahan
             </span>
           </div>
-          
+
           <div className="flex flex-wrap gap-2.5">
             {sortedDetectedIngredients.map((ing, idx) => {
               let style = "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100";
@@ -284,10 +284,10 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               if (ing.type === "TOXIC") style = "bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-200";
               if (ing.type === "HARSH") style = "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200";
               if (ing.type === "BUFFER") style = "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200";
-              
+
               return (
-                <button 
-                  key={idx} 
+                <button
+                  key={idx}
                   onClick={() => setActiveIngredient(ing)} // <-- Membuka modal saat diklik
                   className={`px-3 py-1.5 border rounded-lg text-xs font-bold capitalize shadow-sm transition-all hover:-translate-y-0.5 active:scale-95 ${style}`}
                 >
@@ -300,7 +300,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           {/* INTEGRASI BAHAN ASING SEBAGAI DROPDOWN NOTIFIKASI */}
           {result.engineResult.unknownIngredients.length > 0 && (
             <div className="mt-6 border-t border-slate-200 pt-5">
-              <button 
+              <button
                 onClick={() => setShowUnknownIngredients(!showUnknownIngredients)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white border border-amber-300 rounded-xl shadow-sm text-amber-800 text-sm font-bold hover:bg-amber-50 transition-colors w-full sm:w-auto"
               >
@@ -314,7 +314,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
 
               {showUnknownIngredients && (
                 <div className="mt-4 p-5 bg-white rounded-2xl border border-amber-200 shadow-sm animate-in slide-in-from-top-2">
-                  
+
                   {/* Tampilan Baru yang lebih menenangkan & Otomatis */}
                   <div className="bg-amber-50/50 p-4 rounded-xl text-sm text-amber-900 font-medium leading-relaxed mb-5 border border-amber-100 flex gap-4 items-start">
                     <span className="text-2xl">⚠️</span>
@@ -368,10 +368,10 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {visibleGoodIngredients.map((ing, idx) => <IngredientCard key={idx} ing={ing} />)}
           </div>
-          
+
           {goodIngredients.length > 4 && (
-            <button 
-              onClick={() => setShowAllGoodIngredients(!showAllGoodIngredients)} 
+            <button
+              onClick={() => setShowAllGoodIngredients(!showAllGoodIngredients)}
               className="w-full mt-6 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-bold rounded-xl border border-slate-200 transition-colors shadow-sm"
             >
               {showAllGoodIngredients ? "Sembunyikan Bahan ▲" : `Tampilkan ${goodIngredients.length - 4} Bahan Lainnya 🔽`}
@@ -381,23 +381,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
       )}
 
       {/* 5. KESIMPULAN AKHIR AI */}
-      {result.analysis.recommendations && result.analysis.recommendations.length > 0 && (
-        <div className="bg-[#111827] p-6 md:p-10 rounded-[2rem] shadow-xl text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
-          
-          <h3 className="text-lg font-black mb-8 text-emerald-400 flex items-center gap-2 relative z-10">
-            <span>✨</span> Saran Pemakaian dari AI
-          </h3>
-          <ul className="space-y-4 relative z-10">
-            {result.analysis.recommendations.map((rec, idx) => (
-              <li key={idx} className="flex gap-4 items-start bg-white/5 p-5 rounded-2xl border border-white/10 backdrop-blur-sm transition-all hover:bg-white/10">
-                <span className="text-emerald-400 font-black mt-0.5">✓</span>
-                <span className="text-sm text-slate-200 font-medium leading-relaxed">{rec}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+
     </div>
   );
 }
