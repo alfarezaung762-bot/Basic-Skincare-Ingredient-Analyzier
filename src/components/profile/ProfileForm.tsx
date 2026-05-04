@@ -150,22 +150,22 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
   ];
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto flex justify-center transform scale-[1.15] md:scale-[1.20] origin-top mb-24 mt-4">
+    <div className="relative w-full max-w-2xl mx-auto flex justify-center origin-top mb-12 mt-4 px-4 sm:px-0">
       {/* --- DEKORASI BACKGROUND ANIMASI --- */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden md:overflow-visible flex justify-center">
-        <motion.div animate={{ y: [0, -20, 0], rotate: [-5, 5, -5] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute top-4 -left-8 md:-left-28 text-[100px] md:text-[140px] opacity-[0.15] filter blur-[2px]">🧴</motion.div>
-        <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.3, 0.1], rotate: [0, 90, 180] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-12 right-0 md:-right-10 text-[70px] md:text-[90px] filter blur-[1px] text-yellow-500">✨</motion.div>
-        <motion.div animate={{ y: [0, 25, 0], rotate: [10, -5, 10] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-64 -right-10 md:-right-24 text-[110px] md:text-[150px] opacity-[0.15] filter blur-[2px]">🧪</motion.div>
-        <motion.div animate={{ y: [0, -40, 0], x: [0, 15, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-80 -left-6 md:-left-16 text-[80px] md:text-[110px] opacity-20 filter blur-[1px]">🫧</motion.div>
-        <motion.div animate={{ y: [0, 15, 0], rotate: [-10, 10, -10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute bottom-40 -left-10 md:-left-20 text-[100px] md:text-[130px] opacity-[0.15] filter blur-[2px]">🌿</motion.div>
-        <motion.div animate={{ y: [0, -30, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-16 -right-8 md:-right-16 text-[90px] md:text-[120px] opacity-20 filter blur-[2px]">💧</motion.div>
-        <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }} className="absolute -bottom-20 right-1/4 text-[130px] md:text-[180px] opacity-10 filter blur-[3px]">🌸</motion.div>
+        <motion.div animate={{ y: [0, -20, 0], rotate: [-5, 5, -5] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute top-4 -left-8 md:-left-28 text-[80px] md:text-[140px] opacity-[0.15] filter blur-[2px]">🧴</motion.div>
+        <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.3, 0.1], rotate: [0, 90, 180] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-12 right-0 md:-right-10 text-[60px] md:text-[90px] filter blur-[1px] text-yellow-500">✨</motion.div>
+        <motion.div animate={{ y: [0, 25, 0], rotate: [10, -5, 10] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-64 -right-10 md:-right-24 text-[80px] md:text-[150px] opacity-[0.15] filter blur-[2px]">🧪</motion.div>
+        <motion.div animate={{ y: [0, -40, 0], x: [0, 15, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-80 -left-6 md:-left-16 text-[60px] md:text-[110px] opacity-20 filter blur-[1px]">🫧</motion.div>
+        <motion.div animate={{ y: [0, 15, 0], rotate: [-10, 10, -10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute bottom-40 -left-10 md:-left-20 text-[70px] md:text-[130px] opacity-[0.15] filter blur-[2px]">🌿</motion.div>
+        <motion.div animate={{ y: [0, -30, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-16 -right-8 md:-right-16 text-[70px] md:text-[120px] opacity-20 filter blur-[2px]">💧</motion.div>
+        <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }} className="absolute -bottom-20 right-1/4 text-[90px] md:text-[180px] opacity-10 filter blur-[3px]">🌸</motion.div>
       </div>
 
       {/* --- KOTAK FORM UTAMA --- */}
       <motion.form 
         variants={formVariants} initial="hidden" animate="visible" onSubmit={handleSubmit} 
-        className="w-full max-w-2xl mx-auto space-y-8 bg-white/90 backdrop-blur-xl p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white/60 relative z-10"
+        className="w-full mx-auto space-y-6 sm:space-y-8 bg-white/95 backdrop-blur-xl p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white/60 relative z-10"
       >
         {error && (
           <motion.div variants={itemVariants} className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-medium border border-red-200 shadow-sm">

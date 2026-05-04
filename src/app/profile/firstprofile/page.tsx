@@ -36,14 +36,14 @@ const FOCUS_OPTIONS = [
 ];
 
 const FLOATERS = [
-    { emoji: "🌸", size: "text-6xl", top: "8%", left: "5%", duration: 6, delay: 0 },
-    { emoji: "✨", size: "text-4xl", top: "15%", right: "8%", duration: 4, delay: 0.5 },
-    { emoji: "🧴", size: "text-5xl", top: "40%", left: "3%", duration: 7, delay: 1 },
-    { emoji: "💧", size: "text-5xl", top: "65%", right: "5%", duration: 5, delay: 0.8 },
-    { emoji: "🌿", size: "text-4xl", bottom: "10%", left: "8%", duration: 6, delay: 1.5 },
-    { emoji: "🫧", size: "text-3xl", bottom: "20%", right: "10%", duration: 5, delay: 0.3 },
-    { emoji: "🌺", size: "text-3xl", top: "55%", left: "1%", duration: 8, delay: 2 },
-    { emoji: "💆‍♀️", size: "text-4xl", top: "30%", right: "3%", duration: 9, delay: 1.2 },
+    { emoji: "🌸", size: "text-4xl md:text-6xl", top: "8%", left: "5%", duration: 6, delay: 0 },
+    { emoji: "✨", size: "text-3xl md:text-4xl", top: "15%", right: "8%", duration: 4, delay: 0.5 },
+    { emoji: "🧴", size: "text-4xl md:text-5xl", top: "40%", left: "3%", duration: 7, delay: 1 },
+    { emoji: "💧", size: "text-4xl md:text-5xl", top: "65%", right: "5%", duration: 5, delay: 0.8 },
+    { emoji: "🌿", size: "text-3xl md:text-4xl", bottom: "10%", left: "8%", duration: 6, delay: 1.5 },
+    { emoji: "🫧", size: "text-2xl md:text-3xl", bottom: "20%", right: "10%", duration: 5, delay: 0.3 },
+    { emoji: "🌺", size: "text-2xl md:text-3xl", top: "55%", left: "1%", duration: 8, delay: 2 },
+    { emoji: "💆‍♀️", size: "text-3xl md:text-4xl", top: "30%", right: "3%", duration: 9, delay: 1.2 },
 ];
 
 export default function FirstProfilePage() {
@@ -132,11 +132,11 @@ export default function FirstProfilePage() {
 
             {/* === ANIMATED BACKGROUND BLOBS === */}
             <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.25, 0.4, 0.25] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-200 rounded-full blur-[100px] -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+                className="absolute top-0 right-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-pink-200 rounded-full blur-[80px] md:blur-[100px] -translate-y-1/3 translate-x-1/3 pointer-events-none" />
             <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.35, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-rose-200 rounded-full blur-[90px] translate-y-1/3 -translate-x-1/3 pointer-events-none" />
+                className="absolute bottom-0 left-0 w-[250px] md:w-[450px] h-[250px] md:h-[450px] bg-rose-200 rounded-full blur-[70px] md:blur-[90px] translate-y-1/3 -translate-x-1/3 pointer-events-none" />
             <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute top-1/2 left-1/2 w-72 h-72 bg-fuchsia-100 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+                className="absolute top-1/2 left-1/2 w-48 md:w-72 h-48 md:h-72 bg-fuchsia-100 rounded-full blur-[60px] md:blur-[80px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
             {/* === FLOATING SKINCARE EMOJIS === */}
             {FLOATERS.map((f, i) => (

@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import SingleAnalyzer from "@/components/analyze/SingleAnalyzer";
 import CombineAnalyzer from "@/components/analyze/CombineAnalyzer";
 import LoginModal from "@/components/LoginModal";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface Banner {
+  id: string;
+  imageUrl: string;
+  altText: string;
+}
 
 interface DashboardClientProps {
   displayName: string;
@@ -16,6 +22,23 @@ interface DashboardClientProps {
 export default function DashboardClient({ displayName, isGuest = false }: DashboardClientProps) {
   const [activeView, setActiveView] = useState<"menu" | "single" | "combine">("menu");
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [banners, setBanners] = useState<Banner[]>([]);
+
+  useEffect(() => {
+    fetchBanners();
+  }, []);
+
+  const fetchBanners = async () => {
+    try {
+      const res = await fetch("/api/benner");
+      if (res.ok) {
+        const data = await res.json();
+        setBanners(data);
+      }
+    } catch (e) {
+      console.error("Gagal memuat banner");
+    }
+  };
 
   // Jika guest, tampilkan popup login. Jika sudah login, langsung navigasi.
   const handleMenuClick = (view: "single" | "combine") => {
@@ -173,21 +196,53 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
 
         {/* Footer Marquee Banner */}
         <footer className="mt-16 w-full overflow-hidden border-t border-gray-200 py-8 bg-white flex flex-col items-center shrink-0">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 text-center shrink-0">Dipercaya oleh berbagai brand terkemuka</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 text-center shrink-0">
+            {banners.length > 0 ? "Informasi Terkini" : "Dipercaya oleh berbagai brand terkemuka"}
+          </p>
           <div className="relative flex overflow-hidden group max-w-full w-full bg-white shrink-0">
-            <div className="py-2 animate-marquee flex items-center gap-16 pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
-                <span key={`a-${i}`} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-pointer flex-shrink-0">
-                  <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-[50px] w-auto object-cover rounded-md" />
-                </span>
-              ))}
+            <div className="py-2 animate-marquee flex items-center gap-6 md:gap-16 pr-6 md:pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
+              {banners.length > 0 ? (
+                <>
+                  {banners.map((banner, i) => (
+                    <span key={`a-${banner.id}-${i}`} className="hover:scale-[1.02] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden border border-slate-100">
+                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                    </span>
+                  ))}
+                  {banners.map((banner, i) => (
+                    <span key={`a2-${banner.id}-${i}`} className="hover:scale-[1.02] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden border border-slate-100">
+                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                    </span>
+                  ))}
+                </>
+              ) : (
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
+                  <span key={`dummy-a-${i}`} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-pointer flex-shrink-0">
+                    <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-[50px] w-auto object-cover rounded-md" />
+                  </span>
+                ))
+              )}
             </div>
-            <div className="absolute top-0 py-2 animate-marquee2 flex items-center gap-16 pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
-                <span key={`b-${i}`} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-pointer flex-shrink-0">
-                  <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-[50px] w-auto object-cover rounded-md" />
-                </span>
-              ))}
+            <div className="absolute top-0 py-2 animate-marquee2 flex items-center gap-6 md:gap-16 pr-6 md:pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
+              {banners.length > 0 ? (
+                <>
+                  {banners.map((banner, i) => (
+                    <span key={`b-${banner.id}-${i}`} className="hover:scale-[1.02] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden border border-slate-100">
+                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                    </span>
+                  ))}
+                  {banners.map((banner, i) => (
+                    <span key={`b2-${banner.id}-${i}`} className="hover:scale-[1.02] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden border border-slate-100">
+                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                    </span>
+                  ))}
+                </>
+              ) : (
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
+                  <span key={`dummy-b-${i}`} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-pointer flex-shrink-0">
+                    <img src={`https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=200&h=100`} alt="Brand Logo" className="h-[50px] w-auto object-cover rounded-md" />
+                  </span>
+                ))
+              )}
             </div>
           </div>
         </footer>

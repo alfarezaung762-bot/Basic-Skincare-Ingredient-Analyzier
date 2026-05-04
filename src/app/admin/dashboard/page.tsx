@@ -264,6 +264,13 @@ export default function AdminDashboard() {
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
+          {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner (Hanya Admin dengan Izin / Superadmin) */}
+          {(isSuperAdmin || (adminRole === "ADMIN" && sessionStorage.getItem("adminProfile")?.includes("MANAGE_BENNER"))) && (
+            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+              <span>🖼️ Kelola Banner</span>
+            </Link>
+          )}
+
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Akun Khusus Superadmin */}
           {isSuperAdmin && (
             <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
@@ -360,8 +367,7 @@ export default function AdminDashboard() {
                     <th className="p-4 whitespace-nowrap">Alias</th>
                     <th className="p-4 whitespace-nowrap">Kategori Logika</th>
                     <th className="p-4 whitespace-nowrap">Fungsi Utama</th>
-                    <th className="p-4">Manfaat Khusus</th>
-                    <th className="p-4 whitespace-nowrap text-right">Aksi</th>
+                    <th className="p-4 whitespace-nowrap text-right sticky right-0 bg-slate-100/80 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] z-10">Aksi</th>
                   </tr>
                 </thead>
                 <motion.tbody
@@ -439,9 +445,7 @@ export default function AdminDashboard() {
                         </span>
                       </td>
 
-                      <td className="p-4 text-slate-600 truncate max-w-[150px]">{item.benefits}</td>
-
-                      <td className="p-4 text-right whitespace-nowrap">
+                      <td className="p-4 text-right whitespace-nowrap sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.02)] group-hover:bg-blue-50/50 transition-colors z-10">
                         {!isViewer ? (
                           <button
                             onClick={(e) => {

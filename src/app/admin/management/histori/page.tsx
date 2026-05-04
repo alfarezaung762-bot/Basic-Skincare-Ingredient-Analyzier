@@ -144,6 +144,7 @@ export default function AdminHistoryLog() {
                 <option value="AUTH">AUTH (Akses)</option>
                 <option value="INGREDIENT">INGREDIENT (Bahan)</option>
                 <option value="PRODUCT">PRODUCT (Katalog)</option>
+                <option value="BANNER">BANNER (Banner)</option>
               </select>
             </div>
           </div>

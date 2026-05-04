@@ -19,6 +19,7 @@ const AVAILABLE_PERMISSIONS = [
   { id: "MANAGE_TINJAUAN", label: "❓ Pusat Tinjauan", desc: "Akses kelola laporan & keluhan pengguna" },
   { id: "MANAGE_KATALOG", label: "🛒 Katalog Produk", desc: "Akses kelola produk afiliasi" },
   { id: "MANAGE_ULASAN", label: "⭐ Moderasi Ulasan", desc: "Akses hapus komentar toksik/spam" },
+  { id: "MANAGE_BENNER", label: "🖼️ Kelola Banner", desc: "Akses mengelola banner slider di beranda" },
 ];
 
 export default function AdminManagement() {
