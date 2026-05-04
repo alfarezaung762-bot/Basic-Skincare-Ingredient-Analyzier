@@ -20,7 +20,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998]"
+            className="fixed inset-0 bg-slate-900/25 backdrop-blur-md z-[9998]"
             onClick={onClose}
           />
 
@@ -32,12 +32,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 md:p-10 relative">
+            <div className="glass-card rounded-3xl shadow-[0_16px_64px_rgba(13,148,136,0.12)] w-full max-w-md p-8 md:p-10 relative overflow-hidden">
+
+              {/* Gradient accent top */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400" />
 
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all"
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/60 hover:bg-white flex items-center justify-center text-gray-400 hover:text-teal-600 transition-all hover:shadow-md"
               >
                 ✕
               </button>
@@ -47,8 +50,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                 {/* Logo / Title */}
                 <div className="space-y-3">
-                  <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-                    SkinTech <span className="text-gray-400">Analyzer</span>
+                  <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                    <span className="gradient-text">SkinTech</span> <span className="text-gray-400">Analyzer</span>
                   </h2>
                   <p className="text-gray-500 text-sm md:text-base leading-relaxed max-w-xs mx-auto">
                     Pahami setiap tetes skincare Anda. Analisis kecocokan bahan dengan teknologi AI berdasarkan profil unik kulit Anda.
@@ -57,15 +60,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                 {/* Divider */}
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Masuk untuk lanjut</span>
-                  <div className="flex-1 h-px bg-gray-200" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Masuk untuk lanjut</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent" />
                 </div>
 
                 {/* Google Login Button */}
-                <button
+                <motion.button
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => signIn("google")}
-                  className="w-full px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm"
+                  className="w-full px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 font-bold rounded-2xl hover:border-teal-300 hover:shadow-lg hover:shadow-teal-100/40 transition-all duration-300 flex items-center justify-center gap-3 shadow-sm"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -74,7 +79,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                   </svg>
                   Lanjutkan dengan Google
-                </button>
+                </motion.button>
 
                 {/* Privacy note */}
                 <p className="text-[11px] text-gray-400 leading-relaxed">

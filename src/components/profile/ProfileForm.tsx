@@ -153,19 +153,19 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     <div className="relative w-full max-w-2xl mx-auto flex justify-center origin-top mb-12 mt-4 px-4 sm:px-0">
       {/* --- DEKORASI BACKGROUND ANIMASI --- */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden md:overflow-visible flex justify-center">
-        <motion.div animate={{ y: [0, -20, 0], rotate: [-5, 5, -5] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute top-4 -left-8 md:-left-28 text-[80px] md:text-[140px] opacity-[0.15] filter blur-[2px]">🧴</motion.div>
-        <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.3, 0.1], rotate: [0, 90, 180] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-12 right-0 md:-right-10 text-[60px] md:text-[90px] filter blur-[1px] text-yellow-500">✨</motion.div>
-        <motion.div animate={{ y: [0, 25, 0], rotate: [10, -5, 10] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-64 -right-10 md:-right-24 text-[80px] md:text-[150px] opacity-[0.15] filter blur-[2px]">🧪</motion.div>
-        <motion.div animate={{ y: [0, -40, 0], x: [0, 15, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-80 -left-6 md:-left-16 text-[60px] md:text-[110px] opacity-20 filter blur-[1px]">🫧</motion.div>
-        <motion.div animate={{ y: [0, 15, 0], rotate: [-10, 10, -10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute bottom-40 -left-10 md:-left-20 text-[70px] md:text-[130px] opacity-[0.15] filter blur-[2px]">🌿</motion.div>
-        <motion.div animate={{ y: [0, -30, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-16 -right-8 md:-right-16 text-[70px] md:text-[120px] opacity-20 filter blur-[2px]">💧</motion.div>
-        <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }} className="absolute -bottom-20 right-1/4 text-[90px] md:text-[180px] opacity-10 filter blur-[3px]">🌸</motion.div>
+        <motion.div animate={{ y: [0, -20, 0], rotate: [-5, 5, -5] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute top-4 -left-8 md:-left-28 text-[80px] md:text-[140px] opacity-[0.12] filter blur-[2px]">🧴</motion.div>
+        <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.08, 0.2, 0.08], rotate: [0, 90, 180] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-12 right-0 md:-right-10 text-[60px] md:text-[90px] filter blur-[1px] text-teal-500">✨</motion.div>
+        <motion.div animate={{ y: [0, 25, 0], rotate: [10, -5, 10] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-64 -right-10 md:-right-24 text-[80px] md:text-[150px] opacity-[0.12] filter blur-[2px]">🧪</motion.div>
+        <motion.div animate={{ y: [0, -40, 0], x: [0, 15, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-80 -left-6 md:-left-16 text-[60px] md:text-[110px] opacity-[0.15] filter blur-[1px]">🫧</motion.div>
+        <motion.div animate={{ y: [0, 15, 0], rotate: [-10, 10, -10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute bottom-40 -left-10 md:-left-20 text-[70px] md:text-[130px] opacity-[0.12] filter blur-[2px]">🌿</motion.div>
+        <motion.div animate={{ y: [0, -30, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-16 -right-8 md:-right-16 text-[70px] md:text-[120px] opacity-[0.15] filter blur-[2px]">💧</motion.div>
+        <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }} className="absolute -bottom-20 right-1/4 text-[90px] md:text-[180px] opacity-[0.07] filter blur-[3px]">🔬</motion.div>
       </div>
 
       {/* --- KOTAK FORM UTAMA --- */}
       <motion.form 
         variants={formVariants} initial="hidden" animate="visible" onSubmit={handleSubmit} 
-        className="w-full mx-auto space-y-6 sm:space-y-8 bg-white/95 backdrop-blur-xl p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white/60 relative z-10"
+        className="w-full mx-auto space-y-6 sm:space-y-8 glass-card p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_8px_40px_rgba(13,148,136,0.08)] relative z-10 border border-slate-200/80"
       >
         {error && (
           <motion.div variants={itemVariants} className="p-4 bg-red-50 text-red-700 rounded-xl text-sm font-medium border border-red-200 shadow-sm">
@@ -176,42 +176,42 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         {/* 1. Nama Panggilan */}
         <motion.div variants={itemVariants} className="space-y-3">
           <label htmlFor="name" className="block text-sm font-bold text-gray-900">1. Siapa namamu?</label>
-          <input id="name" type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm bg-gray-50/50 hover:bg-gray-50 shadow-inner" />
+          <input id="name" type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 rounded-xl premium-input text-gray-900 font-medium text-sm" />
         </motion.div>
 
         {/* 2. Jenis Kulit */}
         <motion.div variants={itemVariants} className="space-y-3">
           <div className="flex justify-between items-end mb-2">
             <label className="block text-sm font-bold text-gray-900">2. Apa jenis kulitmu?</label>
-            <Link href="/quiz" className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 hover:shadow-md transition-all flex items-center gap-1 group">
+            <Link href="/quiz" className="text-xs font-bold text-teal-700 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-200 hover:bg-teal-100 hover:shadow-md transition-all flex items-center gap-1 group btn-press">
               <span className="group-hover:animate-bounce">🤔</span> Bingung? Lakukan Tes !!!
             </Link>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {["Normal", "Kering", "Berminyak", "Kombinasi"].map((type) => (
-              <button key={type} type="button" onClick={() => handleBaseSkinChange(type)} className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transform active:scale-95 transition-all ${baseSkin === type ? "bg-black text-white border-black shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50"}`}>
+              <button key={type} type="button" onClick={() => handleBaseSkinChange(type)} className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transform active:scale-95 transition-all ${baseSkin === type ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white border-teal-500 shadow-lg shadow-teal-200/50" : "bg-white text-gray-600 border-slate-300 shadow-sm hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-md"}`}>
                 {type}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-red-50/50 border border-red-100 rounded-xl mt-3 transition-colors hover:bg-red-50">
-            <input type="checkbox" id="sensitive" checked={isSensitive} onChange={(e) => handleSensitiveToggle(e.target.checked)} className="w-5 h-5 text-red-600 bg-white border-gray-300 rounded focus:ring-red-500 cursor-pointer" />
-            <label htmlFor="sensitive" className="text-sm font-bold text-red-900 cursor-pointer select-none">Kulit saya rentan Kemerahan / Sensitif 🌡️</label>
+          <div className={`flex items-center gap-3 p-4 rounded-xl mt-3 transition-all border-2 ${isSensitive ? "bg-amber-50/80 border-amber-300 shadow-sm" : "bg-white border-slate-300 shadow-sm hover:bg-amber-50/30 hover:border-amber-300"}`}>
+            <input type="checkbox" id="sensitive" checked={isSensitive} onChange={(e) => handleSensitiveToggle(e.target.checked)} className="w-5 h-5 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500 cursor-pointer accent-amber-500" />
+            <label htmlFor="sensitive" className="text-sm font-bold text-slate-800 cursor-pointer select-none">Kulit saya rentan Kemerahan / Sensitif 🌡️</label>
           </div>
         </motion.div>
 
         {/* 3. Umur */}
         <motion.div variants={itemVariants} className="space-y-3">
           <label htmlFor="age" className="block text-sm font-bold text-gray-900">3. Berapa umurmu?</label>
-          <input id="age" type="number" required min="10" max="100" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} placeholder="Contoh: 22" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm bg-gray-50/50 hover:bg-gray-50 shadow-inner" />
+          <input id="age" type="number" required min="10" max="100" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} placeholder="Contoh: 22" className="w-full px-4 py-3 rounded-xl premium-input text-gray-900 font-medium text-sm" />
         </motion.div>
 
         {/* Kondisi Khusus: Hamil */}
-        <motion.div variants={itemVariants} className="flex items-center gap-3 p-4 bg-pink-50/50 border border-pink-100 rounded-xl transition-colors hover:bg-pink-50">
-          <input type="checkbox" id="pregnant" checked={formData.isPregnantOrNursing} onChange={(e) => setFormData({ ...formData, isPregnantOrNursing: e.target.checked })} className="w-5 h-5 text-pink-600 bg-white border-gray-300 rounded focus:ring-pink-500 cursor-pointer" />
-          <label htmlFor="pregnant" className="text-sm font-bold text-pink-900 cursor-pointer select-none">Saya sedang Hamil atau Menyusui 🤰</label>
+        <motion.div variants={itemVariants} className={`flex items-center gap-3 p-4 rounded-xl transition-all border-2 ${formData.isPregnantOrNursing ? "bg-indigo-50/80 border-indigo-300 shadow-sm" : "bg-white border-slate-300 shadow-sm hover:bg-indigo-50/30 hover:border-indigo-300"}`}>
+          <input type="checkbox" id="pregnant" checked={formData.isPregnantOrNursing} onChange={(e) => setFormData({ ...formData, isPregnantOrNursing: e.target.checked })} className="w-5 h-5 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-500" />
+          <label htmlFor="pregnant" className="text-sm font-bold text-slate-800 cursor-pointer select-none">Saya sedang Hamil atau Menyusui 🤰</label>
         </motion.div>
 
         {/* 4. Tingkat Keparahan */}
@@ -223,7 +223,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               { id: "SEDANG", label: "Sedang (Beruntusan)" },
               { id: "PARAH", label: "Parah (Meradang)" },
             ].map((item) => (
-              <button key={item.id} type="button" onClick={() => setFormData({ ...formData, severity: item.id })} className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transform active:scale-95 transition-all ${formData.severity === item.id ? "bg-black text-white border-black shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50"}`}>
+              <button key={item.id} type="button" onClick={() => setFormData({ ...formData, severity: item.id })} className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transform active:scale-95 transition-all ${formData.severity === item.id ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white border-teal-500 shadow-lg shadow-teal-200/50" : "bg-white text-gray-600 border-slate-300 shadow-sm hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-md"}`}>
                 {item.label}
               </button>
             ))}
@@ -234,7 +234,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         <motion.div variants={itemVariants} className="space-y-3">
           <div className="flex justify-between items-end">
             <label className="block text-sm font-bold text-gray-900">5. Apa fokus utama skincare-mu?</label>
-            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${selectedFocuses.length === 3 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}>
+            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${selectedFocuses.length === 3 ? "bg-amber-100 text-amber-700" : "bg-teal-50 text-teal-600"}`}>
               {selectedFocuses.length}/3 Terpilih
             </span>
           </div>
@@ -252,8 +252,8 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                   disabled={isDisabled}
                   onClick={() => handleFocusToggle(item.id)}
                   className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transform active:scale-95 transition-all text-left flex items-center gap-2 
-                    ${isSelected ? "bg-black text-white border-black shadow-lg" : "bg-white text-gray-600 border-gray-200"}
-                    ${isDisabled ? "opacity-50 cursor-not-allowed hover:bg-white hover:border-gray-200" : "hover:border-gray-400 hover:bg-gray-50"}
+                    ${isSelected ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white border-teal-500 shadow-lg shadow-teal-200/50" : "bg-white text-gray-600 border-slate-300 shadow-sm"}
+                    ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-md"}
                   `}
                 >
                   <span className="text-base">{item.icon}</span> {item.id}
@@ -266,22 +266,22 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         {/* 6. Alergi */}
         <motion.div variants={itemVariants} className="space-y-3">
           <label htmlFor="allergies" className="block text-sm font-bold text-gray-900">6. Alergi Bahan / Sensitivitas (Opsional)</label>
-          <input id="allergies" type="text" value={formData.allergies} onChange={(e) => setFormData({ ...formData, allergies: e.target.value })} placeholder="Contoh: Fragrance, Alcohol..." className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm bg-gray-50/50 hover:bg-gray-50 shadow-inner" />
+          <input id="allergies" type="text" value={formData.allergies} onChange={(e) => setFormData({ ...formData, allergies: e.target.value })} placeholder="Contoh: Fragrance, Alcohol..." className="w-full px-4 py-3 rounded-xl premium-input text-gray-900 font-medium text-sm" />
         </motion.div>
 
         <motion.div variants={itemVariants} className="pt-4 space-y-3">
           <Link
             href="/profile/firstprofile"
-            className="w-full py-3 border-2 border-pink-200 bg-gradient-to-r from-rose-50 to-pink-50 text-pink-600 font-bold rounded-xl hover:from-rose-100 hover:to-pink-100 transition-all text-sm flex justify-center items-center gap-2 hover:border-pink-300"
+            className="w-full py-3 border-2 border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-600 font-bold rounded-xl hover:from-teal-100 hover:to-cyan-100 transition-all text-sm flex justify-center items-center gap-2 hover:border-teal-300 btn-press"
           >
             ✨ Isi Ulang Profil lewat Kuesioner
           </Link>
-          <button type="submit" disabled={isLoading || !formData.age || !formData.name} className="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all transform active:scale-95 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] text-lg flex justify-center items-center">
+          <button type="submit" disabled={isLoading || !formData.age || !formData.name} className="w-full py-4 gradient-btn rounded-xl text-lg flex justify-center items-center disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
             {isLoading ? (
-              <span className="flex items-center gap-3">
+              <span className="flex items-center gap-3 relative z-10">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Menyimpan...
               </span>
-            ) : "Simpan Profil Kulit ✨"}
+            ) : <span className="relative z-10">Simpan Profil Kulit ✨</span>}
           </button>
         </motion.div>
       </motion.form>
