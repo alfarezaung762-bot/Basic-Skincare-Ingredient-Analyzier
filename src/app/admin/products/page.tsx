@@ -201,6 +201,13 @@ export default function AdminProductsDashboard() {
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
+          {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner (Hanya Admin dengan Izin / Superadmin) */}
+          {(isSuperAdmin || (adminRole === "ADMIN" && sessionStorage.getItem("adminProfile")?.includes("MANAGE_BENNER"))) && (
+            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+              <span>🖼️ Kelola Banner</span>
+            </Link>
+          )}
+
           {isSuperAdmin && (
             <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
               <span>👑 Manajemen Akun</span>
