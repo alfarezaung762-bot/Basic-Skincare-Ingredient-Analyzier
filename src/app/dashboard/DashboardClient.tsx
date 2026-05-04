@@ -324,7 +324,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-teal-400 to-transparent" />
 
           <p className={`text-xs font-bold ${textMuted} uppercase tracking-widest mb-6 text-center shrink-0`}>
-            {banners.length > 0 ? "Informasi Terkini" : "Dipercaya oleh berbagai brand terkemuka"}
+            {banners.length > 0 ? "Produk Brand Terdaftar" : "Dipercaya oleh berbagai brand terkemuka"}
           </p>
           <div className="relative flex overflow-hidden group max-w-full w-full shrink-0">
             <div className="py-2 animate-marquee flex items-center gap-6 md:gap-16 pr-6 md:pr-16 shrink-0 w-max group-hover:[animation-play-state:paused]">
