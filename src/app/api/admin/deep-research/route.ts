@@ -32,8 +32,8 @@ const FALLBACK_MODELS = [
 const INGREDIENT_SCHEMA = {
   type: "object" as const,
   properties: {
-    name: { type: "string" as const, description: "Nama INCI resmi bahan, gunakan tanda kurung jika ada angka dengan koma contoh: (1,3)-propanediol" },
-    aliases: { type: "string" as const, description: "Daftar sinonim/alias dipisahkan koma, termasuk nama Indonesia, Inggris, dan nama umum dalam skincare. Gunakan tanda kurung jika ada koma dalam 1 bahan." },
+    name: { type: "string" as const, description: "Nama INCI resmi standar PCPC (International Nomenclature of Cosmetic Ingredients). Contoh: 'Aqua' bukan 'Air'." },
+    aliases: { type: "string" as const, description: "Daftar sinonim teknis, nama umum (Indonesia/Inggris), dan variasi label yang AKURAT. Contoh: 'Water, Air' untuk 'Aqua'. Pisahkan dengan koma." },
     type: { type: "string" as const, enum: ["BASIC", "BUFFER", "HARSH", "TOXIC"], description: "Sifat kimia: BASIC=standar/umum, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya" },
     strengthLevel: { type: "number" as const, description: "Level kekuatan 1-3. 1=rendah/lembut, 2=menengah, 3=sangat kuat. Hanya relevan untuk HARSH dan BUFFER." },
     functionalCategory: { type: "string" as const, enum: ["UMUM", "SURFAKTAN", "UV_FILTER", "PELEMBAP_HUMEKTAN", "PELEMBAP_EMOLIEN", "PELEMBAP_OKLUSIF"], description: "Fungsi khusus bahan dalam formulasi skincare" },
@@ -69,8 +69,8 @@ Analisis bahan skincare "${ingredientName}" berdasarkan penelitian resmi dermato
 Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value HARUS berupa STRING kecuali yang ditandai angka/boolean):
 
 {
-  "name": "nama inci resmi (lowercase)",
-  "aliases": "sinonim1, sinonim2, nama indonesia, nama inggris",
+  "name": "nama INCI resmi standar internasional (PCPC)",
+  "aliases": "sinonim ilmiah, nama umum indonesia, nama umum inggris, variasi label",
   "type": "BASIC atau BUFFER atau HARSH atau TOXIC",
   "strengthLevel": 1,
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
@@ -87,20 +87,20 @@ Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value
 }
 
 ATURAN KETAT:
-1. "aliases" = STRING, bukan array. Pisahkan dengan koma. Sertakan nama Indonesia dan Inggris.
-2. "type": BASIC=umum/standar, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya.
-3. "strengthLevel": angka 1-3. Gunakan 2 atau 3 HANYA jika type=HARSH atau BUFFER. Untuk BASIC/TOXIC selalu 1.
-4. "functionalCategory": Pilih yang PALING tepat. Ceramide/lipid = PELEMBAP_OKLUSIF. Hyaluronic/glycerin = PELEMBAP_HUMEKTAN. Minyak/ester = PELEMBAP_EMOLIEN. SLS/SLES = SURFAKTAN. Zinc oxide/titanium = UV_FILTER. Lainnya = UMUM.
-5. "isKeyActive": true jika ini bahan aktif utama (niacinamide, retinol, vitamin C, ceramide, AHA/BHA, peptide, dll). false jika hanya pengawet/pelarut/emulsifier.
-6. "benefits": STRING, maks 30 kata, bahasa yang mudah dipahami.
-7. "aiContext": STRING, WAJIB MINIMAL 500 KATA. Tulis analisis mendalam meliputi: mekanisme kerja kimia, pH optimal, konsentrasi efektif, pantangan campuran, data klinis/jurnal, efek samping, sejarah dermatologi, rekomendasi formulasi, perbandingan bahan serupa. JANGAN kurang dari 500 kata.
-8. "targetFocus": STRING, pilih yang relevan dipisah koma dari daftar ini SAJA: "Mencerahkan & Bekas Jerawat", "Merawat Jerawat & Sebum", "Anti-Aging & Garis Halus", "Memperbaiki Skin Barrier & Hidrasi", "Menenangkan Kemerahan (Soothing)", "Eksfoliasi & Tekstur Pori-pori". WAJIB isi minimal 1 jika bahan punya manfaat perawatan.
-9. "blacklistedSkinTypes": STRING. Pilih dari: "Normal", "Kering", "Berminyak", "Kombinasi". Kosongkan ("") jika aman untuk semua.
-10. "warnings": STRING berisi peringatan penggunaan. Kosongkan ("") jika tidak ada.
-11. "comedogenicRating": angka 0-5 berdasarkan data publikasi.
+1. "name": WAJIB menggunakan standar INCI resmi (International Nomenclature of Cosmetic Ingredients). Jika bahan adalah ekstrak, gunakan format 'Genus Species Extract'. Jika bahan adalah air, gunakan 'Aqua'. JANGAN gunakan nama pasaran sebagai field 'name'.
+2. "aliases": Masukkan semua variasi penamaan yang benar secara saintifik atau umum di label produk (termasuk bahasa Indonesia dan Inggris). Contoh untuk 'Aqua': 'Water, Air, Purified Water'. Contoh untuk 'Niacinamide': 'Vitamin B3, Nicotinamide'. JANGAN masukkan deskripsi fungsi.
+3. "type": BASIC=umum/standar, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya.
+4. "strengthLevel": angka 1-3. Gunakan 2 atau 3 HANYA jika type=HARSH atau BUFFER. Untuk BASIC/TOXIC selalu 1.
+5. "functionalCategory": Pilih yang PALING tepat. Ceramide/lipid = PELEMBAP_OKLUSIF. Hyaluronic/glycerin = PELEMBAP_HUMEKTAN. Minyak/ester = PELEMBAP_EMOLIEN. SLS/SLES = SURFAKTAN. Zinc oxide/titanium = UV_FILTER. Lainnya = UMUM.
+6. "isKeyActive": true jika ini bahan aktif utama yang memiliki klaim fungsi spesifik. false jika hanya bahan pendukung (pelarut/pengental).
+7. "benefits": STRING, maks 30 kata, bahasa yang mudah dipahami namun akurat secara dermatologis.
+8. "aiContext": STRING, WAJIB MINIMAL 500 KATA. Analisis teknis mendalam: mekanisme molekuler, interaksi kimia, pH stabilitas, referensi jurnal PubMed/SINTA.
+9. "targetFocus": STRING, pilih dari daftar resmi yang disediakan.
+10. "blacklistedSkinTypes": STRING, pilih dari daftar resmi.
+11. "comedogenicRating": angka 0-5 berdasarkan standar dermatologi resmi.
 12. Jika TOXIC: safeForPregnancy=false, safeForSensitive=false.
 
-Kembalikan HANYA JSON tanpa markdown, tanpa penjelasan tambahan.`;
+Kembalikan HANYA JSON tanpa markdown. Pastikan semua sinonim adalah BENAR secara kimia untuk bahan tersebut. JANGAN BERHALUSINASI.`;
 
   const modelsToTry = provider === "gemini" ? [modelName, ...FALLBACK_MODELS] : [modelName];
 
