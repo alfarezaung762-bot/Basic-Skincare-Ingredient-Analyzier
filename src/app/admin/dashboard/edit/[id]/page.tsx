@@ -183,7 +183,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
 
     const normalizedVal = normalizeString(val);
     if (existingNamesMap[normalizedVal]) {
-      setNameError(`⚠️ Nama ini sudah terdaftar sebagai bahan/alias dari INCI: ${existingNamesMap[normalizedVal]}!`);
+      setNameError(`⚠️ Nama "${val}" sudah terdaftar sebagai bahan/alias dari INCI: ${existingNamesMap[normalizedVal]}!`);
     } else {
       setNameError("");
     }
@@ -199,16 +199,21 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    const typedAliases = val.split(/,(?![^()]*\))/g)
-      .map(a => normalizeString(a.replace(/[\(\)]/g, '')))
-      .filter(a => a !== "");
-      
-    const duplicateAliases = typedAliases.filter(a => existingNamesMap[a]);
+    const rawParts = val.split(/,(?![^()]*\))/g);
+    const duplicateList = rawParts
+      .map(p => p.trim())
+      .filter(p => {
+        const clean = normalizeString(p.replace(/[\(\)]/g, ''));
+        return clean && existingNamesMap[clean];
+      });
 
-    if (duplicateAliases.length > 0) {
-      const conflicts = duplicateAliases.map(a => existingNamesMap[a]);
+    if (duplicateList.length > 0) {
+      const conflicts = duplicateList.map(p => {
+        const clean = normalizeString(p.replace(/[\(\)]/g, ''));
+        return existingNamesMap[clean];
+      });
       const uniqueConflicts = Array.from(new Set(conflicts));
-      setAliasError(`⚠️ Alias sudah terpakai oleh bahan INCI: ${uniqueConflicts.join(", ")}`);
+      setAliasError(`⚠️ Alias "${duplicateList.join(", ")}" sudah terpakai oleh bahan INCI: ${uniqueConflicts.join(", ")}`);
     } else {
       setAliasError("");
     }
