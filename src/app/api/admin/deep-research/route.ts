@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 menit max untuk Vercel/Next.js
@@ -18,9 +19,7 @@ const normalizeString = (str: string) => {
 
 // ========================================================
 // MODEL FALLBACK CHAIN
-// Catatan: gemini-3.1-pro dan gemini-2.5-pro = PAID ONLY (limit: 0 di free tier)
-// gemini-3-flash = TIDAK ADA (404)
-// Hanya model Flash yang tersedia di free tier
+// Hanya digunakan jika provider = "gemini" dan model tidak dispesifikasikan
 // ========================================================
 const FALLBACK_MODELS = [
   "gemini-2.5-flash",
@@ -52,10 +51,17 @@ const INGREDIENT_SCHEMA = {
   required: ["name", "aliases", "type", "strengthLevel", "functionalCategory", "isKeyActive", "benefits", "aiContext", "comedogenicRating", "safeForPregnancy", "safeForSensitive"],
 };
 
+// Helper untuk mengekstrak JSON dari teks markdown
+const extractJson = (text: string) => {
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (match) return JSON.parse(match[1]);
+  return JSON.parse(text);
+};
+
 // ========================================================
-// FUNGSI UTAMA: Riset satu bahan via Gemini
+// FUNGSI UTAMA: Riset satu bahan via berbagai AI
 // ========================================================
-async function researchIngredient(ingredientName: string): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string }> {
+async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro"): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string }> {
   const prompt = `Kamu adalah ahli dermatologi, kosmesi, dan kimia farmasi internasional dengan pengalaman 20+ tahun.
 
 Analisis bahan skincare "${ingredientName}" berdasarkan penelitian resmi dermatologi, jurnal SINTA 1, PubMed, dan referensi terpercaya.
@@ -74,7 +80,7 @@ Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
-  "targetFocus": "Mencerahkan & Bekas Jerawat, Memperbaiki Skin Barrier & Hidrasi",
+  "targetFocus": "Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum, Anti-Aging & Garis Halus, Memperbaiki Skin Barrier & Hidrasi, Menenangkan Kemerahan (Soothing), Eksfoliasi & Tekstur Pori-pori",
   "blacklistedSkinTypes": "",
   "blacklistReason": "",
   "warnings": "peringatan penggunaan"
@@ -96,51 +102,120 @@ ATURAN KETAT:
 
 Kembalikan HANYA JSON tanpa markdown, tanpa penjelasan tambahan.`;
 
-  for (const modelName of FALLBACK_MODELS) {
+  const modelsToTry = provider === "gemini" ? [modelName, ...FALLBACK_MODELS] : [modelName];
+
+  for (const currentModel of modelsToTry) {
     try {
-      console.log(`[Deep Research] Mencoba model: ${modelName} untuk "${ingredientName}"...`);
+      console.log(`[Deep Research] Mencoba provider: ${provider}, model: ${currentModel} untuk "${ingredientName}"...`);
       
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2, // Rendah agar lebih faktual
-        } as any,
-      });
+      let parsed: any = null;
+      let wordCount = 0;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
-      const parsed = JSON.parse(responseText);
+      if (provider === "gemini") {
+        const model = genAI.getGenerativeModel({
+          model: currentModel,
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          } as any,
+        });
 
-      // Validasi: aiContext harus >= 400 kata
-      const wordCount = (parsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
-      if (wordCount < 400) {
-        console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${modelName}). Mencoba ulang...`);
-        
-        // Retry dengan prompt yang lebih tegas
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 500 KATA untuk field aiContext. Tuliskan analisis yang sangat detail dan komprehensif. Jangan buat kurang dari 500 kata.`;
-        
-        const retryResult = await model.generateContent(retryPrompt);
-        const retryText = retryResult.response.text();
-        const retryParsed = JSON.parse(retryText);
-        
-        const retryWordCount = (retryParsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
-        
-        if (retryWordCount >= 400) {
-          console.log(`[Deep Research] ✅ Retry berhasil: ${retryWordCount} kata (model: ${modelName})`);
-          return { success: true, data: retryParsed, modelUsed: modelName };
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        parsed = JSON.parse(responseText);
+      } else {
+        // OpenAI Compatible (BytePlus / DeepSeek)
+        let client: OpenAI;
+        if (provider === "byteplus") {
+          let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
+          // Jika URL lama yang tidak valid ada di env, paksa ke SE Asia
+          if (byteplusUrl.includes("ark.byteplus.com")) {
+            byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+          }
+          client = new OpenAI({
+            apiKey: process.env.BYTEPLUS_API_KEY || "",
+            baseURL: byteplusUrl,
+          });
+          
+          // Log untuk debug
+          console.log(`[Deep Research] BytePlus Request: URL=${byteplusUrl}, Model=${currentModel}`);
+        } else {
+          client = new OpenAI({
+            apiKey: process.env.DEEPSEEK_API_KEY || "",
+            baseURL: "https://api.deepseek.com",
+          });
         }
-        
-        // Jika masih kurang, tetap terima tapi log warning
-        console.warn(`[Deep Research] ⚠️ Retry masih ${retryWordCount} kata. Tetap diterima.`);
-        return { success: true, data: retryParsed, modelUsed: modelName };
+
+        const response = await client.chat.completions.create({
+          model: currentModel,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2,
+        });
+
+        const responseText = response.choices[0].message.content || "{}";
+        parsed = extractJson(responseText);
       }
 
-      console.log(`[Deep Research] ✅ Berhasil: "${ingredientName}" (${wordCount} kata, model: ${modelName})`);
-      return { success: true, data: parsed, modelUsed: modelName };
+      // Validasi: aiContext harus >= 400 kata
+      wordCount = (parsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
+      if (wordCount < 400) {
+        console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
+
+        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 500 KATA untuk field aiContext. Tuliskan analisis yang sangat detail dan komprehensif. Jangan buat kurang dari 500 kata.`;
+
+        let retryParsed: any = null;
+        if (provider === "gemini") {
+          const model = genAI.getGenerativeModel({
+            model: currentModel,
+            generationConfig: { responseMimeType: "application/json", temperature: 0.2 } as any,
+          });
+          const retryResult = await model.generateContent(retryPrompt);
+          retryParsed = JSON.parse(retryResult.response.text());
+        } else {
+          let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
+          if (byteplusUrl.includes("ark.byteplus.com")) {
+            byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+          }
+          let client = new OpenAI({
+            apiKey: provider === "byteplus" ? process.env.BYTEPLUS_API_KEY || "" : process.env.DEEPSEEK_API_KEY || "",
+            baseURL: provider === "byteplus" ? byteplusUrl : "https://api.deepseek.com",
+          });
+          const response = await client.chat.completions.create({
+            model: currentModel,
+            messages: [{ role: "user", content: retryPrompt }],
+            temperature: 0.2,
+          });
+          retryParsed = extractJson(response.choices[0].message.content || "{}");
+        }
+
+        const retryWordCount = (retryParsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
+
+        if (retryWordCount >= 400) {
+          console.log(`[Deep Research] ✅ Retry berhasil: ${retryWordCount} kata (model: ${currentModel})`);
+          return { success: true, data: retryParsed, modelUsed: currentModel };
+        }
+
+        console.warn(`[Deep Research] ⚠️ Retry masih ${retryWordCount} kata. Tetap diterima.`);
+        return { success: true, data: retryParsed, modelUsed: currentModel };
+      }
+
+      console.log(`[Deep Research] ✅ Berhasil: "${ingredientName}" (${wordCount} kata, model: ${currentModel})`);
+      return { success: true, data: parsed, modelUsed: currentModel };
 
     } catch (err: any) {
-      console.warn(`[Deep Research] ⚠️ Model ${modelName} gagal untuk "${ingredientName}": ${err.message}`);
+      const errorMsg = err.response?.data?.error?.message || err.message;
+      console.warn(`[Deep Research] ⚠️ Model ${currentModel} gagal untuk "${ingredientName}": ${errorMsg}`);
+      
+      // Jika error 404 pada BytePlus, beri info tambahan tentang Endpoint ID
+      if (provider === "byteplus" && (err.status === 404 || errorMsg.includes("404"))) {
+        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model. Silakan buat Endpoint di dashboard BytePlus Ark." };
+      }
+      
+      // Jika error 402, saldo habis
+      if (err.status === 402 || errorMsg.includes("402")) {
+        return { success: false, error: "Saldo API Habis (402). Silakan isi saldo di dashboard penyedia AI." };
+      }
+
       continue;
     }
   }
@@ -154,7 +229,7 @@ Kembalikan HANYA JSON tanpa markdown, tanpa penjelasan tambahan.`;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { names, adminName, adminRole } = body;
+    const { names, adminName, adminRole, provider, model } = body;
 
     if (!names || !Array.isArray(names) || names.length === 0) {
       return NextResponse.json({ message: "Daftar bahan kosong." }, { status: 400 });
@@ -223,7 +298,7 @@ export async function POST(req: Request) {
             status: "researching",
           });
 
-          const research = await researchIngredient(ingredientName);
+          const research = await researchIngredient(ingredientName, provider, model);
 
           if (research.success && research.data) {
             const data = research.data;
@@ -233,7 +308,7 @@ export async function POST(req: Request) {
               // SIMPAN KE DATABASE
               // ========================================================
               const finalName = (data.name || ingredientName).toLowerCase().trim();
-              
+
               // Cek apakah nama sudah ada (race condition guard)
               const existing = await prisma.ingredientDictionary.findFirst({
                 where: { name: finalName },
@@ -279,8 +354,8 @@ export async function POST(req: Request) {
                 "MOISTURIZER": "PELEMBAP_HUMEKTAN",
               };
               const rawCategory = String(data.functionalCategory || "").toUpperCase().trim();
-              const funcCategory = validCategories.includes(rawCategory) 
-                ? rawCategory 
+              const funcCategory = validCategories.includes(rawCategory)
+                ? rawCategory
                 : categoryMap[rawCategory] || "UMUM";
 
               // Pastikan strengthLevel valid
@@ -308,7 +383,7 @@ export async function POST(req: Request) {
               ];
               let rawFocus = toStr(data.targetFocus) || "";
               // Filter hanya fokus yang valid
-              const matchedFocus = validFocusList.filter(f => 
+              const matchedFocus = validFocusList.filter(f =>
                 rawFocus.toLowerCase().includes(f.toLowerCase()) ||
                 rawFocus.toLowerCase().includes(f.split(" & ")[0].toLowerCase())
               );
@@ -383,11 +458,11 @@ export async function POST(req: Request) {
               }
               totalReportsCleaned += cleanedCount;
 
-              results.push({ 
-                name: ingredientName, 
-                success: true, 
-                aliasCount, 
-                model: research.modelUsed 
+              results.push({
+                name: ingredientName,
+                success: true,
+                aliasCount,
+                model: research.modelUsed
               });
 
               sendEvent({
@@ -403,9 +478,9 @@ export async function POST(req: Request) {
 
             } catch (dbError: any) {
               console.error(`[Deep Research] DB Error untuk "${ingredientName}":`, dbError.message);
-              
+
               // Cek apakah error duplikasi
-              const errorMsg = dbError.code === 'P2002' 
+              const errorMsg = dbError.code === 'P2002'
                 ? "Bahan sudah ada di kamus (duplikasi nama)"
                 : `Gagal menyimpan: ${dbError.message}`;
 
