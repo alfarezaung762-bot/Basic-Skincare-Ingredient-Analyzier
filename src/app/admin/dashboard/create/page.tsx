@@ -17,8 +17,8 @@ export default function CreateIngredientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // STATE: Menyimpan daftar nama DAN alias bahan yang sudah ada di database (sudah dinormalisasi)
-  const [existingNames, setExistingNames] = useState<string[]>([]);
+  // STATE: Menyimpan map nama/alias yang sudah ada ke nama INCI aslinya
+  const [existingNamesMap, setExistingNamesMap] = useState<Record<string, string>>({});
   const [nameError, setNameError] = useState("");
   const [aliasError, setAliasError] = useState("");
 
@@ -79,20 +79,22 @@ export default function CreateIngredientPage() {
       fetch("/api/ingredients")
         .then(res => res.json())
         .then(data => {
-          let allUsedNames: string[] = [];
+          let map: Record<string, string> = {};
           
           data.forEach((item: any) => {
+            const parentName = item.name;
             // Normalisasi nama utama
-            allUsedNames.push(normalizeString(item.name));
+            map[normalizeString(parentName)] = parentName;
             // Normalisasi setiap alias
             if (item.aliases) {
-              const itemAliases = item.aliases.split(/,(?![^()]*\))/g).map((a: string) => normalizeString(a.replace(/[\(\)]/g, '')));
-              allUsedNames = [...allUsedNames, ...itemAliases];
+              item.aliases.split(/,(?![^()]*\))/g).forEach((a: string) => {
+                const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
+                if (cleanAlias) map[cleanAlias] = parentName;
+              });
             }
           });
           
-          const finalExistingNames = Array.from(new Set(allUsedNames));
-          setExistingNames(finalExistingNames);
+          setExistingNamesMap(map);
 
           // AUTO-FILL DARI URL
           const params = new URLSearchParams(window.location.search);
@@ -102,8 +104,9 @@ export default function CreateIngredientPage() {
             const cleanUrlName = urlName.trim();
             setFormData(prev => ({ ...prev, name: cleanUrlName }));
             
-            if (finalExistingNames.includes(normalizeString(cleanUrlName))) {
-              setNameError("⚠️ Bahan ini ternyata sudah terdaftar di kamus!");
+            const normalizedUrlName = normalizeString(cleanUrlName);
+            if (map[normalizedUrlName]) {
+              setNameError(`⚠️ Bahan ini sudah terdaftar sebagai bagian dari bahan INCI: ${map[normalizedUrlName]}!`);
             }
           }
         })
@@ -120,8 +123,9 @@ export default function CreateIngredientPage() {
     setFormData({ ...formData, name: val });
 
     // Validasi menggunakan string yang dinormalisasi
-    if (existingNames.includes(normalizeString(val))) {
-      setNameError("⚠️ Bahan dengan nama/alias ini sudah terdaftar di kamus!");
+    const normalizedVal = normalizeString(val);
+    if (existingNamesMap[normalizedVal]) {
+      setNameError(`⚠️ Nama ini sudah terdaftar sebagai bahan/alias dari INCI: ${existingNamesMap[normalizedVal]}!`);
     } else {
       setNameError("");
     }
@@ -140,10 +144,12 @@ export default function CreateIngredientPage() {
       .map(a => normalizeString(a.replace(/[\(\)]/g, '')))
       .filter(a => a !== "");
       
-    const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));
+    const duplicateAliases = typedAliases.filter(a => existingNamesMap[a]);
 
     if (duplicateAliases.length > 0) {
-      setAliasError(`⚠️ Alias sudah terpakai: ${duplicateAliases.join(", ")}`);
+      const conflicts = duplicateAliases.map(a => existingNamesMap[a]);
+      const uniqueConflicts = Array.from(new Set(conflicts));
+      setAliasError(`⚠️ Alias sudah terpakai oleh bahan INCI: ${uniqueConflicts.join(", ")}`);
     } else {
       setAliasError("");
     }

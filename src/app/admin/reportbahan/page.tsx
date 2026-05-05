@@ -29,6 +29,7 @@ export default function AdminReportBahan() {
   
   const [unknownReports, setUnknownReports] = useState<UnknownReport[]>([]);
   const [mismatchReports, setMismatchReports] = useState<MismatchReport[]>([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // STATE BARU: Keamanan & Hak Akses Lintas Batas
@@ -102,11 +103,35 @@ export default function AdminReportBahan() {
     if (isInitial) setIsLoading(true);
     
     try {
-      const res = await fetch("/api/admin/reportbahan");
-      if (res.ok) {
-        const data = await res.json();
-        setUnknownReports(data.unknownReports || []);
+      const [reportsRes, ingredientsRes] = await Promise.all([
+        fetch("/api/admin/reportbahan"),
+        fetch("/api/ingredients")
+      ]);
+
+      if (reportsRes.ok && ingredientsRes.ok) {
+        const data = await reportsRes.json();
+        const ingredientsData = await ingredientsRes.json();
+
+        // Bangun kamus nama dan alias yang sudah ada (normalisasi)
+        const normalizeString = (str: string) => str ? str.toLowerCase().replace(/[\s\-_]+/g, "") : "";
+        const existingSet = new Set<string>();
+
+        ingredientsData.forEach((item: any) => {
+          existingSet.add(normalizeString(item.name));
+          if (item.aliases) {
+            item.aliases.split(/,(?![^()]*\))/g).forEach((a: string) => {
+              const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
+              if (cleanAlias) existingSet.add(cleanAlias);
+            });
+          }
+        });
+
+        // Filter unknownReports yang belum ada di database
+        const filteredUnknownReports = (data.unknownReports || []).filter((r: any) => !existingSet.has(normalizeString(r.name)));
+
+        setUnknownReports(filteredUnknownReports);
         setMismatchReports(data.mismatchReports || []);
+        setIngredients(ingredientsData);
       }
     } catch (error) {
       console.error("Gagal mengambil laporan:", error);
@@ -401,21 +426,43 @@ export default function AdminReportBahan() {
         {/* Konten Utama */}
         <div className="bg-white min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
           
-          <div className="flex gap-4 mb-8 border-b border-slate-100 pb-4">
-            <button 
-              onClick={() => setActiveTab("SYSTEM")}
-              className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-            >
-              🤖 Laporan Sistem (Bahan Asing) 
-              {unknownReports.length > 0 && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{unknownReports.length}</span>}
-            </button>
-            <button 
-              onClick={() => setActiveTab("USER")}
-              className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-            >
-              👤 Laporan Pengguna (Ketidaksesuaian)
-              {Object.keys(groupedMismatch).length > 0 && <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{Object.keys(groupedMismatch).length}</span>}
-            </button>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 pb-4">
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setActiveTab("SYSTEM")}
+                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+              >
+                🤖 Laporan Sistem (Bahan Asing) 
+                {unknownReports.length > 0 && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{unknownReports.length}</span>}
+              </button>
+              <button 
+                onClick={() => setActiveTab("USER")}
+                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+              >
+                👤 Laporan Pengguna
+                {Object.keys(groupedMismatch).length > 0 && <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{Object.keys(groupedMismatch).length}</span>}
+              </button>
+            </div>
+            
+            {/* SEARCH INPUT (Tersedia untuk Kedua Tab) */}
+            <div className="relative w-full md:w-72">
+              <input 
+                type="text" 
+                placeholder={activeTab === "SYSTEM" ? "Cari bahan asing..." : "Cari bahan atau keluhan..."} 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+              />
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
           {isLoading ? (
@@ -427,29 +474,7 @@ export default function AdminReportBahan() {
             <>
               {activeTab === "SYSTEM" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <p className="text-sm text-slate-500 font-medium">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
-                    
-                    {/* SEARCH INPUT */}
-                    <div className="relative w-full md:w-72">
-                      <input 
-                        type="text" 
-                        placeholder="Cari bahan..." 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                      />
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-                      {searchQuery && (
-                        <button 
-                          onClick={() => setSearchQuery("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <p className="text-sm text-slate-500 font-medium mb-6">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
                   
                   {/* SELECTION BAR + DEEP RESEARCH BUTTON */}
                   {unknownReports.length > 0 && canManageKamus && (
@@ -555,10 +580,10 @@ export default function AdminReportBahan() {
                                 <motion.tr 
                                   variants={itemVariants} 
                                   key={report.id} 
-                                  className={`hover:bg-amber-50/30 transition-colors group ${
+                                  className={`transition-colors group relative ${
                                     selectedIds.has(report.id) ? "bg-indigo-50/40" : 
-                                    isClaimedByMe ? "bg-emerald-50/60" :
-                                    isClaimedByOther ? "bg-slate-100/50 grayscale-[0.5]" : ""
+                                    isClaimedByMe ? "bg-emerald-50 border-l-4 border-l-emerald-500" :
+                                    isClaimedByOther ? "bg-slate-100/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
                                   }`}
                                 >
                                   {canManageKamus && (
@@ -573,14 +598,14 @@ export default function AdminReportBahan() {
                                     </td>
                                   )}
                                   <td className="p-4">
-                                    <div className="flex flex-col">
-                                      <span className={`font-black lowercase ${isClaimedByOther ? "text-slate-400" : "text-amber-700"}`}>
+                                    <div className="flex flex-col items-start">
+                                      <span className={`font-black lowercase text-lg ${isClaimedByOther ? "text-slate-400" : "text-amber-700"}`}>
                                         {report.name}
                                       </span>
                                       {report.analyzedBy && (
-                                        <span className={`text-[10px] font-bold mt-0.5 flex items-center gap-1 ${isClaimedByMe ? "text-emerald-600" : "text-slate-500"}`}>
-                                          <span className="animate-pulse">●</span> 
-                                          {isClaimedByMe ? "Sedang Anda Analisis" : `Dianalisis oleh: ${report.analyzedBy}`}
+                                        <span className={`text-[10px] font-black mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md w-fit shadow-sm border ${isClaimedByMe ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-slate-200 text-slate-600 border-slate-300"}`}>
+                                          <span className={`w-1.5 h-1.5 rounded-full ${isClaimedByMe ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`}></span> 
+                                          {isClaimedByMe ? "Sedang Anda Cek" : `Di Cek: ${report.analyzedBy}`}
                                         </span>
                                       )}
                                     </div>
@@ -596,14 +621,14 @@ export default function AdminReportBahan() {
                                       {!isViewer && (
                                         <button 
                                           onClick={() => handleToggleClaim(report.id, "unknown", report.analyzedBy)}
-                                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
                                             isClaimedByMe 
-                                              ? "bg-emerald-100 text-emerald-700 border-emerald-200" 
-                                              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                                              ? "bg-emerald-600 text-white border-emerald-700 shadow-sm hover:bg-emerald-700" 
+                                              : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50 shadow-sm"
                                           }`}
-                                          title={isClaimedByMe ? "Lepas Analisis" : "Mulai Analisis"}
+                                          title={isClaimedByMe ? "Selesai Pengecekan" : "Tandai Sedang Anda Cek"}
                                         >
-                                          {isClaimedByMe ? "✓ Selesai?" : "⏳ Tandai Cek"}
+                                          {isClaimedByMe ? "✓ Selesai" : "⏳ Cek Bahan"}
                                         </button>
                                       )}
 
@@ -654,7 +679,18 @@ export default function AdminReportBahan() {
                           </tr>
                         </thead>
                         <motion.tbody variants={containerVariants} initial="hidden" animate="visible" className="divide-y divide-slate-100">
-                          {Object.entries(groupedMismatch).map(([ingredientName, reports]) => (
+                          {Object.entries(groupedMismatch)
+                            .filter(([ingredientName, reports]) => {
+                              const sq = searchQuery.toLowerCase();
+                              if (ingredientName.toLowerCase().includes(sq)) return true;
+                              
+                              // Check if search matches any alias of this ingredient
+                              const ingredient = ingredients.find(i => i.name.toLowerCase() === ingredientName.toLowerCase());
+                              if (ingredient && ingredient.aliases && ingredient.aliases.toLowerCase().includes(sq)) return true;
+
+                              return reports.some(r => r.reason.toLowerCase().includes(sq));
+                            })
+                            .map(([ingredientName, reports]) => (
                             <motion.tr variants={itemVariants} key={ingredientName} className="hover:bg-rose-50/30 transition-colors group">
                               <td className="p-4 font-black text-rose-700 capitalize">{ingredientName}</td>
                               <td className="p-4 text-center">

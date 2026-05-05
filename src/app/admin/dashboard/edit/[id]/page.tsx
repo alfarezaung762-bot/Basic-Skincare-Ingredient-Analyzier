@@ -25,7 +25,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
   const [isViewer, setIsViewer] = useState(false);
 
   // STATE VALIDASI NAMA & ALIAS
-  const [existingNames, setExistingNames] = useState<string[]>([]);
+  const [existingNamesMap, setExistingNamesMap] = useState<Record<string, string>>({});
   const [nameError, setNameError] = useState("");
   const [aliasError, setAliasError] = useState("");
 
@@ -143,17 +143,20 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
             }
 
             // 2. Kumpulkan Semua Nama/Alias untuk Pengecekan Duplikasi (KECUALI bahan ini sendiri)
-            let allUsedNames: string[] = [];
+            let map: Record<string, string> = {};
             allData.forEach((item: any) => {
               if (item.id !== ingredientId) {
-                allUsedNames.push(normalizeString(item.name));
+                const parentName = item.name;
+                map[normalizeString(parentName)] = parentName;
                 if (item.aliases) {
-                  const itemAliases = item.aliases.split(/,(?![^()]*\))/g).map((a: string) => normalizeString(a.replace(/[\(\)]/g, '')));
-                  allUsedNames = [...allUsedNames, ...itemAliases];
+                  item.aliases.split(/,(?![^()]*\))/g).forEach((a: string) => {
+                    const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
+                    if (cleanAlias) map[cleanAlias] = parentName;
+                  });
                 }
               }
             });
-            setExistingNames(Array.from(new Set(allUsedNames)));
+            setExistingNamesMap(map);
 
           } else {
             setMessage({ type: "error", text: "Bahan tidak ditemukan." });
@@ -178,8 +181,9 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
     const val = e.target.value;
     setFormData({ ...formData, name: val });
 
-    if (existingNames.includes(normalizeString(val))) {
-      setNameError("⚠️ Nama ini sudah dipakai oleh bahan lain di kamus!");
+    const normalizedVal = normalizeString(val);
+    if (existingNamesMap[normalizedVal]) {
+      setNameError(`⚠️ Nama ini sudah terdaftar sebagai bahan/alias dari INCI: ${existingNamesMap[normalizedVal]}!`);
     } else {
       setNameError("");
     }
@@ -199,10 +203,12 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       .map(a => normalizeString(a.replace(/[\(\)]/g, '')))
       .filter(a => a !== "");
       
-    const duplicateAliases = typedAliases.filter(a => existingNames.includes(a));
+    const duplicateAliases = typedAliases.filter(a => existingNamesMap[a]);
 
     if (duplicateAliases.length > 0) {
-      setAliasError(`⚠️ Terdapat alias yang menabrak bahan lain.`);
+      const conflicts = duplicateAliases.map(a => existingNamesMap[a]);
+      const uniqueConflicts = Array.from(new Set(conflicts));
+      setAliasError(`⚠️ Alias sudah terpakai oleh bahan INCI: ${uniqueConflicts.join(", ")}`);
     } else {
       setAliasError("");
     }
