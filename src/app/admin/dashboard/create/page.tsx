@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { splitAliases } from "@/lib/splitAliases";
 
 // FUNGSI NORMALISASI TEKS: Menghapus semua spasi, dash, dan underscore untuk pencocokan yang akurat
 const normalizeString = (str: string) => {
@@ -87,9 +88,8 @@ export default function CreateIngredientPage() {
             map[normalizeString(parentName)] = parentName;
             // Normalisasi setiap alias
             if (item.aliases) {
-              item.aliases.split(/,(?![^()]*\))/g).forEach((a: string) => {
-                const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
-                if (cleanAlias) map[cleanAlias] = parentName;
+              splitAliases(item.aliases).forEach(cleanAlias => {
+                map[cleanAlias] = parentName;
               });
             }
           });
@@ -140,7 +140,7 @@ export default function CreateIngredientPage() {
       return;
     }
 
-    const rawParts = val.split(/,(?![^()]*\))/g);
+    const rawParts = val.includes(';') ? val.split(';') : val.split(/,(?![^()]*\))/g);
     const duplicateList = rawParts
       .map(p => p.trim())
       .filter(p => {
@@ -275,9 +275,8 @@ export default function CreateIngredientPage() {
              // Kumpulkan nama utama dan alias yang sudah dinormalisasi
              const submittedNames = [normalizeString(formData.name)];
              if (formData.aliases) {
-               formData.aliases.split(/,(?![^()]*\))/g).forEach(a => {
-                 const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
-                 if (cleanAlias) submittedNames.push(cleanAlias);
+               splitAliases(formData.aliases).forEach(cleanAlias => {
+                 submittedNames.push(cleanAlias);
                });
              }
 
@@ -412,7 +411,7 @@ export default function CreateIngredientPage() {
                 <input 
                   id="aliases" 
                   type="text" 
-                  placeholder="Contoh: bha, betahydroxy acid (Pisahkan koma)" 
+                  placeholder="Contoh: bha; betahydroxy acid (Pisahkan dengan titik koma ;)" 
                   value={formData.aliases} 
                   onChange={handleAliasesChange}
                   className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${

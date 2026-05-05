@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { splitAliases } from "@/lib/splitAliases";
 import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ const INGREDIENT_SCHEMA = {
   type: "object" as const,
   properties: {
     name: { type: "string" as const, description: "Nama INCI resmi standar PCPC (International Nomenclature of Cosmetic Ingredients). Contoh: 'Aqua' bukan 'Air'." },
-    aliases: { type: "string" as const, description: "Daftar sinonim teknis, nama umum (Indonesia/Inggris), dan variasi label yang AKURAT. Contoh: 'Water, Air' untuk 'Aqua'. Pisahkan dengan koma." },
+    aliases: { type: "array" as const, items: { type: "string" as const }, description: "Daftar sinonim sebagai JSON Array of Strings. Contoh: ['Water', 'Air', 'Purified Water'] untuk 'Aqua'. HANYA nama kimia/dagang murni, TANPA deskripsi." },
     type: { type: "string" as const, enum: ["BASIC", "BUFFER", "HARSH", "TOXIC"], description: "Sifat kimia: BASIC=standar/umum, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya" },
     strengthLevel: { type: "number" as const, description: "Level kekuatan 1-3. 1=rendah/lembut, 2=menengah, 3=sangat kuat. Hanya relevan untuk HARSH dan BUFFER." },
     functionalCategory: { type: "string" as const, enum: ["UMUM", "SURFAKTAN", "UV_FILTER", "PELEMBAP_HUMEKTAN", "PELEMBAP_EMOLIEN", "PELEMBAP_OKLUSIF"], description: "Fungsi khusus bahan dalam formulasi skincare" },
@@ -70,7 +71,7 @@ Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value
 
 {
   "name": "nama INCI resmi standar internasional (PCPC)",
-  "aliases": "sinonim ilmiah, nama umum indonesia, nama umum inggris, variasi label",
+  "aliases": ["sinonim ilmiah", "nama umum indonesia", "nama umum inggris", "variasi label"],
   "type": "BASIC atau BUFFER atau HARSH atau TOXIC",
   "strengthLevel": 1,
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
@@ -88,7 +89,7 @@ Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value
 
 ATURAN KETAT:
 1. "name": WAJIB menggunakan standar INCI resmi (International Nomenclature of Cosmetic Ingredients). Jika bahan adalah ekstrak, gunakan format 'Genus Species Extract'. Jika bahan adalah air, gunakan 'Aqua'. JANGAN gunakan nama pasaran sebagai field 'name'.
-2. "aliases": Masukkan semua variasi penamaan yang benar secara saintifik atau umum di label produk (termasuk bahasa Indonesia dan Inggris). Contoh untuk 'Aqua': 'Water, Air, Purified Water'. Contoh untuk 'Niacinamide': 'Vitamin B3, Nicotinamide'. JANGAN masukkan deskripsi fungsi.
+2. "aliases": WAJIB berupa JSON Array of Strings, BUKAN string biasa. Contoh BENAR: ["Water", "Air", "Purified Water"]. Contoh SALAH: "Water, Air, Purified Water". Setiap elemen array hanya boleh berisi nama kimia atau nama dagang murni. DILARANG KERAS menambahkan deskripsi dalam kurung seperti "(dari sumber olive oil)", "(variasi industri)", atau kalimat penjelasan apapun. DILARANG menambahkan tanda kutip ganda berlebihan di dalam nilai string.
 3. "type": BASIC=umum/standar, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya.
 4. "strengthLevel": angka 1-3. Gunakan 2 atau 3 HANYA jika type=HARSH atau BUFFER. Untuk BASIC/TOXIC selalu 1.
 5. "functionalCategory": Pilih yang PALING tepat. Ceramide/lipid = PELEMBAP_OKLUSIF. Hyaluronic/glycerin = PELEMBAP_HUMEKTAN. Minyak/ester = PELEMBAP_EMOLIEN. SLS/SLES = SURFAKTAN. Zinc oxide/titanium = UV_FILTER. Lainnya = UMUM.
@@ -99,8 +100,10 @@ ATURAN KETAT:
 10. "blacklistedSkinTypes": STRING, pilih dari daftar resmi.
 11. "comedogenicRating": angka 0-5 berdasarkan standar dermatologi resmi.
 12. Jika TOXIC: safeForPregnancy=false, safeForSensitive=false.
+13. Pastikan SEMUA sinonim adalah BENAR secara kimia untuk bahan tersebut. Jangan masukkan nama bahan lain yang mirip tapi berbeda secara kimiawi. JANGAN BERHALUSINASI.
+14. Sebelum memberikan jawaban, pastikan nama di field "name" benar-benar ada di database INCI resmi PCPC atau CosIng EU. Jika tidak yakin 100%, gunakan nama yang paling umum ditemukan di label produk skincare internasional.
 
-Kembalikan HANYA JSON tanpa markdown. Pastikan semua sinonim adalah BENAR secara kimia untuk bahan tersebut. JANGAN BERHALUSINASI.`;
+Kembalikan HANYA JSON tanpa markdown.`;
 
   const modelsToTry = provider === "gemini" ? [modelName, ...FALLBACK_MODELS] : [modelName];
 
@@ -246,21 +249,29 @@ export async function POST(req: Request) {
       select: { name: true, aliases: true },
     });
 
-    let allExistingNames: string[] = [];
+    // Map: normalizedName -> { inciName, type: 'name'|'alias' }
+    const existingNameMap = new Map<string, { inciName: string; matchType: string }>();
     existingIngredients.forEach((item) => {
-      allExistingNames.push(normalizeString(item.name));
+      existingNameMap.set(normalizeString(item.name), { inciName: item.name, matchType: 'name' });
       if (item.aliases) {
-        item.aliases.split(/,(?![^()]*\))/g).forEach((a) => {
-          const clean = normalizeString(a.replace(/[\(\)]/g, ""));
-          if (clean) allExistingNames.push(clean);
+        splitAliases(item.aliases).forEach(cleanAlias => {
+          existingNameMap.set(cleanAlias, { inciName: item.name, matchType: 'alias' });
         });
       }
     });
+    let allExistingNames = Array.from(existingNameMap.keys());
     allExistingNames = Array.from(new Set(allExistingNames));
 
     // Filter bahan yang sudah ada
-    const filteredNames = names.filter((n: string) => !allExistingNames.includes(normalizeString(n)));
-    const skippedNames = names.filter((n: string) => allExistingNames.includes(normalizeString(n)));
+    const filteredNames = names.filter((n: string) => !existingNameMap.has(normalizeString(n)));
+    // Build detailed skip info
+    const skippedDetails = names
+      .filter((n: string) => existingNameMap.has(normalizeString(n)))
+      .map((n: string) => {
+        const info = existingNameMap.get(normalizeString(n))!;
+        return { name: n, existingInci: info.inciName, matchType: info.matchType };
+      });
+    const skippedNames = skippedDetails.map(s => s.name);
 
     // ========================================================
     // SSE STREAMING RESPONSE
@@ -277,6 +288,7 @@ export async function POST(req: Request) {
           type: "init",
           total: filteredNames.length,
           skipped: skippedNames,
+          skippedDetails: skippedDetails,
           skippedCount: skippedNames.length,
         });
 
@@ -309,30 +321,70 @@ export async function POST(req: Request) {
               // ========================================================
               const finalName = (data.name || ingredientName).toLowerCase().trim();
 
-              // Cek apakah nama sudah ada (race condition guard)
-              const existing = await prisma.ingredientDictionary.findFirst({
-                where: { name: finalName },
+              // ========================================================
+              // POST-AI DUPLICATE CHECK (Cek ulang setelah AI merespons)
+              // ========================================================
+              // Refresh data existing (karena bisa berubah selama batch)
+              const freshExisting = await prisma.ingredientDictionary.findMany({
+                select: { name: true, aliases: true },
+              });
+              const freshMap = new Map<string, { inciName: string; matchType: string }>();
+              freshExisting.forEach((item) => {
+                freshMap.set(normalizeString(item.name), { inciName: item.name, matchType: 'name' });
+                if (item.aliases) {
+                  splitAliases(item.aliases).forEach(cleanAlias => {
+                    freshMap.set(cleanAlias, { inciName: item.name, matchType: 'alias' });
+                  });
+                }
               });
 
-              if (existing) {
-                results.push({ name: ingredientName, success: false, aliasCount: 0, error: "Bahan sudah ada di kamus" });
+              // Cek finalName
+              const nameConflict = freshMap.get(normalizeString(finalName));
+              
+              // Cek setiap alias dari AI
+              const aiAliases: string[] = Array.isArray(data.aliases)
+                ? data.aliases.map((a: string) => a.trim()).filter((a: string) => a.length > 0)
+                : typeof data.aliases === 'string'
+                  ? data.aliases.split(/[;,]/).map((a: string) => a.trim()).filter((a: string) => a.length > 0)
+                  : [];
+
+              const aliasConflicts: { alias: string; existingInci: string }[] = [];
+              aiAliases.forEach((alias: string) => {
+                const norm = normalizeString(alias);
+                const conflict = freshMap.get(norm);
+                if (conflict) {
+                  aliasConflicts.push({ alias, existingInci: conflict.inciName });
+                }
+              });
+
+              if (nameConflict) {
+                const conflictDetail = `Nama INCI "${finalName}" sudah terdaftar di kamus sebagai ${nameConflict.matchType === 'name' ? 'bahan' : 'alias dari'}: ${nameConflict.inciName}`;
+                results.push({ name: ingredientName, success: false, aliasCount: 0, error: conflictDetail });
                 sendEvent({
                   type: "progress",
                   current: i + 1,
                   total: filteredNames.length,
                   name: ingredientName,
                   status: "skipped",
-                  reason: "Sudah ada di kamus",
+                  reason: conflictDetail,
+                  conflictType: "name",
+                  conflictInci: nameConflict.inciName,
                 });
                 continue;
               }
+
+              // Jika ada alias yang konflik, filter keluar alias yang konflik (tapi tetap simpan bahan)
+              const cleanAliases = aiAliases.filter((alias: string) => {
+                const norm = normalizeString(alias);
+                return !freshMap.has(norm);
+              });
 
               // ========================================================
               // NORMALISASI SEMUA FIELD (AI bisa return array atau string)
               // ========================================================
               const toStr = (val: any): string | null => {
                 if (!val) return null;
-                if (Array.isArray(val)) return val.join(", ").trim() || null;
+                if (Array.isArray(val)) return val.join("; ").trim() || null;
                 if (typeof val === "string") return val.trim() || null;
                 return String(val).trim() || null;
               };
@@ -366,8 +418,22 @@ export async function POST(req: Request) {
               strengthLevel = Math.min(3, Math.max(1, strengthLevel));
 
               // Normalisasi semua field string/array
-              const aliasesString = toStr(data.aliases)?.toLowerCase() || null;
+              // Gunakan alias yang sudah difilter dari konflik, join dengan titik koma
+              const aliasesString = cleanAliases.length > 0 
+                ? cleanAliases.join("; ").toLowerCase() 
+                : null;
               const benefitsStr = toStr(data.benefits) || "";
+
+              // Kirim info alias yang dibuang karena konflik
+              if (aliasConflicts.length > 0) {
+                sendEvent({
+                  type: "alias_conflict",
+                  name: ingredientName,
+                  finalName: finalName,
+                  conflicts: aliasConflicts,
+                  message: `${aliasConflicts.length} alias dibuang karena sudah terdaftar di kamus`,
+                });
+              }
               const warningsStr = toStr(data.warnings);
               const aiContextStr = toStr(data.aiContext);
               const blacklistReasonStr = toStr(data.blacklistReason);
@@ -431,9 +497,8 @@ export async function POST(req: Request) {
               // ========================================================
               const namesToMatch = [normalizeString(finalName)];
               if (aliasesString) {
-                aliasesString.split(/,(?![^()]*\))/g).forEach((a: string) => {
-                  const clean = normalizeString(a.replace(/[\(\)]/g, ""));
-                  if (clean) namesToMatch.push(clean);
+                splitAliases(aliasesString).forEach(cleanAlias => {
+                  namesToMatch.push(cleanAlias);
                 });
               }
 

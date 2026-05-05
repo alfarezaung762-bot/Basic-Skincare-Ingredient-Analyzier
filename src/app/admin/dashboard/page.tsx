@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
+import { splitAliasesRaw } from "@/lib/splitAliases";
 
 interface Ingredient {
   id: string;
@@ -414,8 +415,8 @@ export default function AdminDashboard() {
                       <td className="p-4 text-xs font-medium text-slate-500">
                         {item.aliases ? (
                           <div className="flex flex-wrap gap-1">
-                            {item.aliases.split(/,(?![^()]*\))/g).map((alias, i) => (
-                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias.replace(/[\(\)]/g, '').trim()}</span>
+                            {splitAliasesRaw(item.aliases).map((alias, i) => (
+                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias}</span>
                             ))}
                           </div>
                         ) : (

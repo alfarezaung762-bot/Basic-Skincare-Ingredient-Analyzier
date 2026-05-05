@@ -1,4 +1,5 @@
 // src/app/api/analyze/perhitunganlogic/scoringEngine.ts
+import { splitAliases } from "@/lib/splitAliases";
 
 // ==============================================================
 // 1. DEFINISI TIPE DATA (UPDATE V3)
@@ -118,7 +119,7 @@ export function runScoringEngine(
     const matched = dictionary.find(dbItem => {
       if (isFuzzyMatch(inputItem, dbItem.name)) return true;
       if (dbItem.aliases) {
-        const aliasList = dbItem.aliases.split(/,(?![^()]*\))/g).map(a => a.replace(/[\(\)]/g, '').trim().toLowerCase());
+        const aliasList = splitAliases(dbItem.aliases);
         return aliasList.some(alias => isFuzzyMatch(inputItem, alias));
       }
       return false;

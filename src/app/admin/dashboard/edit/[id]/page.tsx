@@ -5,6 +5,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { splitAliases } from "@/lib/splitAliases";
 
 // FUNGSI NORMALISASI TEKS: Menghapus semua spasi, dash, dan underscore untuk pencocokan yang akurat
 const normalizeString = (str: string) => {
@@ -149,9 +150,8 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                 const parentName = item.name;
                 map[normalizeString(parentName)] = parentName;
                 if (item.aliases) {
-                  item.aliases.split(/,(?![^()]*\))/g).forEach((a: string) => {
-                    const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
-                    if (cleanAlias) map[cleanAlias] = parentName;
+                  splitAliases(item.aliases).forEach(cleanAlias => {
+                    map[cleanAlias] = parentName;
                   });
                 }
               }
@@ -199,7 +199,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    const rawParts = val.split(/,(?![^()]*\))/g);
+    const rawParts = val.includes(';') ? val.split(';') : val.split(/,(?![^()]*\))/g);
     const duplicateList = rawParts
       .map(p => p.trim())
       .filter(p => {
@@ -467,6 +467,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
                   id="aliases" 
                   disabled={isViewer} 
                   type="text" 
+                  placeholder="Contoh: bha; betahydroxy acid (Pisahkan dengan titik koma ;)"
                   value={formData.aliases} 
                   onChange={handleAliasesChange} 
                   className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium focus:ring-2 transition-all disabled:bg-slate-50 disabled:text-slate-500 ${

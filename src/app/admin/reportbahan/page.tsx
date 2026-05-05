@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { splitAliases } from "@/lib/splitAliases";
 import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 import { useDeepResearch, ResearchEngine } from "@/components/DeepResearchProvider";
 
@@ -119,9 +120,8 @@ export default function AdminReportBahan() {
         ingredientsData.forEach((item: any) => {
           existingSet.add(normalizeString(item.name));
           if (item.aliases) {
-            item.aliases.split(/,(?![^()]*\))/g).forEach((a: string) => {
-              const cleanAlias = normalizeString(a.replace(/[\(\)]/g, ''));
-              if (cleanAlias) existingSet.add(cleanAlias);
+            splitAliases(item.aliases).forEach(cleanAlias => {
+              existingSet.add(cleanAlias);
             });
           }
         });

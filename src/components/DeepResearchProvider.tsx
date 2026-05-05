@@ -66,12 +66,37 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
 
             if (event.type === "init") {
               if (event.skippedCount > 0) {
-                setResearchLog(prev => [...prev, ...event.skipped.map((n: string) => ({ name: n, status: "skipped", error: "Sudah ada di kamus" }))]);
+                // Gunakan skippedDetails untuk info lebih lengkap
+                const details = event.skippedDetails || [];
+                setResearchLog(prev => [...prev, ...details.map((d: any) => ({
+                  name: d.name,
+                  status: "skipped",
+                  error: d.matchType === 'name'
+                    ? `Sudah terdaftar sebagai bahan INCI: ${d.existingInci}`
+                    : `Sudah terdaftar sebagai alias dari INCI: ${d.existingInci}`,
+                  conflictInci: d.existingInci,
+                }))]);
               }
+            } else if (event.type === "alias_conflict") {
+              // Tambahkan log konflik alias (bahan tetap disimpan tapi beberapa alias dibuang)
+              setResearchLog(prev => [...prev, {
+                name: event.name,
+                status: "warning",
+                error: `${event.conflicts.length} alias dibuang: ${event.conflicts.map((c: any) => `"${c.alias}" → milik ${c.existingInci}`).join("; ")}`,
+                conflictInci: event.conflicts[0]?.existingInci,
+              }]);
             } else if (event.type === "progress") {
               setResearchProgress(event);
               if (event.status !== "researching") {
-                setResearchLog(prev => [...prev, { name: event.name, status: event.status, error: event.error, aliasCount: event.aliasCount, model: event.model }]);
+                setResearchLog(prev => [...prev, {
+                  name: event.name,
+                  status: event.status,
+                  error: event.error || event.reason,
+                  aliasCount: event.aliasCount,
+                  model: event.model,
+                  conflictInci: event.conflictInci,
+                  conflictType: event.conflictType,
+                }]);
               }
             } else if (event.type === "complete") {
               setResearchSummary(event.summary);
@@ -158,26 +183,36 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
 
               <div className="overflow-y-auto flex-1 space-y-2 pr-1 mb-4">
                 {researchLog.map((log, idx) => (
-                  <div key={idx} className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between gap-2 ${
+                  <div key={idx} className={`p-3 rounded-xl border text-xs font-bold ${
                     log.status === "done" ? "bg-emerald-50 border-emerald-100 text-emerald-800" :
                     log.status === "error" ? "bg-red-50 border-red-100 text-red-700" :
+                    log.status === "warning" ? "bg-amber-50 border-amber-100 text-amber-700" :
                     "bg-slate-50 border-slate-100 text-slate-500"
                   }`}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="shrink-0">{log.status === "done" ? "✅" : log.status === "error" ? "❌" : "⏭️"}</span>
-                      <span className="capitalize truncate">{log.name}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0">{log.status === "done" ? "✅" : log.status === "error" ? "❌" : log.status === "warning" ? "⚠️" : "⏭️"}</span>
+                        <span className="capitalize truncate">{log.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {log.aliasCount !== undefined && log.aliasCount > 0 && (
+                          <span className="bg-white px-2 py-0.5 rounded-md border text-[9px]">+{log.aliasCount} alias</span>
+                        )}
+                        {log.model && (
+                          <span className="text-[9px] text-slate-400">{log.model.split("-").slice(0,3).join("-")}</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {log.aliasCount !== undefined && log.aliasCount > 0 && (
-                        <span className="bg-white px-2 py-0.5 rounded-md border text-[9px]">+{log.aliasCount} alias</span>
-                      )}
-                      {log.status === "error" && (
-                        <span className="text-[9px] text-red-500 max-w-[120px] truncate">{log.error}</span>
-                      )}
-                      {log.model && (
-                        <span className="text-[9px] text-slate-400">{log.model.split("-").slice(0,3).join("-")}</span>
-                      )}
-                    </div>
+                    {/* Detail konflik/error di bawah nama */}
+                    {log.error && (
+                      <div className={`mt-1.5 text-[10px] font-medium leading-relaxed pl-6 ${
+                        log.status === "warning" ? "text-amber-600" :
+                        log.status === "skipped" ? "text-slate-500" :
+                        "text-red-500"
+                      }`}>
+                        {log.error}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {researchLog.length === 0 && isResearching && (
