@@ -125,3 +125,37 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ message: "Gagal menghapus laporan" }, { status: 500 });
   }
 }
+
+// ========================================================
+// 4. PATCH: Mengklaim atau melepas analisis bahan
+// ========================================================
+export async function PATCH(req: Request) {
+  try {
+    const { id, type, adminName, action } = await req.json();
+
+    if (!id || !type) {
+      return NextResponse.json({ message: "Data tidak lengkap" }, { status: 400 });
+    }
+
+    const data = action === "claim" 
+      ? { analyzedBy: adminName, analyzedAt: new Date() }
+      : { analyzedBy: null, analyzedAt: null };
+
+    if (type === "mismatch") {
+      await prisma.ingredientReport.update({
+        where: { id },
+        data
+      });
+    } else {
+      await prisma.unknownIngredient.update({
+        where: { id },
+        data
+      });
+    }
+
+    return NextResponse.json({ message: "Status berhasil diperbarui" }, { status: 200 });
+  } catch (error: any) {
+    console.error("PATCH Report Error:", error.message);
+    return NextResponse.json({ message: "Gagal memperbarui status analisis" }, { status: 500 });
+  }
+}

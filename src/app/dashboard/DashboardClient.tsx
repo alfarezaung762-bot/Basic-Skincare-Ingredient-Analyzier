@@ -21,7 +21,7 @@ interface DashboardClientProps {
 
 // === FEATURES DATA ===
 const FEATURES = [
-  { icon: "🧬", title: "AI-Powered Analysis", desc: "Didukung Gemini AI untuk analisis komposisi yang akurat" },
+  { icon: "🧬", title: "AI-Powered Analysis", desc: "Didukung Multiple AI untuk analisis komposisi yang akurat" },
   { icon: "🛡️", title: "Safety Scoring", desc: "Skor keamanan berdasarkan profil unik kulitmu" },
   { icon: "📊", title: "Match Score", desc: "Persentase kecocokan produk dengan kondisi kulitmu" },
   { icon: "⚡", title: "Hasil Instan", desc: "Analisis real-time tanpa perlu menunggu lama" },
@@ -32,9 +32,11 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isDark, setIsDark] = useState(false);
+  const [stats, setStats] = useState({ ingredientCount: 0, productCount: 0 });
 
   useEffect(() => {
     fetchBanners();
+    fetchStats();
     // Load theme preference
     const saved = localStorage.getItem("theme");
     if (saved === "dark") {
@@ -62,8 +64,20 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
         const data = await res.json();
         setBanners(data);
       }
-    } catch (e) {
-      console.error("Gagal memuat banner");
+    } catch (err) {
+      console.error("Gagal mengambil banner:", err);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch("/api/stats");
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil statistik:", err);
     }
   };
 
@@ -242,13 +256,13 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   {/* Stats Bar */}
                   <div className={`glass-card rounded-2xl p-4 flex flex-wrap items-center justify-center gap-6 md:gap-12 border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
                     <div className="text-center">
-                      <div className={`text-2xl font-black ${textPrimary}`}>100+</div>
+                      <div className={`text-2xl font-black ${textPrimary}`}>{stats.ingredientCount || "100"}+</div>
                       <div className={`text-xs font-medium ${textMuted}`}>Bahan Terdata</div>
                     </div>
                     <div className={`w-px h-8 ${isDark ? "bg-slate-700" : "bg-slate-200"}`} />
                     <div className="text-center">
-                      <div className={`text-2xl font-black ${textPrimary}`}>AI</div>
-                      <div className={`text-xs font-medium ${textMuted}`}>Gemini Powered</div>
+                      <div className={`text-2xl font-black ${textPrimary}`}>{stats.productCount || "120"}+</div>
+                      <div className={`text-xs font-medium ${textMuted}`}>Skincare Terdaftar</div>
                     </div>
                     <div className={`w-px h-8 ${isDark ? "bg-slate-700" : "bg-slate-200"}`} />
                     <div className="text-center">
@@ -258,7 +272,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                     <div className={`w-px h-8 hidden sm:block ${isDark ? "bg-slate-700" : "bg-slate-200"}`} />
                     <div className="text-center hidden sm:block">
                       <div className={`text-2xl font-black ${textPrimary}`}>Free</div>
-                      <div className={`text-xs font-medium ${textMuted}`}>Gratis Selamanya</div>
+                      <div className={`text-xs font-medium ${textMuted}`}>Gratis-Terbatas</div>
                     </div>
                   </div>
                 </motion.div>

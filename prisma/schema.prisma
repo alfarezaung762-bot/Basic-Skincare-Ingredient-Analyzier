@@ -190,6 +190,9 @@ model UnknownIngredient {
   reportCount Int      @default(1) 
   isReviewed  Boolean  @default(false) 
   
+  analyzedBy  String?  // Nama admin yang sedang menganalisis
+  analyzedAt  DateTime? // Waktu mulai analisis
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -199,6 +202,9 @@ model IngredientReport {
   ingredientName String   
   reason         String   @db.Text 
   isReviewed     Boolean  @default(false)
+  
+  analyzedBy     String?  // Nama admin yang sedang menganalisis
+  analyzedAt     DateTime? // Waktu mulai analisis
   
   createdAt      DateTime @default(now())
 }

@@ -13,6 +13,7 @@ interface UnknownReport {
   name: string;
   reportCount: number;
   createdAt: string;
+  analyzedBy?: string | null;
 }
 
 interface MismatchReport {
@@ -20,6 +21,7 @@ interface MismatchReport {
   ingredientName: string;
   reason: string;
   createdAt: string;
+  analyzedBy?: string | null;
 }
 
 export default function AdminReportBahan() {
@@ -208,6 +210,36 @@ export default function AdminReportBahan() {
     
     startResearch(selectedNames, adminName, adminRole, engineToUse);
     setSelectedIds(new Set());
+  };
+
+  const handleToggleClaim = async (id: string, type: "unknown" | "mismatch", currentClaim: string | null | undefined) => {
+    if (isViewer) return;
+    
+    const action = currentClaim ? "unclaim" : "claim";
+    
+    // Jika sedang di-claim orang lain, beri peringatan (tapi admin masih bisa ambil alih jika perlu)
+    if (currentClaim && currentClaim !== adminName && action === "claim") {
+      if (!window.confirm(`Bahan ini sedang dianalisis oleh ${currentClaim}. Ambil alih?`)) return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/reportbahan", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, type, adminName, action })
+      });
+      
+      if (res.ok) {
+        // Update local state untuk feedback instan
+        if (type === "unknown") {
+          setUnknownReports(prev => prev.map(r => r.id === id ? { ...r, analyzedBy: action === "claim" ? adminName : null } : r));
+        } else {
+          setMismatchReports(prev => prev.map(r => r.id === id ? { ...r, analyzedBy: action === "claim" ? adminName : null } : r));
+        }
+      }
+    } catch (error) {
+      console.error("Gagal update status analisis:", error);
+    }
   };
 
   const containerVariants = {
@@ -515,45 +547,85 @@ export default function AdminReportBahan() {
                         <motion.tbody variants={containerVariants} initial="hidden" animate="visible" className="divide-y divide-slate-100">
                           {unknownReports
                             .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                            .map((report) => (
-                            <motion.tr variants={itemVariants} key={report.id} className={`hover:bg-amber-50/30 transition-colors group ${selectedIds.has(report.id) ? "bg-indigo-50/40" : ""}`}>
-                              {canManageKamus && (
-                                <td className="p-4">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={selectedIds.has(report.id)}
-                                    onChange={() => toggleSelectId(report.id)}
-                                    disabled={isResearching || (!selectedIds.has(report.id) && selectedIds.size >= 15)}
-                                    className="w-4 h-4 rounded accent-indigo-600 cursor-pointer disabled:opacity-50"
-                                  />
-                                </td>
-                              )}
-                              <td className="p-4 font-black text-amber-700 lowercase">{report.name}</td>
-                              <td className="p-4 text-center">
-                                <span className="inline-block bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-black text-xs border border-amber-200 shadow-sm">{report.reportCount}x Dicari</span>
-                              </td>
-                              <td className="p-4 text-slate-500 font-medium text-xs">{new Date(report.createdAt).toLocaleDateString('id-ID')}</td>
-                              <td className="p-4 text-right">
-                                <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
-                                  
-                                  {/* PERENDERAN BERSYARAT: Tombol Abaikan/Hapus */}
-                                  {!isViewer ? (
-                                    <button onClick={() => handleDeleteUnknown(report.id, report.name)} className="text-slate-400 hover:text-red-600 font-bold text-xs px-2 py-1">🗑️ Abaikan</button>
-                                  ) : (
-                                    <span className="text-[10px] font-bold text-slate-400 italic mr-2">Hanya Pantau</span>
-                                  )}
-
-                                  {/* PERENDERAN BERSYARAT: Tombol Buat Kamus (Hanya jika punya izin Kamus) */}
+                            .map((report) => {
+                              const isClaimedByMe = report.analyzedBy === adminName;
+                              const isClaimedByOther = report.analyzedBy && report.analyzedBy !== adminName;
+                              
+                              return (
+                                <motion.tr 
+                                  variants={itemVariants} 
+                                  key={report.id} 
+                                  className={`hover:bg-amber-50/30 transition-colors group ${
+                                    selectedIds.has(report.id) ? "bg-indigo-50/40" : 
+                                    isClaimedByMe ? "bg-emerald-50/60" :
+                                    isClaimedByOther ? "bg-slate-100/50 grayscale-[0.5]" : ""
+                                  }`}
+                                >
                                   {canManageKamus && (
-                                    <Link href={`/admin/dashboard/create?name=${encodeURIComponent(report.name)}`} className="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 shadow-sm active:scale-95 flex items-center gap-1.5">
-                                      <span>✨</span> Buat Kamus
-                                    </Link>
+                                    <td className="p-4">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={selectedIds.has(report.id)}
+                                        onChange={() => toggleSelectId(report.id)}
+                                        disabled={isResearching || (!selectedIds.has(report.id) && selectedIds.size >= 15)}
+                                        className="w-4 h-4 rounded accent-indigo-600 cursor-pointer disabled:opacity-50"
+                                      />
+                                    </td>
                                   )}
+                                  <td className="p-4">
+                                    <div className="flex flex-col">
+                                      <span className={`font-black lowercase ${isClaimedByOther ? "text-slate-400" : "text-amber-700"}`}>
+                                        {report.name}
+                                      </span>
+                                      {report.analyzedBy && (
+                                        <span className={`text-[10px] font-bold mt-0.5 flex items-center gap-1 ${isClaimedByMe ? "text-emerald-600" : "text-slate-500"}`}>
+                                          <span className="animate-pulse">●</span> 
+                                          {isClaimedByMe ? "Sedang Anda Analisis" : `Dianalisis oleh: ${report.analyzedBy}`}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    <span className="inline-block bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-black text-xs border border-amber-200 shadow-sm">{report.reportCount}x Dicari</span>
+                                  </td>
+                                  <td className="p-4 text-slate-500 font-medium text-xs">{new Date(report.createdAt).toLocaleDateString('id-ID')}</td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                                      
+                                      {/* CLAIM BUTTON */}
+                                      {!isViewer && (
+                                        <button 
+                                          onClick={() => handleToggleClaim(report.id, "unknown", report.analyzedBy)}
+                                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                                            isClaimedByMe 
+                                              ? "bg-emerald-100 text-emerald-700 border-emerald-200" 
+                                              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                                          }`}
+                                          title={isClaimedByMe ? "Lepas Analisis" : "Mulai Analisis"}
+                                        >
+                                          {isClaimedByMe ? "✓ Selesai?" : "⏳ Tandai Cek"}
+                                        </button>
+                                      )}
 
-                                </div>
-                              </td>
-                            </motion.tr>
-                          ))}
+                                      {/* PERENDERAN BERSYARAT: Tombol Abaikan/Hapus */}
+                                      {!isViewer ? (
+                                        <button onClick={() => handleDeleteUnknown(report.id, report.name)} className="text-slate-400 hover:text-red-600 font-bold text-xs px-2 py-1">🗑️ Abaikan</button>
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-400 italic mr-2">Hanya Pantau</span>
+                                      )}
+
+                                      {/* PERENDERAN BERSYARAT: Tombol Buat Kamus (Hanya jika punya izin Kamus) */}
+                                      {canManageKamus && (
+                                        <Link href={`/admin/dashboard/create?name=${encodeURIComponent(report.name)}`} className="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 shadow-sm active:scale-95 flex items-center gap-1.5">
+                                          <span>✨</span> Buat
+                                        </Link>
+                                      )}
+
+                                    </div>
+                                  </td>
+                                </motion.tr>
+                              );
+                            })}
                         </motion.tbody>
                       </table>
                     </div>
