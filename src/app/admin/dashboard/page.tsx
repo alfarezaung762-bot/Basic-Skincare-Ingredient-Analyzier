@@ -202,7 +202,7 @@ export default function AdminDashboard() {
 
   if (accessDeniedMessage) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/login")} />
       </div>
     );
@@ -210,14 +210,14 @@ export default function AdminDashboard() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-700 border-t-blue-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 relative overflow-hidden p-4 md:p-8 lg:p-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 relative overflow-hidden p-4 md:p-8 lg:p-12">
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
 
@@ -244,28 +244,28 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
+          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>❓ Pusat Tinjauan</span>
           </Link>
 
-          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner (Hanya Admin dengan Izin / Superadmin) */}
           {(isSuperAdmin || (adminRole === "ADMIN" && sessionStorage.getItem("adminProfile")?.includes("MANAGE_BENNER"))) && (
-            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50">
               <span>🖼️ Kelola Banner</span>
             </Link>
           )}
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Akun Khusus Superadmin */}
           {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-purple-700 border border-purple-200 hover:bg-purple-50">
+            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
@@ -273,10 +273,10 @@ export default function AdminDashboard() {
 
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white dark:bg-slate-900 dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 dark:border-slate-800"
+          className="bg-white dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"
         >
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Daftar Bahan Terverifikasi</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Daftar Bahan Terverifikasi</h2>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
               <div className="relative flex-1 sm:w-72">
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                   placeholder="Cari nama atau alias..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100 bg-white dark:bg-slate-900 dark:bg-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-inner"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-inner"
                 />
               </div>
 
@@ -301,10 +301,10 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 p-4 bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 p-4 bg-slate-100 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filterVerified" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Status Verifikasi</label>
-              <select id="filterVerified" aria-label="Status Verifikasi" value={filterVerified} onChange={(e) => setFilterVerified(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+              <label htmlFor="filterVerified" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status Verifikasi</label>
+              <select id="filterVerified" aria-label="Status Verifikasi" value={filterVerified} onChange={(e) => setFilterVerified(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="ALL">Semua Status</option>
                 <option value="VERIFIED">✅ Sudah Ditinjau</option>
                 <option value="UNVERIFIED">⏳ Belum Ditinjau</option>
@@ -312,8 +312,8 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filterCategory" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Kategori Logika</label>
-              <select id="filterCategory" aria-label="Kategori Logika" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+              <label htmlFor="filterCategory" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Kategori Logika</label>
+              <select id="filterCategory" aria-label="Kategori Logika" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="ALL">Semua Kategori</option>
                 <option value="HERO">⭐ Bintang Utama</option>
                 <option value="BASIC">Standar (Basic)</option>
@@ -324,8 +324,8 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="sortBy" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Urutkan Berdasarkan</label>
-              <select id="sortBy" aria-label="Urutkan Berdasarkan" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+              <label htmlFor="sortBy" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Urutkan Berdasarkan</label>
+              <select id="sortBy" aria-label="Urutkan Berdasarkan" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="NEWEST">⏳ Tanggal: Terbaru ke Terlama</option>
                 <option value="OLDEST">🕰️ Tanggal: Terlama ke Terbaru</option>
                 <option value="A_Z">🔤 Abjad: A - Z</option>
@@ -350,61 +350,61 @@ export default function AdminDashboard() {
               <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Tidak ada bahan yang cocok dengan filter ini.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 shadow-sm">
-              <table className="w-full text-left text-sm text-slate-700">
-                <thead className="bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/80 text-slate-600 font-bold border-b border-slate-200 dark:border-slate-800 dark:border-slate-800">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="p-4 whitespace-nowrap w-24">Status</th>
-                    <th className="p-4 whitespace-nowrap">Nama Bahan (INCI)</th>
+                    <th className="p-4 whitespace-nowrap w-24 sticky left-0 z-20 bg-slate-100 dark:bg-slate-800">Status</th>
+                    <th className="p-4 whitespace-nowrap sticky left-[96px] z-20 bg-slate-100 dark:bg-slate-800 shadow-[4px_0_10px_rgba(0,0,0,0.03)]">Nama Bahan (INCI)</th>
                     <th className="p-4 whitespace-nowrap">Alias</th>
                     <th className="p-4 whitespace-nowrap">Kategori Logika</th>
                     <th className="p-4 whitespace-nowrap">Fungsi Utama</th>
-                    <th className="p-4 whitespace-nowrap text-right sticky right-0 bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/80 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] z-10">Aksi</th>
+                    <th className="p-4 whitespace-nowrap text-right sticky right-0 bg-slate-100 dark:bg-slate-800 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] z-20">Aksi</th>
                   </tr>
                 </thead>
                 <motion.tbody
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="divide-y divide-slate-100 bg-white dark:bg-slate-900 dark:bg-slate-900"
+                  className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900"
                 >
                   {processedIngredients.map((item) => (
                     <motion.tr
                       variants={itemVariants}
                       key={item.id}
                       onClick={() => handleRowClick(item.id)}
-                      className={`cursor-pointer transition-colors group ${item.isVerified ? 'bg-emerald-50/60 hover:bg-emerald-100/60' : 'hover:bg-blue-50/50'}`}
+                      className={`cursor-pointer transition-colors group ${item.isVerified ? 'bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/50' : 'hover:bg-blue-50/50 dark:hover:bg-slate-800/50'}`}
                     >
-                      <td className="p-4">
+                      <td className={`p-4 sticky left-0 z-10 ${item.isVerified ? 'bg-emerald-50/60 dark:bg-emerald-950/30 group-hover:bg-emerald-100/60 dark:group-hover:bg-emerald-950/50' : 'bg-white dark:bg-slate-900 group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50'} transition-colors`}>
                         {item.isVerified ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shadow-sm">
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                             Ditinjau
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-800 dark:border-slate-800 shadow-sm">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shadow-sm">
                             <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
                             Tertunda
                           </span>
                         )}
                       </td>
 
-                      <td className="p-4 font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100 group-hover:text-blue-700 transition-colors capitalize whitespace-nowrap">
-                        <div className="flex items-center justify-between gap-4 min-w-[180px]">
+                      <td className={`p-4 font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors capitalize whitespace-nowrap sticky left-[96px] z-10 shadow-[4px_0_10px_rgba(0,0,0,0.03)] ${item.isVerified ? 'bg-emerald-50/60 dark:bg-emerald-950/30 group-hover:bg-emerald-100/60 dark:group-hover:bg-emerald-950/50' : 'bg-white dark:bg-slate-900 group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50'}`}>
+                        <div className="flex items-center gap-2 min-w-[180px]">
                           {item.name}
                           {item.aiContext && !item.isVerified && (
-                            <span title="Dihasilkan oleh AI" className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
-                              🤖 Dihasilkan AI
+                            <span title="Dihasilkan oleh AI" className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
+                              🤖 AI
                             </span>
                           )}
                         </div>
                       </td>
 
-                      <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400">
+                      <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                         {item.aliases ? (
                           <div className="flex flex-wrap gap-1">
                             {splitAliasesRaw(item.aliases).map((alias, i) => (
-                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 border-emerald-200' : 'bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 border-slate-200 dark:border-slate-800 dark:border-slate-800'}`}>{alias}</span>
+                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-700' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>{alias}</span>
                             ))}
                           </div>
                         ) : (
@@ -414,34 +414,34 @@ export default function AdminDashboard() {
 
                       <td className="p-4">
                         {item.isKeyActive ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shadow-sm whitespace-nowrap">
                             ⭐ BINTANG UTAMA
                           </span>
                         ) : (
-                          <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border ${item.type === 'TOXIC' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                            item.type === 'HARSH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                              item.type === 'BUFFER' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                'bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-800 dark:border-slate-800'
+                          <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border whitespace-nowrap ${item.type === 'TOXIC' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-700' :
+                            item.type === 'HARSH' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-700' :
+                              item.type === 'BUFFER' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700' :
+                                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                             }`}>
                             {item.type}
                           </span>
                         )}
                       </td>
 
-                      <td className="p-4 font-bold text-xs text-slate-600 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-md border ${item.isVerified ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 border-emerald-200' : 'bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 border-slate-200 dark:border-slate-800 dark:border-slate-800'}`}>
+                      <td className="p-4 font-bold text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-md border ${item.isVerified ? 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-700' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                           {formatCategory(item.functionalCategory)}
                         </span>
                       </td>
 
-                      <td className="p-4 text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 dark:bg-slate-900 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] group-hover:bg-blue-50/50 transition-colors z-10">
+                      <td className={`p-4 text-right whitespace-nowrap sticky right-0 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] transition-colors z-10 ${item.isVerified ? 'bg-emerald-50/60 dark:bg-emerald-950/30 group-hover:bg-emerald-100/60 dark:group-hover:bg-emerald-950/50' : 'bg-white dark:bg-slate-900 group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50'}`}>
                         {!isViewer ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(item.id, item.name);
                             }}
-                            className="text-red-500 font-bold hover:text-red-700 transition-colors bg-red-50/50 hover:bg-red-100 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200"
+                            className="text-red-500 dark:text-red-400 font-bold hover:text-red-700 dark:hover:text-red-300 transition-colors bg-red-50/50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-1.5 rounded-lg active:scale-95 opacity-50 group-hover:opacity-100 border border-transparent hover:border-red-200 dark:hover:border-red-700"
                           >
                             Hapus
                           </button>

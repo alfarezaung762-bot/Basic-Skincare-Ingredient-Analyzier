@@ -100,6 +100,14 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                 error: `${event.conflicts.length} alias dibuang: ${event.conflicts.map((c: any) => `"${c.alias}" → milik ${c.existingInci}`).join("; ")}`,
                 conflictInci: event.conflicts[0]?.existingInci,
               }]);
+            } else if (event.type === "alias_update") {
+              // Bahan terdeteksi sebagai alias — tampilkan info dan tandai untuk removal dari tabel report
+              setResearchLog(prev => [...prev, {
+                name: event.name,
+                status: "alias_added",
+                error: event.message,
+                conflictInci: event.existingInci,
+              }]);
             } else if (event.type === "progress") {
               setResearchProgress(event);
               if (event.status !== "researching") {
@@ -111,6 +119,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                   model: event.model,
                   conflictInci: event.conflictInci,
                   conflictType: event.conflictType,
+                  triedModels: event.triedModels,
                 }]);
               }
             } else if (event.type === "complete") {
@@ -164,25 +173,25 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col"
+              className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl border border-slate-100 dark:border-slate-700 max-h-[85vh] flex flex-col"
             >
               <div className="flex justify-between items-start mb-5 shrink-0">
                 <div>
-                  <h4 className="font-black text-xl text-slate-900 flex items-center gap-2">
+                  <h4 className="font-black text-xl text-slate-900 dark:text-slate-100 flex items-center gap-2">
                     🔬 Deep Research AI
                   </h4>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1 block">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-1 block">
                     {isResearching ? "Sedang menganalisis..." : researchSummary ? "Selesai!" : "Mempersiapkan..."}
                   </span>
                 </div>
                 {!isResearching ? (
-                  <button onClick={() => setShowResearchModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full transition-colors font-bold" title="Tutup">✕</button>
+                  <button onClick={() => setShowResearchModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors font-bold" title="Tutup">✕</button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={cancelResearch} className="px-3 py-1.5 text-[10px] font-bold bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors" title="Batalkan analisis">
+                    <button onClick={cancelResearch} className="px-3 py-1.5 text-[10px] font-bold bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/70 rounded-lg transition-colors" title="Batalkan analisis">
                       ⏹ Batalkan
                     </button>
-                    <button onClick={() => setShowResearchModal(false)} className="px-3 py-1.5 text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors" title="Proses tetap berjalan di latar belakang">
+                    <button onClick={() => setShowResearchModal(false)} className="px-3 py-1.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Proses tetap berjalan di latar belakang">
                       ⬇️ Minimize
                     </button>
                   </div>
@@ -191,11 +200,11 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
 
               {researchProgress && (
                 <div className="mb-4 shrink-0">
-                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                  <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">
                     <span>{researchProgress.current}/{researchProgress.total} bahan</span>
-                    <span className="text-slate-400">{isResearching ? `⏳ ~${(researchProgress.total - researchProgress.current) * 10} detik lagi` : "✅ Selesai"}</span>
+                    <span className="text-slate-400 dark:text-slate-500">{isResearching ? `⏳ ~${(researchProgress.total - researchProgress.current) * 10} detik lagi` : "✅ Selesai"}</span>
                   </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
                     <motion.div 
                       className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"
                       initial={{ width: 0 }}
@@ -207,11 +216,11 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
               )}
 
               {isResearching && researchProgress?.status === "researching" && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-3 shrink-0">
-                  <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin shrink-0"></div>
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/50 rounded-xl border border-blue-100 dark:border-blue-800 flex items-center gap-3 shrink-0">
+                  <div className="w-5 h-5 border-2 border-blue-200 dark:border-blue-700 border-t-blue-600 rounded-full animate-spin shrink-0"></div>
                   <div>
-                    <p className="text-sm font-bold text-blue-900 capitalize">{researchProgress.name}</p>
-                    <p className="text-[10px] text-blue-600 font-medium">Menganalisis dengan AI...</p>
+                    <p className="text-sm font-bold text-blue-900 dark:text-blue-200 capitalize">{researchProgress.name}</p>
+                    <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Menganalisis dengan AI...</p>
                   </div>
                 </div>
               )}
@@ -219,31 +228,33 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
               <div className="overflow-y-auto flex-1 space-y-2 pr-1 mb-4">
                 {researchLog.map((log, idx) => (
                   <div key={idx} className={`p-3 rounded-xl border text-xs font-bold ${
-                    log.status === "done" ? "bg-emerald-50 border-emerald-100 text-emerald-800" :
-                    log.status === "error" ? "bg-red-50 border-red-100 text-red-700" :
-                    log.status === "warning" ? "bg-amber-50 border-amber-100 text-amber-700" :
-                    "bg-slate-50 border-slate-100 text-slate-500"
+                    log.status === "done" ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300" :
+                    log.status === "error" ? "bg-red-50 dark:bg-red-950/40 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300" :
+                    log.status === "warning" ? "bg-amber-50 dark:bg-amber-950/40 border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300" :
+                    log.status === "alias_added" ? "bg-blue-50 dark:bg-blue-950/40 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300" :
+                    "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400"
                   }`}>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="shrink-0">{log.status === "done" ? "✅" : log.status === "error" ? "❌" : log.status === "warning" ? "⚠️" : "⏭️"}</span>
+                        <span className="shrink-0">{log.status === "done" ? "✅" : log.status === "error" ? "❌" : log.status === "warning" ? "⚠️" : log.status === "alias_added" ? "🔗" : "⏭️"}</span>
                         <span className="capitalize truncate">{log.name}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {log.aliasCount !== undefined && log.aliasCount > 0 && (
-                          <span className="bg-white px-2 py-0.5 rounded-md border text-[9px]">+{log.aliasCount} alias</span>
+                          <span className="bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border dark:border-slate-700 text-[9px]">+{log.aliasCount} alias</span>
                         )}
                         {log.model && (
-                          <span className="text-[9px] text-slate-400">{log.model.split("-").slice(0,3).join("-")}</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500">{log.model.split("-").slice(0,3).join("-")}</span>
                         )}
                       </div>
                     </div>
                     {/* Detail konflik/error di bawah nama */}
                     {log.error && (
                       <div className={`mt-1.5 text-[10px] font-medium leading-relaxed pl-6 ${
-                        log.status === "warning" ? "text-amber-600" :
-                        log.status === "skipped" ? "text-slate-500" :
-                        "text-red-500"
+                        log.status === "warning" ? "text-amber-600 dark:text-amber-400" :
+                        log.status === "skipped" ? "text-slate-500 dark:text-slate-400" :
+                        log.status === "alias_added" ? "text-blue-600 dark:text-blue-400" :
+                        "text-red-500 dark:text-red-400"
                       }`}>
                         {log.error}
                       </div>
@@ -252,36 +263,36 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                 ))}
                 {researchLog.length === 0 && isResearching && (
                   <div className="text-center py-8 opacity-50">
-                    <div className="w-8 h-8 border-3 border-slate-200 border-t-slate-600 rounded-full animate-spin mx-auto mb-3"></div>
-                    <p className="text-xs text-slate-500 font-medium">Memulai analisis...</p>
+                    <div className="w-8 h-8 border-3 border-slate-200 dark:border-slate-700 border-t-slate-600 dark:border-t-slate-300 rounded-full animate-spin mx-auto mb-3"></div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Memulai analisis...</p>
                   </div>
                 )}
               </div>
 
               {researchSummary && (
-                <div className="shrink-0 pt-4 border-t border-slate-100 space-y-3">
+                <div className="shrink-0 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-3">
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center">
-                      <p className="text-2xl font-black text-emerald-700">{researchSummary.success}</p>
-                      <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Berhasil</p>
+                    <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800 text-center">
+                      <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{researchSummary.success}</p>
+                      <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Berhasil</p>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-center">
-                      <p className="text-2xl font-black text-red-600">{researchSummary.failed}</p>
-                      <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest">Gagal</p>
+                    <div className="bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-100 dark:border-red-800 text-center">
+                      <p className="text-2xl font-black text-red-600 dark:text-red-400">{researchSummary.failed}</p>
+                      <p className="text-[9px] font-bold text-red-500 dark:text-red-400 uppercase tracking-widest">Gagal</p>
                     </div>
-                    <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-center">
-                      <p className="text-2xl font-black text-indigo-700">{researchSummary.totalAliasesFound}</p>
-                      <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">Alias</p>
+                    <div className="bg-indigo-50 dark:bg-indigo-950/40 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800 text-center">
+                      <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{researchSummary.totalAliasesFound}</p>
+                      <p className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Alias</p>
                     </div>
                   </div>
                   {researchSummary.totalReportsCleaned > 0 && (
-                    <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 text-center">
-                      <p className="text-xs font-bold text-amber-800">🧹 {researchSummary.totalReportsCleaned} laporan otomatis dibersihkan</p>
+                    <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-100 dark:border-amber-800 text-center">
+                      <p className="text-xs font-bold text-amber-800 dark:text-amber-300">🧹 {researchSummary.totalReportsCleaned} laporan otomatis dibersihkan</p>
                     </div>
                   )}
                   <button 
                     onClick={() => setShowResearchModal(false)} 
-                    className="w-full py-3 bg-slate-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-all active:scale-95"
+                    className="w-full py-3 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 text-sm font-bold rounded-xl transition-all active:scale-95"
                   >
                     Tutup
                   </button>

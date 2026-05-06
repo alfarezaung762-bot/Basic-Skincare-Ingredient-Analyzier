@@ -154,24 +154,24 @@ export default function AdminManagement() {
 
         {/* Menu Navigasi Utama */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-nowrap overflow-x-auto gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:pb-0 custom-scrollbar">
-          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>📚 Kamus Bahan Utama</span>
           </Link>
 
-          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>❓ Pusat Tinjauan</span>
           </Link>
 
-          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner */}
-          <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+          <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50">
             <span>🖼️ Kelola Banner</span>
           </Link>
 
@@ -184,8 +184,8 @@ export default function AdminManagement() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* KOLOM KIRI: FORMULIR TAMBAH AKUN */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
               <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-lg shadow-md">
                 ➕
               </div>
@@ -201,39 +201,39 @@ export default function AdminManagement() {
             <form onSubmit={handleSubmit} className="space-y-6">
               
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Username / ID Admin</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Username / ID Admin</label>
                 <input 
                   required 
                   type="text" 
                   value={formData.username} 
                   onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().trim()})} 
-                  className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-800 outline-none text-sm font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 placeholder-slate-400 focus:border-slate-900 focus:ring-0 transition-colors" 
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 outline-none text-sm font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 placeholder-slate-400 focus:border-slate-900 dark:focus:border-indigo-500 focus:ring-0 transition-colors" 
                   placeholder="contoh: budi_katalog" 
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Kata Sandi</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Kata Sandi</label>
                 <input 
                   required 
                   type="password" 
                   value={formData.password} 
                   onChange={(e) => setFormData({...formData, password: e.target.value})} 
-                  className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-800 outline-none text-sm font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 placeholder-slate-400 focus:border-slate-900 focus:ring-0 transition-colors" 
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 outline-none text-sm font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 placeholder-slate-400 focus:border-slate-900 dark:focus:border-indigo-500 focus:ring-0 transition-colors" 
                   placeholder="Minimal 6 karakter" 
                 />
               </div>
 
               <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Tingkat Peran</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Tingkat Peran</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${formData.role === "ADMIN" ? 'bg-blue-50 border-blue-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:bg-slate-800 hover:border-slate-300'}`}>
+                  <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${formData.role === "ADMIN" ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300'}`}>
                     <input type="radio" name="role" value="ADMIN" checked={formData.role === "ADMIN"} onChange={() => setFormData({...formData, role: "ADMIN"})} className="hidden" />
                     <span className={`text-2xl mb-2 transition-all ${formData.role === "ADMIN" ? 'scale-110' : 'grayscale opacity-50'}`}>🛠️</span>
                     <span className={`text-xs font-black tracking-wide ${formData.role === "ADMIN" ? 'text-blue-800' : 'text-slate-500 dark:text-slate-400'}`}>ADMIN</span>
                   </label>
                   
-                  <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${formData.role === "VIEWER" ? 'bg-purple-50 border-purple-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:bg-slate-800 hover:border-slate-300'}`}>
+                  <label className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${formData.role === "VIEWER" ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300'}`}>
                     <input type="radio" name="role" value="VIEWER" checked={formData.role === "VIEWER"} onChange={() => setFormData({...formData, role: "VIEWER", permissions: []})} className="hidden" />
                     <span className={`text-2xl mb-2 transition-all ${formData.role === "VIEWER" ? 'scale-110' : 'grayscale opacity-50'}`}>👁️</span>
                     <span className={`text-xs font-black tracking-wide ${formData.role === "VIEWER" ? 'text-purple-800' : 'text-slate-500 dark:text-slate-400'}`}>VIEWER</span>
@@ -241,11 +241,11 @@ export default function AdminManagement() {
                 </div>
               </div>
 
-              <div className={`space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800 transition-opacity duration-300 ${formData.role === "VIEWER" ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-2">Pilih Hak Akses (Modifikasi)</label>
+              <div className={`space-y-3 pt-6 border-t border-slate-100 dark:border-slate-700 transition-opacity duration-300 ${formData.role === "VIEWER" ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide block mb-2">Pilih Hak Akses (Modifikasi)</label>
                 <div className="space-y-3">
                   {AVAILABLE_PERMISSIONS.map((perm) => (
-                    <label key={perm.id} className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.permissions.includes(perm.id) ? 'bg-slate-900 border-slate-900 shadow-md' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:bg-slate-800'}`}>
+                    <label key={perm.id} className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.permissions.includes(perm.id) ? 'bg-slate-900 border-slate-900 shadow-md' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                       <div className="pt-0.5">
                         <input 
                           type="checkbox" 
@@ -270,7 +270,7 @@ export default function AdminManagement() {
           </motion.div>
 
           {/* KOLOM KANAN: TABEL DAFTAR ADMIN */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 lg:col-span-2">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 lg:col-span-2">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Daftar Admin Aktif</h2>
               <span className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center gap-2">{users.length} Akun</span>
@@ -278,26 +278,26 @@ export default function AdminManagement() {
             
             {isLoading ? (
               <div className="flex justify-center py-20 opacity-50">
-                <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 border-t-slate-900 rounded-full animate-spin"></div>
+                <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-700 border-t-slate-900 rounded-full animate-spin"></div>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <table className="w-full text-left text-sm text-slate-700">
-                  <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 font-bold border-b border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
                     <tr>
                       <th className="p-5 whitespace-nowrap">Profil & Peran</th>
                       <th className="p-5">Hak Akses Tersedia</th>
                       <th className="p-5 text-right whitespace-nowrap">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white dark:bg-slate-900">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                     <AnimatePresence>
                       {users.map((user) => (
-                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950/80 transition-colors group">
+                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
                           
                           <td className="p-5 align-top">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg border border-slate-200 dark:border-slate-800 shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg border border-slate-200 dark:border-slate-700 shrink-0">
                                 {user.role === 'SUPERADMIN' ? '👑' : user.role === 'ADMIN' ? '🛠️' : '👁️'}
                               </div>
                               <div>
@@ -332,7 +332,7 @@ export default function AdminManagement() {
                                 {user.permissions.map(p => {
                                   const label = AVAILABLE_PERMISSIONS.find(ap => ap.id === p)?.label || p;
                                   return (
-                                    <span key={p} className="text-[10px] font-bold bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 text-slate-700 px-2.5 py-1 rounded-md">
+                                    <span key={p} className="text-[10px] font-bold bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-md">
                                       {label}
                                     </span>
                                   )

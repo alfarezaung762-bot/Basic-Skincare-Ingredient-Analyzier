@@ -205,16 +205,20 @@ export default function AdminReportBahan() {
   };
 
   const toggleSelectAll = () => {
-    const filtered = unknownReports.filter(r => 
-      r.name.toLowerCase().includes(searchQuery.toLowerCase())
+    // Jika sudah ada yang dipilih, selalu bersihkan dulu
+    if (selectedIds.size > 0) {
+      setSelectedIds(new Set());
+      return;
+    }
+    
+    // Filter: hanya yang tampil di search DAN tidak di-claim admin lain
+    const selectable = unknownReports.filter(r => 
+      r.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !(r.analyzedBy && r.analyzedBy !== adminName)
     );
     
-    if (selectedIds.size === filtered.length && filtered.length > 0) {
-      setSelectedIds(new Set());
-    } else {
-      const ids = filtered.slice(0, 50).map(r => r.id);
-      setSelectedIds(new Set(ids));
-    }
+    const ids = selectable.slice(0, 50).map(r => r.id);
+    setSelectedIds(new Set(ids));
   };
 
   const handleDeepResearch = () => {
@@ -376,7 +380,7 @@ export default function AdminReportBahan() {
 
         {/* Menu Navigasi (Dengan 2 Lencana Real-time) */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-nowrap overflow-x-auto gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:pb-0 custom-scrollbar">
-          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
+          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>📚 Kamus Bahan Utama</span>
           </Link>
           
@@ -392,43 +396,43 @@ export default function AdminReportBahan() {
             </div>
           </div>
 
-          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner (Hanya Admin dengan Izin / Superadmin) */}
           {(isSuperAdmin || (adminRole === "ADMIN" && sessionStorage.getItem("adminProfile")?.includes("MANAGE_BENNER"))) && (
-            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50">
               <span>🖼️ Kelola Banner</span>
             </Link>
           )}
 
           {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-purple-700 border border-purple-200 hover:bg-purple-50">
+            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
         </motion.div>
 
         {/* Konten Utama */}
-        <div className="bg-white dark:bg-slate-900 dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 pb-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div className="flex gap-4">
               <button 
                 onClick={() => setActiveTab("SYSTEM")}
-                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
               >
                 🤖 Laporan Sistem (Bahan Asing) 
                 {unknownReports.length > 0 && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{unknownReports.length}</span>}
               </button>
               <button 
                 onClick={() => setActiveTab("USER")}
-                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
               >
                 👤 Laporan Pengguna
                 {Object.keys(groupedMismatch).length > 0 && <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{Object.keys(groupedMismatch).length}</span>}
@@ -442,7 +446,7 @@ export default function AdminReportBahan() {
                 placeholder={activeTab === "SYSTEM" ? "Cari bahan asing..." : "Cari bahan atau keluhan..."} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
               />
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
               {searchQuery && (
@@ -458,18 +462,18 @@ export default function AdminReportBahan() {
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-50">
-              <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 dark:border-slate-800 border-t-slate-800 rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium animate-pulse">Menarik data pelaporan...</p>
+              <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-700 border-t-slate-800 rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Menarik data pelaporan...</p>
             </div>
           ) : (
             <>
               {activeTab === "SYSTEM" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium mb-6">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
                   
                   {/* SELECTION BAR + DEEP RESEARCH BUTTON */}
                   {unknownReports.length > 0 && canManageKamus && (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 p-3 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={toggleSelectAll}
@@ -558,7 +562,7 @@ export default function AdminReportBahan() {
                               <th className="p-4 w-12">
                                 <input 
                                   type="checkbox" 
-                                  checked={selectedIds.size > 0 && selectedIds.size === Math.min(unknownReports.length, 50)}
+                                  checked={selectedIds.size > 0}
                                   onChange={toggleSelectAll}
                                   disabled={isResearching}
                                   className="w-4 h-4 rounded accent-indigo-600 cursor-pointer disabled:opacity-50"

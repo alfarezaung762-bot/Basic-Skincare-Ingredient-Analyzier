@@ -137,19 +137,19 @@ export default function AdminBannerPage() {
 
         {/* Menu Navigasi Utama */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-nowrap overflow-x-auto gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:pb-0 custom-scrollbar">
-          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>📚 Kamus Bahan Utama</span>
           </Link>
 
-          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>❓ Pusat Tinjauan</span>
           </Link>
 
-          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
@@ -159,14 +159,14 @@ export default function AdminBannerPage() {
           </div>
 
           {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-purple-700 border border-purple-200 hover:bg-purple-50">
+            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
         </motion.div>
 
         {/* KONTEN */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Daftar Banner Beranda</h2>
             <Link href="/admin/benner/create" className="px-5 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 font-bold text-sm rounded-xl transition-all shadow-sm flex items-center gap-2 w-fit">
@@ -200,7 +200,7 @@ export default function AdminBannerPage() {
                       <div className="absolute top-3 right-3 flex gap-2">
                         <button 
                           onClick={() => handleToggleActive(banner.id, banner.isActive)}
-                          className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm backdrop-blur-md transition-all ${banner.isActive ? 'bg-emerald-500/90 text-white hover:bg-emerald-600' : 'bg-slate-50 dark:bg-slate-9500/90 text-white hover:bg-slate-600'}`}
+                          className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm backdrop-blur-md transition-all ${banner.isActive ? 'bg-emerald-500/90 text-white hover:bg-emerald-600' : 'bg-slate-500/90 text-white hover:bg-slate-600'}`}
                         >
                           {banner.isActive ? '✅ Aktif' : '❌ Nonaktif'}
                         </button>
@@ -213,10 +213,10 @@ export default function AdminBannerPage() {
                       </div>
                       
                       <div className="flex gap-2">
-                        <Link href={`/admin/benner/edit/${banner.id}`} className="flex-1 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-bold text-xs rounded-xl transition-all text-center border border-blue-100 hover:border-transparent shadow-sm">
+                        <Link href={`/admin/benner/edit/${banner.id}`} className="flex-1 py-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white font-bold text-xs rounded-xl transition-all text-center border border-blue-100 dark:border-blue-800 hover:border-transparent shadow-sm">
                           Edit
                         </Link>
-                        <button onClick={() => handleDelete(banner.id)} className="flex-1 py-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white font-bold text-xs rounded-xl transition-all border border-red-100 hover:border-transparent shadow-sm">
+                        <button onClick={() => handleDelete(banner.id)} className="flex-1 py-2 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white font-bold text-xs rounded-xl transition-all border border-red-100 dark:border-red-800 hover:border-transparent shadow-sm">
                           Hapus
                         </button>
                       </div>

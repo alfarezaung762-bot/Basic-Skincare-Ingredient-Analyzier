@@ -19,13 +19,30 @@ const normalizeString = (str: string) => {
 };
 
 // ========================================================
-// DAFTAR FALLBACK MODEL GOOGLE (dicoba otomatis saat model utama gagal)
+// DAFTAR FALLBACK MODEL GOOGLE
+// Gemini: cascade fallback (3.1 -> 3 -> 2.5 -> 2.0)
+// Gemma: standalone, NO fallback
 // ========================================================
 const GEMINI_FALLBACK_ORDER = [
+  "gemini-3.1-flash-preview",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3-flash-preview",
+  "gemini-3-flash",
   "gemini-2.5-flash",
+  "gemini-2.5-pro",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
 ];
+
+// Gemma models are standalone — no fallback chain
+const GEMMA_MODELS = [
+  "gemma-4-31b-it",
+  "gemma-4-26b-a4b-it",
+  "gemma-3-27b-it",
+  "gemma-3-12b-it",
+  "gemma-3-4b-it",
+];
+
+const isGemmaModel = (model: string) => model.startsWith("gemma-");
 
 // ========================================================
 // JSON SCHEMA UNTUK STRUCTURED OUTPUT
@@ -62,7 +79,7 @@ const extractJson = (text: string) => {
 // ========================================================
 // FUNGSI UTAMA: Riset satu bahan via berbagai AI (dengan fallback otomatis)
 // ========================================================
-async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro"): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean }> {
+async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro"): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean; triedModels?: string[] }> {
   const currentDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const currentYear = new Date().getFullYear();
   
@@ -117,18 +134,27 @@ ATURAN KETAT:
 
 Kembalikan HANYA JSON tanpa markdown.`;
 
-  // Bangun daftar model yang akan dicoba (model utama + fallback untuk Gemini)
+  // Bangun daftar model yang akan dicoba
   const modelsToTry: string[] = [modelName];
+  
   if (provider === "gemini") {
-    // Tambahkan fallback yang belum ada di daftar
-    for (const fb of GEMINI_FALLBACK_ORDER) {
-      if (!modelsToTry.includes(fb)) modelsToTry.push(fb);
+    if (isGemmaModel(modelName)) {
+      // GEMMA: standalone, NO fallback — hanya coba model yang dipilih
+      // modelsToTry sudah berisi [modelName] saja
+    } else {
+      // GEMINI: cascade fallback — tambahkan semua fallback yang belum ada
+      for (const fb of GEMINI_FALLBACK_ORDER) {
+        if (!modelsToTry.includes(fb)) modelsToTry.push(fb);
+      }
     }
   }
+
+  const triedModels: string[] = [];
 
   for (let mi = 0; mi < modelsToTry.length; mi++) {
     const currentModel = modelsToTry[mi];
     const isFallback = mi > 0;
+    triedModels.push(currentModel);
     
     try {
       console.log(`[Deep Research] ${isFallback ? '🔄 Fallback ke' : 'Menggunakan provider:'} ${provider}, model: ${currentModel} untuk "${ingredientName}"...`);
@@ -182,7 +208,7 @@ Kembalikan HANYA JSON tanpa markdown.`;
       const confidence = String(parsed.confidenceLevel || "HIGH").toUpperCase();
       if (confidence === "LOW") {
         console.warn(`[Deep Research] ⚠️ AI melaporkan confidence LOW untuk "${ingredientName}". Dibatalkan karena rawan halusinasi.`);
-        return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH (rawan halusinasi). Silakan riset manual.`, modelUsed: currentModel, isHallucination: true };
+        return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH (rawan halusinasi). Silakan riset manual.`, modelUsed: currentModel, isHallucination: true, triedModels };
       }
 
       // Validasi: aiContext harus >= 400 kata
@@ -219,11 +245,11 @@ Kembalikan HANYA JSON tanpa markdown.`;
 
         const retryWordCount = (retryParsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
         console.log(`[Deep Research] ${retryWordCount >= 400 ? '✅' : '⚠️'} Retry: ${retryWordCount} kata (model: ${currentModel})`);
-        return { success: true, data: retryParsed, modelUsed: currentModel };
+        return { success: true, data: retryParsed, modelUsed: currentModel, triedModels };
       }
 
       console.log(`[Deep Research] ✅ Berhasil: "${ingredientName}" (${wordCount} kata, model: ${currentModel})`);
-      return { success: true, data: parsed, modelUsed: currentModel };
+      return { success: true, data: parsed, modelUsed: currentModel, triedModels };
 
     } catch (err: any) {
       const errorMsg = err.response?.data?.error?.message || err.message;
@@ -231,10 +257,10 @@ Kembalikan HANYA JSON tanpa markdown.`;
       
       // Non-retryable errors — langsung return
       if (provider === "byteplus" && (err.status === 404 || errorMsg.includes("404"))) {
-        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model." };
+        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model.", triedModels };
       }
       if (err.status === 402 || errorMsg.includes("402")) {
-        return { success: false, error: "Saldo API Habis (402). Silakan isi saldo di dashboard penyedia AI." };
+        return { success: false, error: "Saldo API Habis (402). Silakan isi saldo di dashboard penyedia AI.", triedModels };
       }
 
       // Retryable errors — coba model fallback berikutnya (hanya untuk Gemini)
@@ -246,11 +272,14 @@ Kembalikan HANYA JSON tanpa markdown.`;
 
       // Semua model gagal
       const modelDisplayName = currentModel.includes("ep-") ? `BytePlus Endpoint (${currentModel})` : currentModel;
-      return { success: false, error: `Model ${modelDisplayName} gagal menganalisis bahan ini: ${errorMsg}. Coba model lain atau coba lagi nanti.` };
+      if (isGemmaModel(modelName)) {
+        return { success: false, error: `Model Gemma (${modelDisplayName}) gagal menganalisis bahan ini: ${errorMsg}. Gemma tidak memiliki fallback — coba gunakan model Gemini.`, triedModels };
+      }
+      return { success: false, error: `Semua model Gemini gagal (${triedModels.join(' → ')}). Error terakhir: ${errorMsg}`, triedModels };
     }
   }
 
-  return { success: false, error: "Semua model AI gagal. Coba lagi nanti." };
+  return { success: false, error: "Semua model AI gagal. Coba lagi nanti.", triedModels };
 }
 
 // ========================================================
@@ -432,6 +461,22 @@ export async function POST(req: Request) {
 
                 const conflictDetail = `Nama INCI "${finalName}" sudah terdaftar di kamus sebagai ${nameConflict.matchType === 'name' ? 'bahan' : 'alias dari'}: ${nameConflict.inciName}. Alias telah di-update.`;
                 results.push({ name: ingredientName, success: false, aliasCount: 0, error: conflictDetail });
+
+                // AUTO-CLEANUP: Hapus laporan UnknownIngredient yang cocok
+                try {
+                  const matchingReports = await prisma.unknownIngredient.findMany({
+                    where: { isReviewed: false },
+                  });
+                  for (const report of matchingReports) {
+                    if (normalizeString(report.name) === normalizeString(ingredientName)) {
+                      await prisma.unknownIngredient.delete({ where: { id: report.id } });
+                      totalReportsCleaned++;
+                    }
+                  }
+                } catch (cleanupErr) {
+                  console.warn(`[Deep Research] Gagal membersihkan laporan untuk "${ingredientName}":`, cleanupErr);
+                }
+
                 sendEvent({
                   type: "progress",
                   current: i + 1,
@@ -565,12 +610,18 @@ export async function POST(req: Request) {
               });
 
               // ========================================================
-              // AUTO-CLEANUP: Hapus laporan yang cocok (nama + alias)
+              // AUTO-CLEANUP: Hapus laporan yang cocok (nama + alias + nama asli pencarian)
               // ========================================================
               const namesToMatch = [normalizeString(finalName)];
+              // Tambahkan nama asli yang dicari (bisa beda dari finalName AI)
+              if (normalizeString(ingredientName) !== normalizeString(finalName)) {
+                namesToMatch.push(normalizeString(ingredientName));
+              }
               if (aliasesString) {
                 splitAliases(aliasesString).forEach(cleanAlias => {
-                  namesToMatch.push(cleanAlias);
+                  if (!namesToMatch.includes(cleanAlias)) {
+                    namesToMatch.push(cleanAlias);
+                  }
                 });
               }
 
@@ -611,6 +662,7 @@ export async function POST(req: Request) {
                 aliasCount,
                 reportsCleaned: cleanedCount,
                 model: research.modelUsed,
+                triedModels: research.triedModels,
               });
 
             } catch (dbError: any) {
@@ -641,6 +693,7 @@ export async function POST(req: Request) {
               name: ingredientName,
               status: "error",
               error: research.error,
+              triedModels: research.triedModels,
             });
           }
 

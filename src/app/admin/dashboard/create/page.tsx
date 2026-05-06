@@ -320,15 +320,15 @@ export default function CreateIngredientPage() {
   const isToxic = formData.type === "TOXIC";
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
-        <Link href="/admin/dashboard" className="text-sm font-bold text-slate-500 hover:text-black transition-colors mb-6 inline-block">
+        <Link href="/admin/dashboard" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Kamus
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Bahan Baru 🧪</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Arsitektur V3.3: Terhubung ke Otomatisasi Laporan Sistem.</p>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">Tambah Bahan Baru 🧪</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 font-medium">Arsitektur V3.3: Terhubung ke Otomatisasi Laporan Sistem.</p>
 
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
@@ -340,7 +340,7 @@ export default function CreateIngredientPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2 md:col-span-1">
-                <label htmlFor="name" className="text-xs font-bold text-slate-700 uppercase">Nama (INCI)</label>
+                <label htmlFor="name" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Nama (INCI)</label>
                 <input 
                   id="name" 
                   required 
@@ -350,8 +350,8 @@ export default function CreateIngredientPage() {
                   onChange={handleNameChange}
                   className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${
                     nameError 
-                      ? 'bg-rose-50 border-2 border-rose-300 text-rose-900 focus:ring-rose-500' 
-                      : 'bg-white border border-slate-200 text-slate-900 focus:ring-black'
+                      ? 'bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-200 focus:ring-rose-500' 
+                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-black dark:focus:ring-indigo-500'
                   }`} 
                 />
                 {nameError && (
@@ -361,8 +361,8 @@ export default function CreateIngredientPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <label htmlFor="type" className="text-xs font-bold text-slate-700 uppercase">Sifat Kimia</label>
-                <select id="type" value={formData.type} onChange={handleTypeChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black">
+                <label htmlFor="type" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Sifat Kimia</label>
+                <select id="type" value={formData.type} onChange={handleTypeChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 outline-none text-sm font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-black dark:focus:ring-indigo-500">
                   <option value="BASIC">BASIC (Standar)</option>
                   <option value="BUFFER">BUFFER (Penenang)</option>
                   <option value="HARSH">HARSH (Keras/Asam)</option>
@@ -371,13 +371,13 @@ export default function CreateIngredientPage() {
               </div>
 
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
-                <label htmlFor="strengthLevel" className="text-xs font-bold text-slate-700 uppercase">Level Kekuatan</label>
+                <label htmlFor="strengthLevel" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Level Kekuatan</label>
                 <select 
                   id="strengthLevel" 
                   value={formData.strengthLevel} 
                   onChange={(e) => setFormData({...formData, strengthLevel: parseInt(e.target.value)})} 
                   disabled={formData.type !== "HARSH" && formData.type !== "BUFFER"}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 outline-none text-sm font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-black dark:focus:ring-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   <option value={1}>1 - Rendah/Lembut</option>
                   <option value={2}>2 - Menengah</option>
@@ -387,13 +387,13 @@ export default function CreateIngredientPage() {
               </div>
 
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>
-                <label htmlFor="functionalCategory" className="text-xs font-bold text-slate-700 uppercase">Fungsi Khusus</label>
+                <label htmlFor="functionalCategory" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Fungsi Khusus</label>
                 <select 
                   id="functionalCategory" 
                   value={formData.functionalCategory} 
                   onChange={(e) => setFormData({...formData, functionalCategory: e.target.value})} 
                   disabled={isToxic}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-black disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 outline-none text-sm font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-black dark:focus:ring-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
                   <option value="UMUM">UMUM (Lainnya)</option>
                   <option value="SURFAKTAN">SURFAKTAN (Sabun)</option>
@@ -407,7 +407,7 @@ export default function CreateIngredientPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
               <div className="space-y-2 md:col-span-3">
-                <label htmlFor="aliases" className="text-xs font-bold text-slate-700 uppercase">Sinonim / Alias</label>
+                <label htmlFor="aliases" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Sinonim / Alias</label>
                 <input 
                   id="aliases" 
                   type="text" 
@@ -416,8 +416,8 @@ export default function CreateIngredientPage() {
                   onChange={handleAliasesChange}
                   className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-medium focus:ring-2 transition-all ${
                     aliasError 
-                      ? 'bg-amber-50 border-2 border-amber-300 text-amber-900 focus:ring-amber-500' 
-                      : 'bg-white border border-slate-200 text-slate-900 focus:ring-black'
+                      ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 focus:ring-amber-500' 
+                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-black dark:focus:ring-indigo-500'
                   }`} 
                 />
                 {aliasError && (
@@ -434,19 +434,19 @@ export default function CreateIngredientPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <div className="grid grid-cols-1 gap-6 bg-slate-50 dark:bg-slate-800/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-700">
               <div className="space-y-2">
-                <label htmlFor="benefits" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
+                <label htmlFor="benefits" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center gap-2">
                   <span>📱</span> {isToxic ? "Alasan Berbahaya (Singkat)" : "Manfaat Singkat (Untuk Pengguna)"} <span className="text-rose-500">*</span>
                 </label>
-                <textarea id="benefits" required rows={2} placeholder={isToxic ? "Jelaskan secara singkat mengapa bahan ini berbahaya..." : "Jelaskan maksimal 2 kalimat untuk dibaca pengguna di aplikasi..."} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white ${isToxic ? 'border-rose-200 text-rose-900 focus:ring-rose-500 focus:border-transparent placeholder-rose-300' : 'border-slate-200 text-slate-900 focus:ring-black'}`} />
+                <textarea id="benefits" required rows={2} placeholder={isToxic ? "Jelaskan secara singkat mengapa bahan ini berbahaya..." : "Jelaskan maksimal 2 kalimat untuk dibaca pengguna di aplikasi..."} value={formData.benefits} onChange={(e) => setFormData({...formData, benefits: e.target.value})} className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-medium resize-none focus:ring-2 bg-white dark:bg-slate-800 ${isToxic ? 'border-rose-200 dark:border-rose-700 text-rose-900 dark:text-rose-200 focus:ring-rose-500 focus:border-transparent placeholder-rose-300' : 'border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-black dark:focus:ring-indigo-500'}`} />
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="aiContext" className="text-xs font-bold text-purple-700 uppercase flex items-center gap-2">
                   <span>🤖</span> Analisis Mendalam (Khusus Mesin AI) <span className="text-slate-400 font-normal lowercase tracking-normal">(Opsional)</span>
                 </label>
-                <textarea id="aiContext" rows={3} placeholder="Tuliskan mekanisme kimia, pH optimal, pantangan campuran, atau data klinis mendalam. AI akan menggunakan ini sebagai konteks tersembunyi..." value={formData.aiContext} onChange={(e) => setFormData({...formData, aiContext: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-purple-200 outline-none text-sm font-medium resize-none focus:ring-2 focus:ring-purple-500 bg-purple-50/30 text-purple-950 placeholder-purple-300" />
+                <textarea id="aiContext" rows={3} placeholder="Tuliskan mekanisme kimia, pH optimal, pantangan campuran, atau data klinis mendalam. AI akan menggunakan ini sebagai konteks tersembunyi..." value={formData.aiContext} onChange={(e) => setFormData({...formData, aiContext: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-purple-200 dark:border-purple-700 outline-none text-sm font-medium resize-none focus:ring-2 focus:ring-purple-500 bg-purple-50/30 dark:bg-purple-950/30 text-purple-950 dark:text-purple-200 placeholder-purple-300 dark:placeholder-purple-600" />
               </div>
             </div>
 
