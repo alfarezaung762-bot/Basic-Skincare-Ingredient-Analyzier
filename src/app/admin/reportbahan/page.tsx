@@ -502,8 +502,19 @@ export default function AdminReportBahan() {
                             className="px-3 py-2.5 text-xs font-bold bg-white border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                           >
                             <optgroup label="Google Gemini">
+                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3.1-flash-lite-preview"})}>Gemini 3.1 Flash-Lite Preview</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3.1-flash-preview"})}>Gemini 3.1 Flash Preview</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3-flash-preview"})}>Gemini 3 Flash Preview</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3-flash"})}>Gemini 3 Flash</option>
                               <option value={JSON.stringify({provider: "gemini", model: "gemini-2.5-pro"})}>Gemini 2.5 Pro</option>
                               <option value={JSON.stringify({provider: "gemini", model: "gemini-2.5-flash"})}>Gemini 2.5 Flash</option>
+                            </optgroup>
+                            <optgroup label="Google Gemma">
+                              <option value={JSON.stringify({provider: "gemini", model: "gemma-4-31b-it"})}>Gemma 4 31B</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemma-4-26b-a4b-it"})}>Gemma 4 26B MoE</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemma-3-27b-it"})}>Gemma 3 27B</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemma-3-12b-it"})}>Gemma 3 12B</option>
+                              <option value={JSON.stringify({provider: "gemini", model: "gemma-3-4b-it"})}>Gemma 3 4B</option>
                             </optgroup>
                             <optgroup label="ByteDance Ark (Endpoint Aktif)">
                               <option value={JSON.stringify({provider: "byteplus", model: "ep-20260505074455-nplpn"})}>DeepSeek-V3.2 (Active)</option>
