@@ -6,11 +6,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import AdminHeader from "@/components/admin/AdminHeader";
 
 export default function CreateBannerPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   const [formData, setFormData] = useState({
     altText: "",
@@ -31,20 +34,29 @@ export default function CreateBannerPage() {
       return;
     }
 
-    try {
-      const profile = JSON.parse(profileString);
-      const isSuperAdmin = profile.role === "SUPERADMIN";
-      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_BENNER");
+    if (profileString) {
+      try {
+        const profile = JSON.parse(profileString);
+        setAdminName(profile.username || "Admin");
+        setAdminRole(profile.role || "STAFF");
+        const isSuperAdmin = profile.role === "SUPERADMIN";
+        const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_BENNER");
 
-      if (!isSuperAdmin && !hasPermission) {
-        alert("Akses Ditolak: Anda tidak memiliki izin menambah Banner.");
-        router.push("/admin/dashboard");
+        if (!isSuperAdmin && !hasPermission) {
+          alert("Akses Ditolak: Anda tidak memiliki izin menambah Banner.");
+          router.push("/admin/dashboard");
+        }
+      } catch (error) {
+        sessionStorage.clear();
+        router.push("/admin/login");
       }
-    } catch (error) {
-      sessionStorage.clear();
-      router.push("/admin/login");
     }
   }, [router]);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    router.push("/admin/login");
+  };
 
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
@@ -139,16 +151,21 @@ export default function CreateBannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
-        <Link href="/admin/benner" className="text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors mb-6 inline-block">
+        <Link href="/admin/benner" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Banner
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Banner Baru 🖼️</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Unggah gambar yang akan ditampilkan pada slider halaman utama.</p>
+        <AdminHeader 
+          adminName={adminName}
+          adminRole={adminRole}
+          onLogout={handleLogout}
+          title="Tambah Banner Baru"
+          subtitle="Unggah gambar yang akan ditampilkan pada slider halaman utama."
+        />
 
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 mt-6">
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
               {message.text}
@@ -156,11 +173,11 @@ export default function CreateBannerPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
+            <div className="space-y-4 bg-slate-100 dark:bg-slate-800 p-6 rounded-2xl border-2 border-dashed border-slate-300">
               <label className="text-xs font-bold uppercase text-slate-700">Foto Banner</label>
               
               {uploadedImage && (
-                <div className="relative w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden group">
+                <div className="relative w-full max-w-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden group">
                   <img src={uploadedImage} alt="Banner Preview" className="w-full h-auto object-cover" />
                   <button 
                     type="button" 
@@ -179,16 +196,16 @@ export default function CreateBannerPage() {
                   type="file" 
                   accept="image/*" 
                   onChange={onSelectFile} 
-                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+                  className="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
                 />
               )}
               
               {imgSrc && !uploadedImage && (
-                <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner border border-indigo-100">
+                <div className="flex flex-col items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-inner border border-indigo-100">
                   <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={16 / 9}>
-                    <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[400px] rounded-lg border border-slate-200" />
+                    <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[400px] rounded-lg border border-slate-200 dark:border-slate-800" />
                   </ReactCrop>
-                  <p className="text-[11px] font-medium text-slate-500">Geser area terang untuk menyesuaikan potongan gambar.</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Geser area terang untuk menyesuaikan potongan gambar.</p>
                   
                   <button
                     type="button"
@@ -225,7 +242,7 @@ export default function CreateBannerPage() {
               )}
             </div>
 
-            <div className="space-y-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <div className="space-y-6 bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
               <div className="space-y-2">
                 <label htmlFor="altText" className="text-xs font-bold text-slate-700 uppercase">Teks Alternatif (Opsional, untuk SEO & Aksesibilitas)</label>
                 <input 
@@ -234,7 +251,7 @@ export default function CreateBannerPage() {
                   placeholder="Contoh: Promo Produk Sabun Muka 20%" 
                   value={formData.altText} 
                   onChange={(e) => setFormData({...formData, altText: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600 transition-all" 
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-600 transition-all" 
                 />
               </div>
 

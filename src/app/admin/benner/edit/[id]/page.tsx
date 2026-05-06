@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import AdminHeader from "@/components/admin/AdminHeader";
 
 export default function EditBannerPage() {
   const router = useRouter();
@@ -14,6 +15,8 @@ export default function EditBannerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   const [formData, setFormData] = useState({
     altText: "",
@@ -34,18 +37,22 @@ export default function EditBannerPage() {
       return;
     }
 
-    try {
-      const profile = JSON.parse(profileString);
-      const isSuperAdmin = profile.role === "SUPERADMIN";
-      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_BENNER");
+    if (profileString) {
+      try {
+        const profile = JSON.parse(profileString);
+        setAdminName(profile.username || "Admin");
+        setAdminRole(profile.role || "STAFF");
+        const isSuperAdmin = profile.role === "SUPERADMIN";
+        const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_BENNER");
 
-      if (!isSuperAdmin && !hasPermission) {
-        alert("Akses Ditolak: Anda tidak memiliki izin.");
-        router.push("/admin/dashboard");
+        if (!isSuperAdmin && !hasPermission) {
+          alert("Akses Ditolak: Anda tidak memiliki izin.");
+          router.push("/admin/dashboard");
+        }
+      } catch (error) {
+        sessionStorage.clear();
+        router.push("/admin/login");
       }
-    } catch (error) {
-      sessionStorage.clear();
-      router.push("/admin/login");
     }
 
     if (bannerId) {
@@ -163,25 +170,35 @@ export default function EditBannerPage() {
     }
   };
 
+  const handleLogout = () => {
+    sessionStorage.clear();
+    router.push("/admin/login");
+  };
+
   if (isFetching) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-         <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+         <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 border-t-indigo-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
-      <div className="max-w-4xl mx-auto">
-        <Link href="/admin/benner" className="text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors mb-6 inline-block">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 lg:p-12">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Link href="/admin/benner" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Banner
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <h1 className="text-2xl font-black text-slate-900 mb-2">Edit Banner 🖼️</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Ubah gambar atau teks alternatif banner.</p>
+        <AdminHeader 
+          adminName={adminName}
+          adminRole={adminRole}
+          onLogout={handleLogout}
+          title="Edit Banner"
+          subtitle="Ubah gambar atau teks alternatif banner."
+        />
 
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 mt-6">
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
               {message.text}

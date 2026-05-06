@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
+import AdminHeader from "@/components/admin/AdminHeader";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -12,6 +14,8 @@ export default function CreateProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [adminName, setAdminName] = useState("");
+  const [adminRole, setAdminRole] = useState("");
 
   const [formData, setFormData] = useState({
     namaProduk: "",
@@ -45,29 +49,35 @@ export default function CreateProductPage() {
   useEffect(() => {
     const profileString = sessionStorage.getItem("adminProfile");
     
-    // Jika belum login, tendang ke halaman login
     if (!profileString) {
       router.push("/admin/login");
       return;
     }
 
-    try {
-      const profile = JSON.parse(profileString);
-      const isSuperAdmin = profile.role === "SUPERADMIN";
-      const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KATALOG");
+    if (profileString) {
+      try {
+        const profile = JSON.parse(profileString);
+        setAdminName(profile.username || "Admin");
+        setAdminRole(profile.role || "STAFF");
+        const isSuperAdmin = profile.role === "SUPERADMIN";
+        const hasPermission = profile.permissions && profile.permissions.includes("MANAGE_KATALOG");
 
-      // Tolak jika bukan Superadmin dan tidak punya izin Manage Katalog
-      // VIEWER otomatis akan tertolak di sini
-      if (!isSuperAdmin && !hasPermission) {
-        alert("Akses Ditolak: Anda tidak memiliki izin untuk menambah produk ke katalog.");
-        router.push("/admin/dashboard");
-        return;
+        if (!isSuperAdmin && !hasPermission) {
+          alert("Akses Ditolak: Anda tidak memiliki izin untuk menambah produk ke katalog.");
+          router.push("/admin/dashboard");
+          return;
+        }
+      } catch (error) {
+        sessionStorage.clear();
+        router.push("/admin/login");
       }
-    } catch (error) {
-      sessionStorage.clear();
-      router.push("/admin/login");
     }
   }, [router]);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    router.push("/admin/login");
+  };
 
   const handleFocusChange = (focus: keyof typeof focuses) => {
     setFocuses((prev) => ({ ...prev, [focus]: !prev[focus] }));
@@ -196,15 +206,21 @@ export default function CreateProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 p-4 md:p-8 lg:p-12">
       <div className="max-w-4xl mx-auto">
-        <Link href="/admin/products" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors mb-6 inline-block">
+        <Link href="/admin/products" className="text-sm font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-blue-600 transition-colors mb-6 inline-block">
           ← Kembali ke Dasbor Produk
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <h1 className="text-2xl font-black text-slate-900 mb-2">Tambah Produk Baru 🛍️</h1>
-          <p className="text-sm text-slate-500 mb-8 font-medium">Lengkapi data produk afiliasi untuk dicocokkan oleh sistem cerdas.</p>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white dark:bg-slate-900 dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 dark:border-slate-800">
+        <AdminHeader 
+          adminName={adminName}
+          adminRole={adminRole}
+          onLogout={handleLogout}
+          title="Tambah Produk Baru"
+          subtitle="Masukkan detail produk baru untuk sistem rekomendasi."
+        />
+          <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-8 font-medium">Lengkapi data produk afiliasi untuk dicocokkan oleh sistem cerdas.</p>
 
           {message.text && (
             <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
@@ -214,7 +230,7 @@ export default function CreateProductPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             
-            <div className="space-y-4 bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
+            <div className="space-y-4 bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-2xl border-2 border-dashed border-slate-300">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold uppercase text-slate-700">Galeri Foto Produk (Bisa lebih dari 1)</label>
                 <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">{uploadedImages.length} Foto Ditambahkan</span>
@@ -224,7 +240,7 @@ export default function CreateProductPage() {
               {uploadedImages.length > 0 && (
                 <div className="flex flex-wrap gap-4 mb-4">
                   {uploadedImages.map((url, idx) => (
-                    <div key={idx} className="relative w-24 h-24 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden group">
+                    <div key={idx} className="relative w-24 h-24 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 shadow-sm overflow-hidden group">
                       <img src={url} alt={`Preview ${idx+1}`} className="w-full h-full object-cover" />
                       <button 
                         type="button" 
@@ -244,15 +260,15 @@ export default function CreateProductPage() {
                 type="file" 
                 accept="image/*" 
                 onChange={onSelectFile} 
-                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                className="block w-full text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
               />
               
               {imgSrc && (
-                <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl shadow-inner border border-blue-100">
+                <div className="flex flex-col items-center gap-4 bg-white dark:bg-slate-900 dark:bg-slate-900 p-4 rounded-xl shadow-inner border border-blue-100">
                   <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={1}>
-                    <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[300px] rounded-lg border border-slate-200" />
+                    <img ref={imgRef} alt="Area potong gambar" src={imgSrc} onLoad={onImageLoad} className="max-h-[300px] rounded-lg border border-slate-200 dark:border-slate-800 dark:border-slate-800" />
                   </ReactCrop>
-                  <p className="text-[11px] font-medium text-slate-500">Geser area terang untuk menyesuaikan potongan gambar (Rasio 1:1).</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400">Geser area terang untuk menyesuaikan potongan gambar (Rasio 1:1).</p>
                   
                   <button
                     type="button"
@@ -289,7 +305,7 @@ export default function CreateProductPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 dark:border-slate-800">
               <div className="space-y-2">
                 <label htmlFor="namaProduk" className="text-xs font-bold text-slate-700 uppercase">Nama Lengkap & Merek</label>
                 <input 
@@ -299,7 +315,7 @@ export default function CreateProductPage() {
                   placeholder="Contoh: Skintific 5X Ceramide Moisturizer" 
                   value={formData.namaProduk} 
                   onChange={(e) => setFormData({...formData, namaProduk: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 transition-all" 
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 transition-all" 
                 />
               </div>
               <div className="space-y-2">
@@ -309,7 +325,7 @@ export default function CreateProductPage() {
                   title="Tipe Produk"
                   value={formData.tipeProduk} 
                   onChange={(e) => setFormData({...formData, tipeProduk: e.target.value})} 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium bg-white text-slate-900 focus:ring-2 focus:ring-blue-600"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 outline-none text-sm font-medium bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="FACEWASH">Sabun Cuci Muka (Facewash)</option>
                   <option value="MOISTURIZER">Pelembap (Moisturizer)</option>
@@ -327,7 +343,7 @@ export default function CreateProductPage() {
                 placeholder="https://..." 
                 value={formData.tautanAfiliasi} 
                 onChange={(e) => setFormData({...formData, tautanAfiliasi: e.target.value})}
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
               />
             </div>
 
@@ -340,15 +356,15 @@ export default function CreateProductPage() {
                 placeholder="Tempel seluruh komposisi produk di sini, pastikan memisahkan setiap bahan dengan tanda koma..." 
                 value={formData.komposisiAsli} 
                 onChange={(e) => setFormData({...formData, komposisiAsli: e.target.value})} 
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 outline-none text-sm font-medium resize-none bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
               />
             </div>
 
-            <div className="space-y-3 pt-4 border-t border-slate-100">
+            <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 dark:border-slate-800">
               <label className="text-xs font-bold text-slate-700 uppercase">Fokus Perawatan (Pilih minimal satu)</label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(Object.keys(focuses) as Array<keyof typeof focuses>).map((focus) => (
-                  <label key={focus} htmlFor={`focus-${focus}`} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors">
+                  <label key={focus} htmlFor={`focus-${focus}`} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 cursor-pointer transition-colors">
                     <input 
                       id={`focus-${focus}`}
                       title={`Pilih fokus ${focus}`}
@@ -363,7 +379,7 @@ export default function CreateProductPage() {
               </div>
             </div>
 
-            <div className="space-y-6 pt-6 border-t border-slate-100">
+            <div className="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-800 dark:border-slate-800">
               <label htmlFor="isPinKreator" className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 cursor-pointer transition-colors">
                 <input 
                   id="isPinKreator"
@@ -386,7 +402,7 @@ export default function CreateProductPage() {
                       required={formData.isPinKreator} 
                       value={formData.masalahKulitPin} 
                       onChange={(e) => setFormData({...formData, masalahKulitPin: e.target.value})} 
-                      className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white text-slate-900 outline-none text-sm font-medium focus:ring-2 focus:ring-amber-500"
+                      className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 outline-none text-sm font-medium focus:ring-2 focus:ring-amber-500"
                     >
                       <option value="">-- Pilih Masalah Kulit Sasaran --</option>
                       <option value="Mencerahkan & Bekas Jerawat">Mencerahkan & Bekas Jerawat</option>
@@ -412,7 +428,7 @@ export default function CreateProductPage() {
                       placeholder="Jelaskan mengapa produk ini sangat direkomendasikan..." 
                       value={formData.catatanKreator} 
                       onChange={handleCatatanChange} 
-                      className="w-full px-4 py-3 rounded-xl border border-amber-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-amber-500" 
+                      className="w-full px-4 py-3 rounded-xl border border-amber-200 outline-none text-sm font-medium resize-none bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-amber-500" 
                     />
                   </div>
                 </motion.div>

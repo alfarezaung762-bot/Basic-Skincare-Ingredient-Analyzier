@@ -8,6 +8,8 @@
 }
 
 /* Dark mode via manual toggle (data-theme attribute) */
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 [data-theme="dark"] {
   --background: #0f172a;
   --foreground: #e2e8f0;

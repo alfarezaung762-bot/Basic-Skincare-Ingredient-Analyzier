@@ -21,9 +21,20 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [localReviews, setLocalReviews] = useState<any[]>(product.reviews || []);
+  const [filterStar, setFilterStar] = useState<number>(0);
 
   const productImages = product.gambarUrl ? product.gambarUrl.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const getStoreLogo = (url: string) => {
+    if (!url) return { name: "Beli Sekarang", icon: "🛒", bg: "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" };
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes("shopee") || lowerUrl.includes("shp.ee")) return { name: "Beli di Shopee", icon: "🛍️", bg: "bg-[#EE4D2D] hover:bg-[#D73211] shadow-[#EE4D2D]/20" };
+    if (lowerUrl.includes("tokopedia") || lowerUrl.includes("tokopedia.link")) return { name: "Beli di Tokopedia", icon: "🦉", bg: "bg-[#00AA5B] hover:bg-[#008F4C] shadow-[#00AA5B]/20" };
+    if (lowerUrl.includes("tiktok") || lowerUrl.includes("vt.tiktok.com")) return { name: "Beli di TikTok Shop", icon: "🎵", bg: "bg-black hover:bg-zinc-800 shadow-black/20" };
+    return { name: "Beli Sekarang", icon: "🛒", bg: "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" };
+  };
+  const storeInfo = getStoreLogo(product.tautanAfiliasi);
 
   useEffect(() => {
     if (productImages.length <= 1) return;
@@ -62,27 +73,62 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
         }),
       });
 
-      if (!res.ok) throw new Error("Gagal mengirim ulasan");
+      const responseData = await res.json();
 
-      const savedReview = await res.json();
+      if (!res.ok) {
+        if (responseData.isMaxEdits) {
+          alert(responseData.message);
+          return;
+        }
+        throw new Error(responseData.message || "Gagal mengirim ulasan");
+      }
 
       // 1. Update tampilan di dalam Modal
-      setLocalReviews([savedReview, ...localReviews]);
+      if (responseData.isEdited) {
+        // Ganti review yang lama
+        setLocalReviews(prev => prev.map(r => r.id === responseData.id ? responseData : r));
+        alert(responseData.message);
+      } else {
+        // Tambah review baru di atas
+        setLocalReviews([responseData, ...localReviews]);
+        alert("Ulasan pertama Anda berhasil ditambahkan! Anda memiliki sisa 1x kesempatan edit.");
+      }
 
       // 2. Laporkan ke Komponen Kartu (Parent) agar bintang di luar ikut berubah
       if (onReviewAdded) {
-        onReviewAdded(savedReview);
+        onReviewAdded(responseData);
       }
 
       setComment("");
       setRating(5);
 
-    } catch (err) {
-      alert("Terjadi kesalahan sistem saat menyimpan ulasan.");
+    } catch (err: any) {
+      alert(err.message || "Terjadi kesalahan sistem saat menyimpan ulasan.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!session?.user?.email) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus ulasan ini? Anda hanya memiliki kesempatan menulis ulang 1 kali.")) return;
+    
+    try {
+      const res = await fetch(`/api/analyze/reviews?id=${reviewId}&email=${session.user.email}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      
+      alert(data.message);
+      // Hapus dari state lokal
+      setLocalReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (err: any) {
+      alert(err.message || "Gagal menghapus ulasan.");
+    }
+  };
+
+  const filteredReviews = filterStar === 0 ? localReviews : localReviews.filter(r => r.rating === filterStar);
 
   return (
     <motion.div
@@ -153,7 +199,7 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <a href={product.tautanAfiliasi} target="_blank" rel="noopener noreferrer" className="col-span-2 sm:col-span-1 py-3.5 bg-rose-500 hover:bg-rose-600 text-white text-center text-xs font-black rounded-xl shadow-lg shadow-rose-500/20 transition-all">🛒 Beli Sekarang</a>
+                <a href={product.tautanAfiliasi} target="_blank" rel="noopener noreferrer" className={`col-span-2 sm:col-span-1 py-3.5 ${storeInfo.bg} text-white text-center text-xs font-black rounded-xl shadow-lg transition-all flex items-center justify-center gap-2`}><span>{storeInfo.icon}</span> {storeInfo.name}</a>
                 <button onClick={() => onAnalyzeThis(product.komposisiAsli)} className="col-span-2 sm:col-span-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-center text-xs font-black rounded-xl transition-all shadow-md">🔬 Analisis Ulang</button>
               </div>
             </div>
@@ -198,13 +244,30 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
           <hr className="border-slate-200 border-dashed" />
 
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="font-black text-slate-900 text-lg flex items-center gap-2"><span>💬</span> Diskusi & Ulasan Komunitas</h3>
-              <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm">
-                <span className="text-amber-500 text-base font-black">★</span>
-                <span className="font-black text-amber-800 text-sm">
-                  {localReviews.length > 0 ? (localReviews.reduce((acc: number, r: any) => acc + r.rating, 0) / localReviews.length).toFixed(1) : "0.0"}
-                </span>
+              <div className="flex items-center gap-3">
+                
+                {/* FILTER BINTANG */}
+                <select 
+                  value={filterStar} 
+                  onChange={(e) => setFilterStar(Number(e.target.value))}
+                  className="bg-white border border-slate-200 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-sm outline-none cursor-pointer focus:border-amber-400"
+                >
+                  <option value={0}>Semua Bintang</option>
+                  <option value={5}>⭐⭐⭐⭐⭐ (5)</option>
+                  <option value={4}>⭐⭐⭐⭐ (4)</option>
+                  <option value={3}>⭐⭐⭐ (3)</option>
+                  <option value={2}>⭐⭐ (2)</option>
+                  <option value={1}>⭐ (1)</option>
+                </select>
+
+                <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm">
+                  <span className="text-amber-500 text-base font-black">★</span>
+                  <span className="font-black text-amber-800 text-sm">
+                    {localReviews.length > 0 ? (localReviews.reduce((acc: number, r: any) => acc + r.rating, 0) / localReviews.length).toFixed(1) : "0.0"}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -233,21 +296,33 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                   <span className={`text-[10px] font-black px-2 py-1 rounded bg-white border ${charCount > 60 ? "text-rose-500 border-rose-200 bg-rose-50" : "text-slate-400 border-slate-200"}`}>
                     {charCount}/60 HURUF
                   </span>
-                  <button disabled={isSubmitting || !comment.trim() || charCount > 60 || !session} className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl text-xs transition-all disabled:opacity-30 disabled:grayscale active:scale-95 shadow-md">
-                    {isSubmitting ? "Mengirim..." : "Kirim Ulasan 🚀"}
-                  </button>
+                  <div className="flex gap-2">
+                    {session?.user?.name && localReviews.find(r => r.user?.name === session.user?.name && !r.isDeleted) ? (
+                      <button type="button" onClick={() => handleDeleteReview(localReviews.find(r => r.user?.name === session.user?.name && !r.isDeleted).id)} className="px-4 py-2.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-black rounded-xl text-xs transition-all active:scale-95 shadow-sm">
+                        Hapus Ulasan 🗑️
+                      </button>
+                    ) : null}
+                    <button disabled={isSubmitting || !comment.trim() || charCount > 60 || !session} className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl text-xs transition-all disabled:opacity-30 disabled:grayscale active:scale-95 shadow-md">
+                      {isSubmitting ? "Mengirim..." : "Kirim Ulasan 🚀"}
+                    </button>
+                  </div>
                 </div>
               </form>
 
               <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                {localReviews.length > 0 ? (
-                  localReviews.map((rev: any, i: number) => (
+                {filteredReviews.length > 0 ? (
+                  filteredReviews.map((rev: any, i: number) => (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} key={i} className="bg-white p-5 rounded-2xl border border-rose-500 shadow-sm flex flex-col sm:flex-row gap-4 sm:gap-5 items-stretch overflow-hidden">
                       <div className="flex-shrink-0 w-full sm:w-[140px] flex flex-col justify-start border-b sm:border-b-0 sm:border-r border-slate-200 pb-3 sm:pb-0 sm:pr-4">
                         <span className="font-black text-rose-500 text-sm leading-snug break-words">{rev.user?.name || "Pengguna Aplikasi"}</span>
                         <span className="text-[10px] italic text-slate-400 mt-1">
                           {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
+                        {rev.editCount > 1 && (
+                          <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded mt-2 w-fit">
+                            Ditulis Ulang
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1 flex flex-col justify-start min-w-0">
                         <div className="flex text-amber-400 text-sm mb-1.5 drop-shadow-sm">
@@ -262,7 +337,9 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
                     <span className="text-3xl mb-2 grayscale opacity-50">📭</span>
-                    <p className="text-slate-500 text-sm font-bold">Jadilah yang pertama!<br /><span className="font-medium text-xs text-slate-400">Bagikan pengalamanmu mencoba produk ini.</span></p>
+                    <p className="text-slate-500 text-sm font-bold">
+                      {filterStar === 0 ? "Jadilah yang pertama!\nBagikan pengalamanmu mencoba produk ini." : "Tidak ada ulasan dengan bintang ini."}
+                    </p>
                   </div>
                 )}
               </div>

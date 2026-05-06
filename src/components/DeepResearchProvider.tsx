@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useRef, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type ResearchEngine = {
@@ -16,6 +16,7 @@ interface DeepResearchContextType {
   showResearchModal: boolean;
   setShowResearchModal: (show: boolean) => void;
   startResearch: (names: string[], adminName: string, adminRole: string, engine: ResearchEngine) => Promise<void>;
+  cancelResearch: () => void;
 }
 
 const DeepResearchContext = createContext<DeepResearchContextType | undefined>(undefined);
@@ -26,6 +27,16 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
   const [researchLog, setResearchLog] = useState<any[]>([]);
   const [researchSummary, setResearchSummary] = useState<any>(null);
   const [showResearchModal, setShowResearchModal] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const cancelResearch = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsResearching(false);
+    // Keep modal open to show partial results
+  };
 
   const startResearch = async (names: string[], adminName: string, adminRole: string, engine: ResearchEngine) => {
     if (isResearching) return;
@@ -37,10 +48,14 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
     setResearchProgress(null);
 
     try {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const res = await fetch("/api/admin/deep-research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -105,10 +120,24 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error: any) {
-      console.error("Deep Research Error:", error);
-      setResearchSummary({ success: 0, failed: names.length, skipped: 0, totalAliasesFound: 0, totalReportsCleaned: 0 });
+      if (error.name === "AbortError") {
+        console.log("Deep Research dibatalkan oleh user.");
+        // Don't overwrite summary — partial results may already be logged
+        if (!researchSummary) {
+          setResearchSummary({ 
+            success: researchLog.filter(l => l.status === "done").length, 
+            failed: researchLog.filter(l => l.status === "error").length, 
+            skipped: 0, totalAliasesFound: 0, totalReportsCleaned: 0,
+            cancelled: true,
+          });
+        }
+      } else {
+        console.error("Deep Research Error:", error);
+        setResearchSummary({ success: 0, failed: names.length, skipped: 0, totalAliasesFound: 0, totalReportsCleaned: 0 });
+      }
     } finally {
       setIsResearching(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -122,6 +151,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
         showResearchModal,
         setShowResearchModal,
         startResearch,
+        cancelResearch,
       }}
     >
       {children}
@@ -148,9 +178,14 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                 {!isResearching ? (
                   <button onClick={() => setShowResearchModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full transition-colors font-bold" title="Tutup">✕</button>
                 ) : (
-                  <button onClick={() => setShowResearchModal(false)} className="px-3 py-1.5 text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors" title="Proses tetap berjalan di latar belakang">
-                    ⬇️ Minimize
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={cancelResearch} className="px-3 py-1.5 text-[10px] font-bold bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors" title="Batalkan analisis">
+                      ⏹ Batalkan
+                    </button>
+                    <button onClick={() => setShowResearchModal(false)} className="px-3 py-1.5 text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors" title="Proses tetap berjalan di latar belakang">
+                      ⬇️ Minimize
+                    </button>
+                  </div>
                 )}
               </div>
 

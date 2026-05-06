@@ -105,7 +105,13 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
 
       {/* === BAGIAN 1: PILIHAN UTAMA KREATOR === */}
       {creatorPins.length > 0 && (
-        <div className="bg-gradient-to-b from-amber-50/80 to-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-amber-200">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="bg-gradient-to-b from-amber-50/80 to-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-amber-200"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 border-b border-amber-200/50 pb-5 gap-4">
             <div>
               <h2 className="text-xl font-black text-amber-900 flex items-center gap-2">
@@ -127,7 +133,10 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
               {currentPins.map((pinProduct, idx) => (
                 <motion.div
                   key={pinProduct.id}
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                  initial={{ opacity: 0, y: 30 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
                   onClick={() => setSelectedProduct(pinProduct)}
                   className="flex flex-col bg-white rounded-2xl border-2 border-amber-300 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative h-full shadow-amber-900/5"
                 >
@@ -165,12 +174,18 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
               ))}
             </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* === BAGIAN 2: ALTERNATIF SERUPA === */}
       {similarProducts.length > 0 && (
-        <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-200"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 border-b border-slate-100 pb-5 gap-4">
             <div>
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
@@ -188,7 +203,11 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
                 return (
                   <motion.div
                     key={product.id}
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: idx * 0.05 }}
+                    initial={{ opacity: 0, y: 30 }} 
+                    whileInView={{ opacity: 1, y: 0 }} 
+                    viewport={{ once: true, margin: "-50px" }}
+                    exit={{ opacity: 0, scale: 0.9 }} 
+                    transition={{ duration: 0.5, delay: idx * 0.1 }}
                     onClick={() => setSelectedProduct(product)}
                     className="flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all cursor-pointer group relative h-full"
                   >
@@ -239,7 +258,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
               <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white disabled:opacity-40 text-sm font-black hover:bg-slate-50 transition-colors shadow-sm">→</button>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );

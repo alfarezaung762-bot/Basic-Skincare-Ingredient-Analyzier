@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { splitAliases } from "@/lib/splitAliases";
 import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
+import AdminHeader from "@/components/admin/AdminHeader";
 import { useDeepResearch, ResearchEngine } from "@/components/DeepResearchProvider";
 
 interface UnknownReport {
@@ -198,7 +199,7 @@ export default function AdminReportBahan() {
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
-      else if (next.size < 15) next.add(id);
+      else if (next.size < 50) next.add(id);
       return next;
     });
   };
@@ -211,7 +212,7 @@ export default function AdminReportBahan() {
     if (selectedIds.size === filtered.length && filtered.length > 0) {
       setSelectedIds(new Set());
     } else {
-      const ids = filtered.slice(0, 15).map(r => r.id);
+      const ids = filtered.slice(0, 50).map(r => r.id);
       setSelectedIds(new Set(ids));
     }
   };
@@ -278,7 +279,7 @@ export default function AdminReportBahan() {
 
   if (accessDeniedMessage) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 flex items-center justify-center">
         <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/dashboard")} />
       </div>
     );
@@ -286,14 +287,14 @@ export default function AdminReportBahan() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 p-4 md:p-8 lg:p-12 relative overflow-hidden">
 
       {/* POP-UP MODAL TINJAUAN KELUHAN */}
       <AnimatePresence>
@@ -303,17 +304,17 @@ export default function AdminReportBahan() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[80vh] flex flex-col"
+              className="bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-slate-100 dark:border-slate-800 dark:border-slate-800 max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-start mb-6 shrink-0">
                 <div>
-                  <h4 className="font-black text-xl text-slate-900 capitalize tracking-tight">{selectedIngredient}</h4>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1 block">
+                  <h4 className="font-black text-xl text-slate-900 dark:text-slate-100 dark:text-slate-100 capitalize tracking-tight">{selectedIngredient}</h4>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1 block">
                     {groupedMismatch[selectedIngredient]?.length || 0} Laporan Pengguna
                   </span>
                 </div>
-                <button onClick={() => setSelectedIngredient(null)} className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full transition-colors font-bold">✕</button>
+                <button onClick={() => setSelectedIngredient(null)} className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-200 rounded-full transition-colors font-bold">✕</button>
               </div>
               
               <div className="overflow-y-auto pr-2 space-y-3 mb-6 flex-1">
@@ -329,11 +330,11 @@ export default function AdminReportBahan() {
               </div>
               
               {/* AKSI MODAL DENGAN PERENDERAN BERSYARAT */}
-              <div className="flex gap-3 shrink-0 pt-4 border-t border-slate-100 mt-auto">
+              <div className="flex gap-3 shrink-0 pt-4 border-t border-slate-100 dark:border-slate-800 dark:border-slate-800 mt-auto">
                 {!isViewer && (
                   <button 
                     onClick={() => handleDeleteMismatchGroup(selectedIngredient)}
-                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl border border-slate-200 transition-colors shadow-sm active:scale-95"
+                    className="flex-1 py-3 bg-white dark:bg-slate-900 dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 text-slate-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 transition-colors shadow-sm active:scale-95"
                   >
                     🗑️ Abaikan Semua
                   </button>
@@ -350,7 +351,7 @@ export default function AdminReportBahan() {
 
                 {/* Info jika tidak ada tombol yang bisa ditekan oleh Viewer */}
                 {isViewer && !canManageKamus && (
-                  <div className="flex-1 py-3 text-center text-xs font-bold text-slate-400 italic bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="flex-1 py-3 text-center text-xs font-bold text-slate-400 italic bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 dark:border-slate-800">
                     Mode Pemantau: Aksi dinonaktifkan
                   </div>
                 )}
@@ -365,27 +366,17 @@ export default function AdminReportBahan() {
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* Header Admin */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
-              <span>🎛️</span> Admin Control Panel
-            </h1>
-            <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Kelola antrean pelaporan bahan untuk AI.</p>
-          </div>
-          <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100 mt-2 md:mt-0">
-            <div className="text-left md:text-right">
-              <p className="text-sm font-black text-slate-900">{adminName}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
-            </div>
-            <button onClick={handleLogout} className="px-5 py-2 shrink-0 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
-              Logout
-            </button>
-          </div>
-        </div>
+        <AdminHeader 
+          adminName={adminName}
+          adminRole={adminRole}
+          onLogout={handleLogout}
+          title="Admin Control Panel"
+          subtitle="Kelola antrean pelaporan bahan untuk AI."
+        />
 
         {/* Menu Navigasi (Dengan 2 Lencana Real-time) */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-nowrap overflow-x-auto gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:pb-0 custom-scrollbar">
-          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
             <span>📚 Kamus Bahan Utama</span>
           </Link>
           
@@ -401,43 +392,43 @@ export default function AdminReportBahan() {
             </div>
           </div>
 
-          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner (Hanya Admin dengan Izin / Superadmin) */}
           {(isSuperAdmin || (adminRole === "ADMIN" && sessionStorage.getItem("adminProfile")?.includes("MANAGE_BENNER"))) && (
-            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
               <span>🖼️ Kelola Banner</span>
             </Link>
           )}
 
           {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
+            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-purple-700 border border-purple-200 hover:bg-purple-50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
         </motion.div>
 
         {/* Konten Utama */}
-        <div className="bg-white min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-900 dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 dark:border-slate-800">
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 pb-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 pb-4">
             <div className="flex gap-4">
               <button 
                 onClick={() => setActiveTab("SYSTEM")}
-                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
               >
                 🤖 Laporan Sistem (Bahan Asing) 
                 {unknownReports.length > 0 && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{unknownReports.length}</span>}
               </button>
               <button 
                 onClick={() => setActiveTab("USER")}
-                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
               >
                 👤 Laporan Pengguna
                 {Object.keys(groupedMismatch).length > 0 && <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{Object.keys(groupedMismatch).length}</span>}
@@ -451,7 +442,7 @@ export default function AdminReportBahan() {
                 placeholder={activeTab === "SYSTEM" ? "Cari bahan asing..." : "Cari bahan atau keluhan..."} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
               />
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
               {searchQuery && (
@@ -467,29 +458,29 @@ export default function AdminReportBahan() {
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-50">
-              <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 font-medium animate-pulse">Menarik data pelaporan...</p>
+              <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 dark:border-slate-800 border-t-slate-800 rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium animate-pulse">Menarik data pelaporan...</p>
             </div>
           ) : (
             <>
               {activeTab === "SYSTEM" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-                  <p className="text-sm text-slate-500 font-medium mb-6">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium mb-6">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
                   
                   {/* SELECTION BAR + DEEP RESEARCH BUTTON */}
                   {unknownReports.length > 0 && canManageKamus && (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 p-3 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={toggleSelectAll}
                           disabled={isResearching}
-                          className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 bg-white border border-slate-200 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                          className="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100 px-3 py-1.5 bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-lg transition-all active:scale-95 disabled:opacity-50"
                         >
-                          {selectedIds.size > 0 ? "Bersihkan Pilihan" : `Pilih Semua (max 15)`}
+                          {selectedIds.size > 0 ? "Bersihkan Pilihan" : `Pilih Semua (max 50)`}
                         </button>
                         {selectedIds.size > 0 && (
                           <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
-                            {selectedIds.size}/{Math.min(unknownReports.length, 15)} dipilih
+                            {selectedIds.size}/{Math.min(unknownReports.length, 50)} dipilih
                           </span>
                         )}
                       </div>
@@ -499,7 +490,7 @@ export default function AdminReportBahan() {
                             value={JSON.stringify(selectedEngine)} 
                             onChange={(e) => setSelectedEngine(JSON.parse(e.target.value))}
                             disabled={isResearching}
-                            className="px-3 py-2.5 text-xs font-bold bg-white border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                           >
                             <optgroup label="Google Gemini">
                               <option value={JSON.stringify({provider: "gemini", model: "gemini-3.1-flash-lite-preview"})}>Gemini 3.1 Flash-Lite Preview</option>
@@ -530,7 +521,7 @@ export default function AdminReportBahan() {
                               placeholder="Masukkan Endpoint ID (ep-...)"
                               value={customEndpoint}
                               onChange={(e) => setCustomEndpoint(e.target.value)}
-                              className="px-3 py-2.5 text-xs font-bold bg-white border border-indigo-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
+                              className="px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-900 dark:bg-slate-900 border border-indigo-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
                             />
                           )}
                           <button 
@@ -553,21 +544,21 @@ export default function AdminReportBahan() {
                   )}
 
                   {unknownReports.length === 0 ? (
-                    <div className="text-center py-20 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    <div className="text-center py-20 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 dark:border-slate-800">
                       <span className="text-4xl block mb-4 opacity-50">✨</span>
                       <p className="text-slate-700 font-bold text-lg mb-1">Sistem Bersih!</p>
-                      <p className="text-slate-500 text-sm font-medium">Tidak ada bahan asing yang antre untuk direview.</p>
+                      <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm font-medium">Tidak ada bahan asing yang antre untuk direview.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 shadow-sm">
                       <table className="w-full text-left text-sm text-slate-700">
-                        <thead className="bg-slate-100/80 text-slate-600 font-bold border-b border-slate-200">
+                        <thead className="bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/80 text-slate-600 font-bold border-b border-slate-200 dark:border-slate-800 dark:border-slate-800">
                           <tr>
                             {canManageKamus && (
                               <th className="p-4 w-12">
                                 <input 
                                   type="checkbox" 
-                                  checked={selectedIds.size > 0 && selectedIds.size === Math.min(unknownReports.length, 15)}
+                                  checked={selectedIds.size > 0 && selectedIds.size === Math.min(unknownReports.length, 50)}
                                   onChange={toggleSelectAll}
                                   disabled={isResearching}
                                   className="w-4 h-4 rounded accent-indigo-600 cursor-pointer disabled:opacity-50"
@@ -594,7 +585,7 @@ export default function AdminReportBahan() {
                                   className={`transition-colors group relative ${
                                     selectedIds.has(report.id) ? "bg-indigo-50/40" : 
                                     isClaimedByMe ? "bg-emerald-50 border-l-4 border-l-emerald-500" :
-                                    isClaimedByOther ? "bg-slate-100/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
+                                    isClaimedByOther ? "bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
                                   }`}
                                 >
                                   {canManageKamus && (
@@ -603,7 +594,7 @@ export default function AdminReportBahan() {
                                         type="checkbox" 
                                         checked={selectedIds.has(report.id)}
                                         onChange={() => toggleSelectId(report.id)}
-                                        disabled={isResearching || (!selectedIds.has(report.id) && selectedIds.size >= 15)}
+                                        disabled={isResearching || Boolean(report.analyzedBy && report.analyzedBy !== adminName) || (!selectedIds.has(report.id) && selectedIds.size >= 50)}
                                         className="w-4 h-4 rounded accent-indigo-600 cursor-pointer disabled:opacity-50"
                                       />
                                     </td>
@@ -624,7 +615,7 @@ export default function AdminReportBahan() {
                                   <td className="p-4 text-center">
                                     <span className="inline-block bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-black text-xs border border-amber-200 shadow-sm">{report.reportCount}x Dicari</span>
                                   </td>
-                                  <td className="p-4 text-slate-500 font-medium text-xs">{new Date(report.createdAt).toLocaleDateString('id-ID')}</td>
+                                  <td className="p-4 text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium text-xs">{new Date(report.createdAt).toLocaleDateString('id-ID')}</td>
                                   <td className="p-4 text-right">
                                     <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
                                       
@@ -632,11 +623,12 @@ export default function AdminReportBahan() {
                                       {!isViewer && (
                                         <button 
                                           onClick={() => handleToggleClaim(report.id, "unknown", report.analyzedBy)}
+                                          disabled={Boolean(report.analyzedBy && report.analyzedBy !== adminName)}
                                           className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
                                             isClaimedByMe 
                                               ? "bg-emerald-600 text-white border-emerald-700 shadow-sm hover:bg-emerald-700" 
-                                              : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50 shadow-sm"
-                                          }`}
+                                              : "bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm"
+                                          } disabled:opacity-30`}
                                           title={isClaimedByMe ? "Selesai Pengecekan" : "Tandai Sedang Anda Cek"}
                                         >
                                           {isClaimedByMe ? "✓ Selesai" : "⏳ Cek Bahan"}
@@ -671,18 +663,18 @@ export default function AdminReportBahan() {
 
               {activeTab === "USER" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-                  <p className="text-sm text-slate-500 mb-6 font-medium">Bahan terdaftar yang dilaporkan memiliki ketidaksesuaian fungsi atau manfaat oleh pengguna.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-6 font-medium">Bahan terdaftar yang dilaporkan memiliki ketidaksesuaian fungsi atau manfaat oleh pengguna.</p>
                   
                   {Object.keys(groupedMismatch).length === 0 ? (
-                    <div className="text-center py-20 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    <div className="text-center py-20 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 dark:border-slate-800">
                       <span className="text-4xl block mb-4 opacity-50">🎉</span>
                       <p className="text-slate-700 font-bold text-lg mb-1">Pengguna Puas!</p>
-                      <p className="text-slate-500 text-sm font-medium">Tidak ada keluhan ketidaksesuaian data saat ini.</p>
+                      <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm font-medium">Tidak ada keluhan ketidaksesuaian data saat ini.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 shadow-sm">
                       <table className="w-full text-left text-sm text-slate-700">
-                        <thead className="bg-slate-100/80 text-slate-600 font-bold border-b border-slate-200">
+                        <thead className="bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/80 text-slate-600 font-bold border-b border-slate-200 dark:border-slate-800 dark:border-slate-800">
                           <tr>
                             <th className="p-4 whitespace-nowrap">Nama Bahan (INCI)</th>
                             <th className="p-4 text-center whitespace-nowrap">Total Keluhan</th>
@@ -710,7 +702,7 @@ export default function AdminReportBahan() {
                               <td className="p-4 text-right">
                                 <button 
                                   onClick={() => setSelectedIngredient(ingredientName)} 
-                                  className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ml-auto"
+                                  className="bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ml-auto"
                                 >
                                   <span>🔍</span> Tinjau Keluhan
                                 </button>

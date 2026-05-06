@@ -97,7 +97,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
 
   return (
     <>
-      <main className="min-h-screen p-4 md:p-8 font-sans flex flex-col relative overflow-hidden">
+      <main className="min-h-screen p-4 md:p-8 font-sans flex flex-col relative">
 
         {/* === DOT PATTERN OVERLAY === */}
         <div className="fixed inset-0 dot-pattern pointer-events-none z-0" />
@@ -114,19 +114,30 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="glass-card rounded-3xl p-6 relative overflow-hidden"
+            className={`glass-card rounded-3xl p-6 overflow-hidden sticky top-4 z-50 backdrop-blur-xl shadow-lg border border-slate-200/50 ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80'}`}
           >
             {/* Gradient top accent bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400" />
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className={`text-2xl font-bold ${textPrimary} flex items-center gap-2`}>
-                  Halo, <span className="gradient-text">{displayName}</span> 👋
-                </h2>
-                <p className={`${textSecondary} text-sm mt-1 font-medium`}>
-                  {isGuest ? "Masuk untuk mulai analisis skincare-mu!" : "Siap merawat kulitmu hari ini?"}
-                </p>
+              <div className="flex items-center gap-4">
+                {activeView !== "menu" && (
+                  <button
+                    onClick={() => setActiveView("menu")}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all border shrink-0 ${isDark ? "bg-slate-700/60 border-slate-600 hover:bg-slate-600/80 text-teal-400" : "bg-white border-slate-200 hover:bg-slate-50 text-teal-600"} btn-press`}
+                    title="Kembali ke Menu"
+                  >
+                    ←
+                  </button>
+                )}
+                <div>
+                  <h2 className={`text-2xl font-bold ${textPrimary} flex items-center gap-2`}>
+                    Halo, <span className="gradient-text">{displayName}</span> 👋
+                  </h2>
+                  <p className={`${textSecondary} text-sm mt-1 font-medium`}>
+                    {isGuest ? "Masuk untuk mulai analisis skincare-mu!" : "Siap merawat kulitmu hari ini?"}
+                  </p>
+                </div>
               </div>
               <div className="flex gap-2 sm:gap-3 items-center flex-wrap">
                 {/* Dark/Light Mode Toggle */}
@@ -288,14 +299,6 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   transition={{ duration: 0.4, ease: "easeOut" }}
                   className="space-y-4 w-full"
                 >
-                  <motion.button
-                    whileHover={{ x: -4 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveView("menu")}
-                    className={`flex items-center gap-2 text-sm font-bold transition-colors glass-card px-4 py-2 rounded-xl w-fit border ${isDark ? "text-slate-400 hover:text-teal-400 border-slate-700" : "text-slate-500 hover:text-teal-600 border-slate-200"}`}
-                  >
-                    <span className="transition-transform">←</span> Kembali ke Menu Utama
-                  </motion.button>
                   <div className={`glass-card rounded-[2.5rem] p-4 md:p-8 relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400" />
                     <SingleAnalyzer />
@@ -313,14 +316,6 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   transition={{ duration: 0.4, ease: "easeOut" }}
                   className="space-y-4 w-full"
                 >
-                  <motion.button
-                    whileHover={{ x: -4 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveView("menu")}
-                    className={`flex items-center gap-2 text-sm font-bold transition-colors glass-card px-4 py-2 rounded-xl w-fit border ${isDark ? "text-slate-400 hover:text-indigo-400 border-slate-700" : "text-slate-500 hover:text-indigo-600 border-slate-200"}`}
-                  >
-                    <span className="transition-transform">←</span> Kembali ke Menu Utama
-                  </motion.button>
                   <div className={`glass-card rounded-[2.5rem] p-4 md:p-8 relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400" />
                     <CombineAnalyzer />

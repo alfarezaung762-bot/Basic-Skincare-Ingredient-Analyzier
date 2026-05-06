@@ -12,7 +12,7 @@ export default function SingleAnalyzer() {
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("FACEWASH");
   const [ingredients, setIngredients] = useState("");
-  const [analysisMode, setAnalysisMode] = useState<"HYBRID" | "FAST">("HYBRID");
+  const [analysisMode, setAnalysisMode] = useState<"HYBRID" | "FAST">("FAST");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // Data Hasil API
@@ -156,7 +156,16 @@ export default function SingleAnalyzer() {
             
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Daftar Komposisi <span className="text-rose-500">*</span></label>
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-0">Daftar Komposisi <span className="text-rose-500">*</span></label>
+                  <div className="group relative flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center cursor-help transition-colors group-hover:bg-indigo-100 group-hover:text-indigo-600">?</span>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 text-slate-200 text-[11px] font-medium rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 leading-relaxed pointer-events-none">
+                      Masukkan daftar bahan yang dipisahkan dengan koma (,). Dapatkan data ini dari label kemasan produk atau deskripsi di toko online.
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800"></div>
+                    </div>
+                  </div>
+                </div>
                 <button type="button" onClick={handleOCRClick} className="text-xs flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl hover:bg-slate-50 font-bold shadow-sm transition-all active:scale-95">
                   <span>📷</span> Pindai Label
                 </button>

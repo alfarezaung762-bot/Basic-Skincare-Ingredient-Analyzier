@@ -19,12 +19,12 @@ const normalizeString = (str: string) => {
 };
 
 // ========================================================
-// MODEL FALLBACK CHAIN
-// Hanya digunakan jika provider = "gemini" dan model tidak dispesifikasikan
+// DAFTAR FALLBACK MODEL GOOGLE (dicoba otomatis saat model utama gagal)
 // ========================================================
-const FALLBACK_MODELS = [
+const GEMINI_FALLBACK_ORDER = [
   "gemini-2.5-flash",
-  "gemini-1.5-flash-latest",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
 ];
 
 // ========================================================
@@ -60,12 +60,22 @@ const extractJson = (text: string) => {
 };
 
 // ========================================================
-// FUNGSI UTAMA: Riset satu bahan via berbagai AI
+// FUNGSI UTAMA: Riset satu bahan via berbagai AI (dengan fallback otomatis)
 // ========================================================
-async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro"): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string }> {
+async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro"): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean }> {
+  const currentDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const currentYear = new Date().getFullYear();
+  
   const prompt = `Kamu adalah ahli dermatologi, kosmesi, dan kimia farmasi internasional dengan pengalaman 20+ tahun.
 
-Analisis bahan skincare "${ingredientName}" berdasarkan penelitian resmi dermatologi, jurnal SINTA 1, PubMed, dan referensi terpercaya.
+TANGGAL ANALISIS: ${currentDate}
+INSTRUKSI WAKTU: Gunakan data paling terbaru yang tersedia hingga tahun ${currentYear}. Prioritaskan sumber dari jurnal SINTA-1, PubMed, CIR (Cosmetic Ingredient Review), dan referensi dermatologi terkini. Jika data comedogenic atau keamanan telah diperbarui dalam penelitian terbaru, gunakan data terbaru tersebut.
+
+Analisis bahan skincare "${ingredientName}" berdasarkan penelitian resmi dermatologi.
+
+LAKUKAN PENCARIAN 2 TAHAP:
+- TAHAP 1: Identifikasi bahan, nama INCI resmi, alias, dan properti dasar.
+- TAHAP 2: VERIFIKASI KHUSUS comedogenicRating — cari data spesifik dari database Kligman & Mills, penelitian comedogenicity terbaru, atau CIR. JANGAN default ke 0 kecuali BENAR-BENAR terbukti non-komedogenik.
 
 Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value HARUS berupa STRING kecuali yang ditandai angka/boolean):
 
@@ -81,35 +91,47 @@ Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
-  "targetFocus": "Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum, Anti-Aging & Garis Halus, Memperbaiki Skin Barrier & Hidrasi, Menenangkan Kemerahan (Soothing), Eksfoliasi & Tekstur Pori-pori",
+  "targetFocus": "...",
   "blacklistedSkinTypes": "",
   "blacklistReason": "",
-  "warnings": "peringatan penggunaan"
+  "warnings": "peringatan penggunaan",
+  "confidenceLevel": "HIGH atau MEDIUM atau LOW"
 }
 
 ATURAN KETAT:
 1. "name": WAJIB menggunakan standar INCI resmi (International Nomenclature of Cosmetic Ingredients). Jika bahan adalah ekstrak, gunakan format 'Genus Species Extract'. Jika bahan adalah air, gunakan 'Aqua'. JANGAN gunakan nama pasaran sebagai field 'name'.
-2. "aliases": WAJIB berupa JSON Array of Strings, BUKAN string biasa. Contoh BENAR: ["Water", "Air", "Purified Water"]. Contoh SALAH: "Water, Air, Purified Water". Setiap elemen array hanya boleh berisi nama kimia atau nama dagang murni. DILARANG KERAS menambahkan deskripsi dalam kurung seperti "(dari sumber olive oil)", "(variasi industri)", atau kalimat penjelasan apapun. DILARANG menambahkan tanda kutip ganda berlebihan di dalam nilai string.
+2. "aliases": WAJIB berupa JSON Array of Strings, BUKAN string biasa. Contoh BENAR: ["Water", "Air", "Purified Water"]. Contoh SALAH: "Water, Air, Purified Water". Setiap elemen array hanya boleh berisi nama kimia atau nama dagang murni. DILARANG KERAS menambahkan deskripsi dalam kurung.
 3. "type": BASIC=umum/standar, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya.
 4. "strengthLevel": angka 1-3. Gunakan 2 atau 3 HANYA jika type=HARSH atau BUFFER. Untuk BASIC/TOXIC selalu 1.
 5. "functionalCategory": Pilih yang PALING tepat. Ceramide/lipid = PELEMBAP_OKLUSIF. Hyaluronic/glycerin = PELEMBAP_HUMEKTAN. Minyak/ester = PELEMBAP_EMOLIEN. SLS/SLES = SURFAKTAN. Zinc oxide/titanium = UV_FILTER. Lainnya = UMUM.
-6. "isKeyActive": true jika ini bahan aktif utama yang memiliki klaim fungsi spesifik. false jika hanya bahan pendukung (pelarut/pengental).
-7. "benefits": STRING, maks 30 kata, bahasa yang mudah dipahami namun akurat secara dermatologis.
-8. "aiContext": STRING, WAJIB MINIMAL 500 KATA. Analisis teknis mendalam: mekanisme molekuler, interaksi kimia, pH stabilitas, referensi jurnal PubMed/SINTA.
-9. "targetFocus": STRING, pilih dari daftar resmi yang disediakan.
+6. "isKeyActive": true jika ini bahan aktif utama yang memiliki klaim fungsi spesifik. false jika hanya bahan pendukung.
+7. "benefits": STRING, maks 30 kata, bahasa mudah dipahami.
+8. "aiContext": STRING, WAJIB MINIMAL 500 KATA. Analisis teknis mendalam.
+9. "targetFocus": STRING, pilih dari: Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum, Anti-Aging & Garis Halus, Memperbaiki Skin Barrier & Hidrasi, Menenangkan Kemerahan (Soothing), Eksfoliasi & Tekstur Pori-pori.
 10. "blacklistedSkinTypes": STRING, pilih dari daftar resmi.
-11. "comedogenicRating": angka 0-5 berdasarkan standar dermatologi resmi.
+11. "comedogenicRating": angka 0-5 berdasarkan standar dermatologi resmi Kligman & Mills. JANGAN selalu 0. Cari data aktual.
 12. Jika TOXIC: safeForPregnancy=false, safeForSensitive=false.
-13. Pastikan SEMUA sinonim adalah BENAR secara kimia untuk bahan tersebut. Jangan masukkan nama bahan lain yang mirip tapi berbeda secara kimiawi. JANGAN BERHALUSINASI.
-14. Sebelum memberikan jawaban, pastikan nama di field "name" benar-benar ada di database INCI resmi PCPC atau CosIng EU. Jika tidak yakin 100%, gunakan nama yang paling umum ditemukan di label produk skincare internasional.
+13. Pastikan SEMUA sinonim adalah BENAR secara kimia. JANGAN BERHALUSINASI.
+14. Pastikan nama di field "name" benar-benar ada di database INCI resmi PCPC atau CosIng EU.
+15. "confidenceLevel": Isi "HIGH" jika kamu 90%+ yakin datanya akurat. "MEDIUM" jika 60-89%. "LOW" jika kurang dari 60% — data mungkin tidak reliable.
 
 Kembalikan HANYA JSON tanpa markdown.`;
 
-  const modelsToTry = provider === "gemini" ? [modelName, ...FALLBACK_MODELS] : [modelName];
+  // Bangun daftar model yang akan dicoba (model utama + fallback untuk Gemini)
+  const modelsToTry: string[] = [modelName];
+  if (provider === "gemini") {
+    // Tambahkan fallback yang belum ada di daftar
+    for (const fb of GEMINI_FALLBACK_ORDER) {
+      if (!modelsToTry.includes(fb)) modelsToTry.push(fb);
+    }
+  }
 
-  for (const currentModel of modelsToTry) {
+  for (let mi = 0; mi < modelsToTry.length; mi++) {
+    const currentModel = modelsToTry[mi];
+    const isFallback = mi > 0;
+    
     try {
-      console.log(`[Deep Research] Mencoba provider: ${provider}, model: ${currentModel} untuk "${ingredientName}"...`);
+      console.log(`[Deep Research] ${isFallback ? '🔄 Fallback ke' : 'Menggunakan provider:'} ${provider}, model: ${currentModel} untuk "${ingredientName}"...`);
       
       let parsed: any = null;
       let wordCount = 0;
@@ -131,7 +153,6 @@ Kembalikan HANYA JSON tanpa markdown.`;
         let client: OpenAI;
         if (provider === "byteplus") {
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
-          // Jika URL lama yang tidak valid ada di env, paksa ke SE Asia
           if (byteplusUrl.includes("ark.byteplus.com")) {
             byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
           }
@@ -139,8 +160,6 @@ Kembalikan HANYA JSON tanpa markdown.`;
             apiKey: process.env.BYTEPLUS_API_KEY || "",
             baseURL: byteplusUrl,
           });
-          
-          // Log untuk debug
           console.log(`[Deep Research] BytePlus Request: URL=${byteplusUrl}, Model=${currentModel}`);
         } else {
           client = new OpenAI({
@@ -159,12 +178,19 @@ Kembalikan HANYA JSON tanpa markdown.`;
         parsed = extractJson(responseText);
       }
 
+      // ANTI-HALUSINASI: Cek confidenceLevel
+      const confidence = String(parsed.confidenceLevel || "HIGH").toUpperCase();
+      if (confidence === "LOW") {
+        console.warn(`[Deep Research] ⚠️ AI melaporkan confidence LOW untuk "${ingredientName}". Dibatalkan karena rawan halusinasi.`);
+        return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH (rawan halusinasi). Silakan riset manual.`, modelUsed: currentModel, isHallucination: true };
+      }
+
       // Validasi: aiContext harus >= 400 kata
       wordCount = (parsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
       if (wordCount < 400) {
         console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
 
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 500 KATA untuk field aiContext. Tuliskan analisis yang sangat detail dan komprehensif. Jangan buat kurang dari 500 kata.`;
+        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 500 KATA untuk field aiContext. Tuliskan analisis yang sangat detail dan komprehensif.`;
 
         let retryParsed: any = null;
         if (provider === "gemini") {
@@ -192,13 +218,7 @@ Kembalikan HANYA JSON tanpa markdown.`;
         }
 
         const retryWordCount = (retryParsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
-
-        if (retryWordCount >= 400) {
-          console.log(`[Deep Research] ✅ Retry berhasil: ${retryWordCount} kata (model: ${currentModel})`);
-          return { success: true, data: retryParsed, modelUsed: currentModel };
-        }
-
-        console.warn(`[Deep Research] ⚠️ Retry masih ${retryWordCount} kata. Tetap diterima.`);
+        console.log(`[Deep Research] ${retryWordCount >= 400 ? '✅' : '⚠️'} Retry: ${retryWordCount} kata (model: ${currentModel})`);
         return { success: true, data: retryParsed, modelUsed: currentModel };
       }
 
@@ -207,19 +227,26 @@ Kembalikan HANYA JSON tanpa markdown.`;
 
     } catch (err: any) {
       const errorMsg = err.response?.data?.error?.message || err.message;
-      console.warn(`[Deep Research] ⚠️ Model ${currentModel} gagal untuk "${ingredientName}": ${errorMsg}`);
+      console.warn(`[Deep Research] ❌ Model ${currentModel} gagal untuk "${ingredientName}": ${errorMsg}`);
       
-      // Jika error 404 pada BytePlus, beri info tambahan tentang Endpoint ID
+      // Non-retryable errors — langsung return
       if (provider === "byteplus" && (err.status === 404 || errorMsg.includes("404"))) {
-        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model. Silakan buat Endpoint di dashboard BytePlus Ark." };
+        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model." };
       }
-      
-      // Jika error 402, saldo habis
       if (err.status === 402 || errorMsg.includes("402")) {
         return { success: false, error: "Saldo API Habis (402). Silakan isi saldo di dashboard penyedia AI." };
       }
 
-      continue;
+      // Retryable errors — coba model fallback berikutnya (hanya untuk Gemini)
+      if (provider === "gemini" && mi < modelsToTry.length - 1) {
+        console.log(`[Deep Research] 🔄 Mencoba fallback model berikutnya: ${modelsToTry[mi + 1]}...`);
+        await new Promise(r => setTimeout(r, 2000)); // 2 detik jeda sebelum fallback
+        continue; // Coba model berikutnya
+      }
+
+      // Semua model gagal
+      const modelDisplayName = currentModel.includes("ep-") ? `BytePlus Endpoint (${currentModel})` : currentModel;
+      return { success: false, error: `Model ${modelDisplayName} gagal menganalisis bahan ini: ${errorMsg}. Coba model lain atau coba lagi nanti.` };
     }
   }
 
@@ -238,8 +265,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Daftar bahan kosong." }, { status: 400 });
     }
 
-    if (names.length > 15) {
-      return NextResponse.json({ message: "Maksimal 15 bahan per sesi." }, { status: 400 });
+    if (names.length > 50) {
+      return NextResponse.json({ message: "Maksimal 50 bahan per sesi." }, { status: 400 });
     }
 
     // ========================================================
@@ -312,6 +339,20 @@ export async function POST(req: Request) {
 
           const research = await researchIngredient(ingredientName, provider, model);
 
+          // ANTI-HALUSINASI: Jika AI melaporkan LOW confidence, kirim event khusus
+          if (!research.success && research.isHallucination) {
+            results.push({ name: ingredientName, success: false, aliasCount: 0, error: research.error });
+            sendEvent({
+              type: "progress",
+              current: i + 1,
+              total: filteredNames.length,
+              name: ingredientName,
+              status: "hallucination",
+              error: research.error,
+            });
+            continue;
+          }
+
           if (research.success && research.data) {
             const data = research.data;
 
@@ -324,16 +365,15 @@ export async function POST(req: Request) {
               // ========================================================
               // POST-AI DUPLICATE CHECK (Cek ulang setelah AI merespons)
               // ========================================================
-              // Refresh data existing (karena bisa berubah selama batch)
               const freshExisting = await prisma.ingredientDictionary.findMany({
-                select: { name: true, aliases: true },
+                select: { id: true, name: true, aliases: true },
               });
-              const freshMap = new Map<string, { inciName: string; matchType: string }>();
+              const freshMap = new Map<string, { id: string; inciName: string; matchType: string; currentAliases: string | null }>();
               freshExisting.forEach((item) => {
-                freshMap.set(normalizeString(item.name), { inciName: item.name, matchType: 'name' });
+                freshMap.set(normalizeString(item.name), { id: item.id, inciName: item.name, matchType: 'name', currentAliases: item.aliases });
                 if (item.aliases) {
                   splitAliases(item.aliases).forEach(cleanAlias => {
-                    freshMap.set(cleanAlias, { inciName: item.name, matchType: 'alias' });
+                    freshMap.set(cleanAlias, { id: item.id, inciName: item.name, matchType: 'alias', currentAliases: item.aliases });
                   });
                 }
               });
@@ -358,14 +398,46 @@ export async function POST(req: Request) {
               });
 
               if (nameConflict) {
-                const conflictDetail = `Nama INCI "${finalName}" sudah terdaftar di kamus sebagai ${nameConflict.matchType === 'name' ? 'bahan' : 'alias dari'}: ${nameConflict.inciName}`;
+                // AUTO-ADD ALIAS: Tambahkan nama yang dicari sebagai alias baru ke bahan existing
+                const searchedName = ingredientName.toLowerCase().trim();
+                const existingEntry = freshMap.get(normalizeString(nameConflict.inciName));
+                
+                if (existingEntry && normalizeString(searchedName) !== normalizeString(nameConflict.inciName)) {
+                  // Cek apakah alias belum ada
+                  const currentAliasesList = existingEntry.currentAliases 
+                    ? splitAliases(existingEntry.currentAliases) 
+                    : [];
+                  const alreadyHasAlias = currentAliasesList.includes(normalizeString(searchedName));
+                  
+                  if (!alreadyHasAlias) {
+                    // Tambahkan alias baru
+                    const newAliasString = existingEntry.currentAliases 
+                      ? `${existingEntry.currentAliases}; ${searchedName}` 
+                      : searchedName;
+                    
+                    await prisma.ingredientDictionary.update({
+                      where: { id: existingEntry.id },
+                      data: { aliases: newAliasString },
+                    });
+                    
+                    sendEvent({
+                      type: "alias_update",
+                      name: ingredientName,
+                      existingInci: nameConflict.inciName,
+                      newAlias: searchedName,
+                      message: `Bahan "${ingredientName}" ternyata sama dengan "${nameConflict.inciName}". Alias "${searchedName}" berhasil ditambahkan ke bahan "${nameConflict.inciName}".`,
+                    });
+                  }
+                }
+
+                const conflictDetail = `Nama INCI "${finalName}" sudah terdaftar di kamus sebagai ${nameConflict.matchType === 'name' ? 'bahan' : 'alias dari'}: ${nameConflict.inciName}. Alias telah di-update.`;
                 results.push({ name: ingredientName, success: false, aliasCount: 0, error: conflictDetail });
                 sendEvent({
                   type: "progress",
                   current: i + 1,
                   total: filteredNames.length,
                   name: ingredientName,
-                  status: "skipped",
+                  status: "alias_added",
                   reason: conflictDetail,
                   conflictType: "name",
                   conflictInci: nameConflict.inciName,

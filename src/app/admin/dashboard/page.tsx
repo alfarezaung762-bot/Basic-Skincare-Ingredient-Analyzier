@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
+import AdminHeader from "@/components/admin/AdminHeader";
 import { splitAliasesRaw } from "@/lib/splitAliases";
 
 interface Ingredient {
@@ -201,7 +202,7 @@ export default function AdminDashboard() {
 
   if (accessDeniedMessage) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 flex items-center justify-center">
         <AccessDeniedModal isOpen={true} message={accessDeniedMessage} onClose={() => router.push("/admin/login")} />
       </div>
     );
@@ -209,34 +210,24 @@ export default function AdminDashboard() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden p-4 md:p-8 lg:p-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 relative overflow-hidden p-4 md:p-8 lg:p-12">
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
-              <span>🎛️</span> Admin Control Panel
-            </h1>
-            <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Kelola database bahan untuk logika Analyzer AI.</p>
-          </div>
-          <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100 mt-2 md:mt-0">
-            <div className="text-left md:text-right">
-              <p className="text-sm font-black text-slate-900">{adminName}</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{adminRole}</p>
-            </div>
-            <button onClick={handleLogout} className="px-5 py-2 shrink-0 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95">
-              Logout
-            </button>
-          </div>
-        </div>
+        <AdminHeader 
+          adminName={adminName}
+          adminRole={adminRole}
+          onLogout={handleLogout}
+          title="Admin Control Panel"
+          subtitle="Kelola database bahan untuk logika Analyzer AI."
+        />
 
         {/* Menu Navigasi Utama */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex flex-nowrap overflow-x-auto gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible md:flex-wrap md:pb-0 custom-scrollbar">
@@ -253,28 +244,28 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/reportbahan" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
             <span>❓ Pusat Tinjauan</span>
           </Link>
 
-          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/products" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
             <span>🛒 Katalog Produk</span>
           </Link>
 
-          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900">
+          <Link href="/admin/products/review" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100">
             <span>⭐ Moderasi Ulasan</span>
           </Link>
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Banner (Hanya Admin dengan Izin / Superadmin) */}
           {(isSuperAdmin || (adminRole === "ADMIN" && sessionStorage.getItem("adminProfile")?.includes("MANAGE_BENNER"))) && (
-            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
+            <Link href="/admin/benner" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-indigo-600 border border-indigo-200 hover:bg-indigo-50">
               <span>🖼️ Kelola Banner</span>
             </Link>
           )}
 
           {/* PERENDERAN BERSYARAT: Tombol Manajemen Akun Khusus Superadmin */}
           {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
+            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900 text-purple-700 border border-purple-200 hover:bg-purple-50">
               <span>👑 Manajemen Akun</span>
             </Link>
           )}
@@ -282,10 +273,10 @@ export default function AdminDashboard() {
 
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200"
+          className="bg-white dark:bg-slate-900 dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 dark:border-slate-800"
         >
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Daftar Bahan Terverifikasi</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Daftar Bahan Terverifikasi</h2>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
               <div className="relative flex-1 sm:w-72">
@@ -295,7 +286,7 @@ export default function AdminDashboard() {
                   placeholder="Cari nama atau alias..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 bg-white placeholder-slate-400 focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-inner"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100 bg-white dark:bg-slate-900 dark:bg-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-inner"
                 />
               </div>
 
@@ -310,10 +301,10 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 p-4 bg-slate-100/50 rounded-2xl border border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 p-4 bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-800">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filterVerified" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status Verifikasi</label>
-              <select id="filterVerified" aria-label="Status Verifikasi" value={filterVerified} onChange={(e) => setFilterVerified(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+              <label htmlFor="filterVerified" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Status Verifikasi</label>
+              <select id="filterVerified" aria-label="Status Verifikasi" value={filterVerified} onChange={(e) => setFilterVerified(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="ALL">Semua Status</option>
                 <option value="VERIFIED">✅ Sudah Ditinjau</option>
                 <option value="UNVERIFIED">⏳ Belum Ditinjau</option>
@@ -321,8 +312,8 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="filterCategory" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kategori Logika</label>
-              <select id="filterCategory" aria-label="Kategori Logika" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+              <label htmlFor="filterCategory" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Kategori Logika</label>
+              <select id="filterCategory" aria-label="Kategori Logika" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="ALL">Semua Kategori</option>
                 <option value="HERO">⭐ Bintang Utama</option>
                 <option value="BASIC">Standar (Basic)</option>
@@ -333,8 +324,8 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="sortBy" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Urutkan Berdasarkan</label>
-              <select id="sortBy" aria-label="Urutkan Berdasarkan" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+              <label htmlFor="sortBy" className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Urutkan Berdasarkan</label>
+              <select id="sortBy" aria-label="Urutkan Berdasarkan" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
                 <option value="NEWEST">⏳ Tanggal: Terbaru ke Terlama</option>
                 <option value="OLDEST">🕰️ Tanggal: Terlama ke Terbaru</option>
                 <option value="A_Z">🔤 Abjad: A - Z</option>
@@ -345,37 +336,37 @@ export default function AdminDashboard() {
 
           {isLoadingData ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-50">
-              <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 font-medium animate-pulse">Memuat data dari server...</p>
+              <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium animate-pulse">Memuat data dari server...</p>
             </div>
           ) : ingredients.length === 0 ? (
-            <div className="text-center py-24 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+            <div className="text-center py-24 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 dark:border-slate-800">
               <span className="text-4xl block mb-3 opacity-50">📂</span>
-              <p className="text-slate-500 font-medium">Tabel kosong. Belum ada bahan yang ditambahkan.</p>
+              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Tabel kosong. Belum ada bahan yang ditambahkan.</p>
             </div>
           ) : processedIngredients.length === 0 ? (
-            <div className="text-center py-24 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+            <div className="text-center py-24 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 dark:border-slate-800">
               <span className="text-4xl block mb-3 opacity-50">🔍</span>
-              <p className="text-slate-500 font-medium">Tidak ada bahan yang cocok dengan filter ini.</p>
+              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Tidak ada bahan yang cocok dengan filter ini.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 shadow-sm">
               <table className="w-full text-left text-sm text-slate-700">
-                <thead className="bg-slate-100/80 text-slate-600 font-bold border-b border-slate-200">
+                <thead className="bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/80 text-slate-600 font-bold border-b border-slate-200 dark:border-slate-800 dark:border-slate-800">
                   <tr>
                     <th className="p-4 whitespace-nowrap w-24">Status</th>
                     <th className="p-4 whitespace-nowrap">Nama Bahan (INCI)</th>
                     <th className="p-4 whitespace-nowrap">Alias</th>
                     <th className="p-4 whitespace-nowrap">Kategori Logika</th>
                     <th className="p-4 whitespace-nowrap">Fungsi Utama</th>
-                    <th className="p-4 whitespace-nowrap text-right sticky right-0 bg-slate-100/80 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] z-10">Aksi</th>
+                    <th className="p-4 whitespace-nowrap text-right sticky right-0 bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/80 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] z-10">Aksi</th>
                   </tr>
                 </thead>
                 <motion.tbody
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="divide-y divide-slate-100 bg-white"
+                  className="divide-y divide-slate-100 bg-white dark:bg-slate-900 dark:bg-slate-900"
                 >
                   {processedIngredients.map((item) => (
                     <motion.tr
@@ -391,32 +382,29 @@ export default function AdminDashboard() {
                             Ditinjau
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-slate-100 text-slate-500 border border-slate-200 shadow-sm">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-800 dark:border-slate-800 shadow-sm">
                             <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
                             Tertunda
                           </span>
                         )}
                       </td>
 
-                      <td className="p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors capitalize whitespace-nowrap">
+                      <td className="p-4 font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100 group-hover:text-blue-700 transition-colors capitalize whitespace-nowrap">
                         <div className="flex items-center justify-between gap-4 min-w-[180px]">
                           {item.name}
-                          {item.aiContext && (
-                            <span title="Telah dilengkapi Konteks AI" className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              AI
+                          {item.aiContext && !item.isVerified && (
+                            <span title="Dihasilkan oleh AI" className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
+                              🤖 Dihasilkan AI
                             </span>
                           )}
                         </div>
                       </td>
 
-                      <td className="p-4 text-xs font-medium text-slate-500">
+                      <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400">
                         {item.aliases ? (
                           <div className="flex flex-wrap gap-1">
                             {splitAliasesRaw(item.aliases).map((alias, i) => (
-                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-100 border-slate-200'}`}>{alias}</span>
+                              <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 border-emerald-200' : 'bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 border-slate-200 dark:border-slate-800 dark:border-slate-800'}`}>{alias}</span>
                             ))}
                           </div>
                         ) : (
@@ -433,7 +421,7 @@ export default function AdminDashboard() {
                           <span className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full border ${item.type === 'TOXIC' ? 'bg-rose-100 text-rose-800 border-rose-200' :
                             item.type === 'HARSH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
                               item.type === 'BUFFER' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                'bg-slate-100 text-slate-600 border-slate-200'
+                                'bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-800 dark:border-slate-800'
                             }`}>
                             {item.type}
                           </span>
@@ -441,12 +429,12 @@ export default function AdminDashboard() {
                       </td>
 
                       <td className="p-4 font-bold text-xs text-slate-600 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-md border ${item.isVerified ? 'bg-white border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                        <span className={`px-2 py-1 rounded-md border ${item.isVerified ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 border-emerald-200' : 'bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 border-slate-200 dark:border-slate-800 dark:border-slate-800'}`}>
                           {formatCategory(item.functionalCategory)}
                         </span>
                       </td>
 
-                      <td className="p-4 text-right whitespace-nowrap sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.02)] group-hover:bg-blue-50/50 transition-colors z-10">
+                      <td className="p-4 text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 dark:bg-slate-900 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] group-hover:bg-blue-50/50 transition-colors z-10">
                         {!isViewer ? (
                           <button
                             onClick={(e) => {
