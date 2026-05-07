@@ -507,9 +507,6 @@ export default function AdminReportBahan() {
                             <optgroup label="Google Gemma">
                               <option value={JSON.stringify({provider: "gemini", model: "gemma-4-31b-it"})}>Gemma 4 31B</option>
                               <option value={JSON.stringify({provider: "gemini", model: "gemma-4-26b-a4b-it"})}>Gemma 4 26B MoE</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemma-3-27b-it"})}>Gemma 3 27B</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemma-3-12b-it"})}>Gemma 3 12B</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemma-3-4b-it"})}>Gemma 3 4B</option>
                             </optgroup>
                             <optgroup label="ByteDance Ark (Endpoint Aktif)">
                               <option value={JSON.stringify({provider: "byteplus", model: "ep-20260505074455-nplpn"})}>DeepSeek-V3.2 (Active)</option>

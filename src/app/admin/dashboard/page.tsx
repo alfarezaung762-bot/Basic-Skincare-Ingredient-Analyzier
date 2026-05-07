@@ -350,7 +350,7 @@ export default function AdminDashboard() {
               <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">Tidak ada bahan yang cocok dengan filter ini.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="overflow-x-auto custom-scrollbar rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
               <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
                 <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
                   <tr>
@@ -389,8 +389,8 @@ export default function AdminDashboard() {
                         )}
                       </td>
 
-                      <td className={`p-4 font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors capitalize whitespace-nowrap sticky left-[96px] z-10 shadow-[4px_0_10px_rgba(0,0,0,0.03)] ${item.isVerified ? 'bg-emerald-50/60 dark:bg-emerald-950/30 group-hover:bg-emerald-100/60 dark:group-hover:bg-emerald-950/50' : 'bg-white dark:bg-slate-900 group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50'}`}>
-                        <div className="flex items-center gap-2 min-w-[180px]">
+                      <td className={`p-4 font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors capitalize sticky left-[96px] z-10 shadow-[4px_0_10px_rgba(0,0,0,0.03)] ${item.isVerified ? 'bg-emerald-50/60 dark:bg-emerald-950/30 group-hover:bg-emerald-100/60 dark:group-hover:bg-emerald-950/50' : 'bg-white dark:bg-slate-900 group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50'}`}>
+                        <div className="flex flex-wrap items-center gap-2 min-w-[150px] max-w-[250px] whitespace-normal break-words leading-tight">
                           {item.name}
                           {item.aiContext && !item.isVerified && (
                             <span title="Dihasilkan oleh AI" className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
@@ -402,7 +402,7 @@ export default function AdminDashboard() {
 
                       <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                         {item.aliases ? (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1 min-w-[150px] max-w-[250px]">
                             {splitAliasesRaw(item.aliases).map((alias, i) => (
                               <span key={i} className={`px-2 py-0.5 rounded border ${item.isVerified ? 'bg-white dark:bg-slate-800 border-emerald-200 dark:border-emerald-700' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>{alias}</span>
                             ))}

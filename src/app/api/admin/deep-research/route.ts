@@ -37,9 +37,6 @@ const GEMINI_FALLBACK_ORDER = [
 const GEMMA_MODELS = [
   "gemma-4-31b-it",
   "gemma-4-26b-a4b-it",
-  "gemma-3-27b-it",
-  "gemma-3-12b-it",
-  "gemma-3-4b-it",
 ];
 
 const isGemmaModel = (model: string) => model.startsWith("gemma-");
@@ -72,7 +69,27 @@ const INGREDIENT_SCHEMA = {
 // Helper untuk mengekstrak JSON dari teks markdown
 const extractJson = (text: string) => {
   const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (match) return JSON.parse(match[1]);
+  if (match) {
+    try {
+      return JSON.parse(match[1]);
+    } catch (e) {
+      // Lanjut ke pencarian manual jika parse regex gagal
+    }
+  }
+  
+  // Pencarian manual dari '{' ke '}'
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const jsonStr = text.substring(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      // Lanjut ke parse text mentah jika masih gagal
+    }
+  }
+  
   return JSON.parse(text);
 };
 
@@ -163,17 +180,23 @@ Kembalikan HANYA JSON tanpa markdown.`;
       let wordCount = 0;
 
       if (provider === "gemini") {
+        const generationConfig: any = {
+          temperature: 0.2,
+        };
+        
+        // Gemma models API does not support application/json responseMimeType natively
+        if (!isGemmaModel(currentModel)) {
+          generationConfig.responseMimeType = "application/json";
+        }
+
         const model = genAI.getGenerativeModel({
           model: currentModel,
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          } as any,
+          generationConfig,
         });
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
-        parsed = JSON.parse(responseText);
+        parsed = extractJson(responseText);
       } else {
         // OpenAI Compatible (BytePlus / DeepSeek)
         let client: OpenAI;
@@ -220,12 +243,16 @@ Kembalikan HANYA JSON tanpa markdown.`;
 
         let retryParsed: any = null;
         if (provider === "gemini") {
+          const generationConfig: any = { temperature: 0.2 };
+          if (!isGemmaModel(currentModel)) {
+            generationConfig.responseMimeType = "application/json";
+          }
           const model = genAI.getGenerativeModel({
             model: currentModel,
-            generationConfig: { responseMimeType: "application/json", temperature: 0.2 } as any,
+            generationConfig,
           });
           const retryResult = await model.generateContent(retryPrompt);
-          retryParsed = JSON.parse(retryResult.response.text());
+          retryParsed = extractJson(retryResult.response.text());
         } else {
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
           if (byteplusUrl.includes("ark.byteplus.com")) {

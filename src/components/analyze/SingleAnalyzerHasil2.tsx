@@ -7,6 +7,7 @@ import { motion } from "framer-motion"; // Pastikan framer-motion diimpor untuk 
 // --- TIPE DATA EXPORT ---
 export interface IngredientDb {
   name: string;
+  aliases?: string | null;
   type: string;
   functionalCategory: string;
   benefits: string;
@@ -190,6 +191,11 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h4 className="font-black text-lg text-slate-900 capitalize">{activeIngredient.name}</h4>
+                {activeIngredient.aliases && (
+                  <p className="text-xs font-medium text-slate-500 mt-1 leading-tight max-w-[200px] break-words">
+                    Sinonim: {activeIngredient.aliases.split(/[,;]/).map(a => a.trim()).join(', ')}
+                  </p>
+                )}
                 <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200 mt-1 inline-block">
                   {activeIngredient.functionalCategory.replace(/_/g, ' ')}
                 </span>
