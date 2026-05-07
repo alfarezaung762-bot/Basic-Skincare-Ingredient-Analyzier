@@ -3,12 +3,14 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { signOut, useSession } from "next-auth/react";
+import { usePathname } from "next/navigation"; // use next/navigation for app router
 
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 menit dalam milidetik
 const SESSION_CHECK_INTERVAL = 2 * 60 * 1000; // Cek validitas session setiap 2 menit
 
 export default function AutoLogout() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -18,12 +20,16 @@ export default function AutoLogout() {
 
   // Reset timer inactivity setiap kali user melakukan aksi
   const resetTimer = useCallback(() => {
+    // Abaikan fitur AutoLogout jika sedang berada di halaman admin 
+    // agar proses panjang seperti Deep Research tidak terpotong
+    if (pathname?.startsWith("/admin")) return;
+
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       // User tidak aktif selama 15 menit → paksa logout
       performLogout();
     }, INACTIVITY_TIMEOUT);
-  }, [performLogout]);
+  }, [performLogout, pathname]);
 
   // Cek apakah session masih valid (misal: user dihapus dari DB)
   const checkSessionValidity = useCallback(async () => {
@@ -42,6 +48,13 @@ export default function AutoLogout() {
   useEffect(() => {
     // Hanya aktifkan jika user sudah login
     if (status !== "authenticated") return;
+
+    // Abaikan jika sedang di halaman admin
+    if (pathname?.startsWith("/admin")) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      return;
+    }
 
     // Daftar event yang menandakan user aktif
     const activityEvents = ["mousemove", "keydown", "click", "scroll", "touchstart"];
@@ -65,7 +78,7 @@ export default function AutoLogout() {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     };
-  }, [status, resetTimer, checkSessionValidity]);
+  }, [status, resetTimer, checkSessionValidity, pathname]);
 
   // Komponen ini tidak merender UI apapun
   return null;
