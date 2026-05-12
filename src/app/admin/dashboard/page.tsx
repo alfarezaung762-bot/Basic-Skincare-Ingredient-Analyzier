@@ -291,12 +291,20 @@ export default function AdminDashboard() {
               </div>
 
               {!isViewer && (
-                <Link
-                  href="/admin/dashboard/create"
-                  className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-                >
-                  <span>✨</span> Tambah Baru
-                </Link>
+                <>
+                  <Link
+                    href="/admin/dashboard/downloadfile"
+                    className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 whitespace-nowrap shadow-sm"
+                  >
+                    <span>📥</span> Ekspor
+                  </Link>
+                  <Link
+                    href="/admin/dashboard/create"
+                    className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    <span>✨</span> Tambah Baru
+                  </Link>
+                </>
               )}
             </div>
           </div>
