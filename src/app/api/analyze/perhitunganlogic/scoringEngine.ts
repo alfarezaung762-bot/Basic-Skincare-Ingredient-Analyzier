@@ -1,5 +1,6 @@
 // src/app/api/analyze/perhitunganlogic/scoringEngine.ts
 import { splitAliases } from "@/lib/splitAliases";
+import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
 
 // ==============================================================
 // 1. DEFINISI TIPE DATA (UPDATE V3)
@@ -56,10 +57,6 @@ export type EngineResult = {
 // ==============================================================
 // 2. FUNGSI PEMBERSIH & FUZZY MATCH (TETAP SAMA)
 // ==============================================================
-function sanitizeIngredients(rawText: string): string[] {
-  const parts = rawText.replace(/[0-9]+%?/g, '').split(/[,;\n](?![^()]*\))/g);
-  return parts.map(item => item.replace(/[\(\)\[\]\{\}\*]/g, '').trim().toLowerCase()).filter(item => item.length > 0);
-}
 
 function levenshtein(a: string, b: string): number {
   const matrix = [];
@@ -111,7 +108,7 @@ export function runScoringEngine(
 ): EngineResult {
   
   // A. IDENTIFIKASI BAHAN
-  const inputList = sanitizeIngredients(product.ingredientsRaw);
+  const inputList = ekstrakDaftarBahan(product.ingredientsRaw);
   const detected: IngredientDb[] = [];
   const unknown: string[] = [];
 

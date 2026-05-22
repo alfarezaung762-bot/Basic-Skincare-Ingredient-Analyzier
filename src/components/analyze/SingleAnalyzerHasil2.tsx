@@ -123,8 +123,9 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
     if (!hasAutoReported.current && result.engineResult.unknownIngredients.length > 0) {
       hasAutoReported.current = true;
 
-      // Kirim laporan ke API secara diam-diam di background
+      // Kirim laporan ke API secara diam-diam di background, filter bahan aneh
       result.engineResult.unknownIngredients.forEach((ingName) => {
+        if (!ingName || ingName.trim() === "" || ingName.length > 45) return; // Mencegah spam gabungan kata panjang
         fetch('/api/admin/reportbahan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

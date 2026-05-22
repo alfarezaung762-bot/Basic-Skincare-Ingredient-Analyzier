@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import SingleAnalyzerHasil, { FullAnalysisResponse, UserProfileSummary } from "./SingleAnalyzerHasil";
 import SingleAnalyzerHasil2 from "./SingleAnalyzerHasil2";
 import ProductRecommendation from "./ProductRecommendation";
+import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
 
 export default function SingleAnalyzer() {
   const [productName, setProductName] = useState("");
@@ -100,7 +101,7 @@ export default function SingleAnalyzer() {
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Gulir ke atas secara mulus
   };
 
-  const ingredientCount = ingredients.split(',').filter(i => i.trim() !== '').length;
+  const ingredientCount = ekstrakDaftarBahan(ingredients).length;
 
   return (
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-4">
