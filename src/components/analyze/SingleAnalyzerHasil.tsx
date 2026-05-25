@@ -20,6 +20,7 @@ export interface FlagDetail {
   type: "CRITICAL" | "WARNING" | "SUCCESS" | "INFO";
   message: string;
   pointsDeducted: number;
+  culprits?: string[];
 }
 
 export interface EngineResult {
@@ -64,26 +65,28 @@ const RenderFlags = ({ flags }: { flags: FlagDetail[] }) => {
     <div className="space-y-3 mt-6 w-full animate-in fade-in-50 slide-in-from-top-2 duration-300">
       {flags.map((flag, idx) => {
         let style = "border-slate-300 bg-slate-50 text-slate-800";
-        let icon = "ℹ️";
+        let icon = "ℹ️"; let badgeStyle = "bg-slate-200 text-slate-700 border-slate-300";
         
-        if (flag.type === "CRITICAL") {
-          style = "border-rose-500 bg-rose-50 text-rose-900";
-          icon = "🚨";
-        } else if (flag.type === "WARNING") {
-          style = "border-amber-400 bg-amber-50 text-amber-900";
-          icon = "⚠️";
-        } else if (flag.type === "SUCCESS") {
-          style = "border-emerald-500 bg-emerald-50 text-emerald-900";
-          icon = "✅";
-        }
+        if (flag.type === "CRITICAL") { style = "border-rose-500 bg-rose-50 text-rose-900"; badgeStyle = "bg-rose-100 text-rose-800 border-rose-200 shadow-sm"; icon = "🚨"; }
+        else if (flag.type === "WARNING") { style = "border-amber-400 bg-amber-50 text-amber-900"; badgeStyle = "bg-amber-100 text-amber-800 border-amber-200 shadow-sm"; icon = "⚠️"; }
+        else if (flag.type === "SUCCESS") { style = "border-emerald-500 bg-emerald-50 text-emerald-900"; badgeStyle = "bg-emerald-100 text-emerald-800 border-emerald-200 shadow-sm"; icon = "✅"; }
 
         return (
           <div key={idx} className={`p-4 rounded-xl border-l-4 text-xs font-semibold leading-relaxed shadow-sm flex flex-col sm:flex-row items-start gap-3 border ${style}`}>
             <span className="text-base shrink-0">{icon}</span>
-            <div className="flex-1">
+            <div className="flex-1 w-full">
               <p>{flag.message}</p>
+              {/* LENCANA BAHAN PEMICU (CULPRITS) */}
+              {flag.culprits && flag.culprits.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  {flag.culprits.map((culprit, cIdx) => (
+                    <span key={cIdx} className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${badgeStyle}`}>{culprit}</span>
+                  ))}
+                </div>
+              )}
+              {/* BADGE PENALTI SKOR */}
               {flag.pointsDeducted > 0 && (
-                <span className="inline-block mt-2 px-2.5 py-0.5 rounded-md bg-white/60 text-[9px] font-black uppercase tracking-wider text-rose-600 shadow-sm border border-rose-100">
+                <span className="inline-block mt-2.5 px-2.5 py-0.5 rounded-md bg-white/60 text-[9px] font-black uppercase tracking-wider text-rose-600 shadow-sm border border-rose-100">
                   Penalti Skor: -{flag.pointsDeducted} Poin
                 </span>
               )}

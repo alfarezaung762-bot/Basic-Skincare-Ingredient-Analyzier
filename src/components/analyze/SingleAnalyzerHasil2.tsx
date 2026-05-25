@@ -22,6 +22,7 @@ export interface FlagDetail {
   type: "CRITICAL" | "WARNING" | "SUCCESS" | "INFO";
   message: string;
   pointsDeducted: number;
+  culprits?: string[];
 }
 
 export interface EngineResult {
