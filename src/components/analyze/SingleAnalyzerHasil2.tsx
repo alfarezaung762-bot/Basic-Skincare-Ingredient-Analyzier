@@ -52,11 +52,11 @@ export interface FullAnalysisResponse {
 // --- KOMPONEN KARTU BAHAN DETAIL ---
 const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
   const getStyle = () => {
-    if (ing.type === "TOXIC") return "bg-rose-50 text-rose-900 border-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.3)]";
-    if (ing.type === "HARSH") return "bg-orange-50 text-orange-900 border-orange-200";
-    if (ing.isKeyActive) return "bg-emerald-50 text-emerald-900 border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-    if (ing.type === "BUFFER") return "bg-blue-50 border-blue-200 text-blue-900";
-    return "bg-slate-50 border-slate-200 text-slate-900";
+    if (ing.type === "TOXIC") return "bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border-rose-300 dark:border-rose-800 shadow-[0_0_15px_rgba(244,63,94,0.3)]";
+    if (ing.type === "HARSH") return "bg-orange-50 dark:bg-orange-950/40 text-orange-900 dark:text-orange-200 border-orange-200 dark:border-orange-800";
+    if (ing.isKeyActive) return "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
+    if (ing.type === "BUFFER") return "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200";
+    return "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200";
   };
 
   const isPulsing = ing.type === "TOXIC" || ing.type === "HARSH" || ing.isKeyActive;
@@ -68,9 +68,9 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
 
   let strengthBadge = null;
   if (ing.type === "HARSH" && ing.strengthLevel) {
-    strengthBadge = <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-orange-100 text-orange-800 rounded-md border border-orange-200 ml-2">🔥 Lvl {ing.strengthLevel}</span>;
+    strengthBadge = <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 rounded-md border border-orange-200 dark:border-orange-700 ml-2">🔥 Lvl {ing.strengthLevel}</span>;
   } else if (ing.type === "BUFFER" && ing.strengthLevel) {
-    strengthBadge = <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-blue-100 text-blue-800 rounded-md border border-blue-200 ml-2">💧 Lvl {ing.strengthLevel}</span>;
+    strengthBadge = <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-md border border-blue-200 dark:border-blue-700 ml-2">💧 Lvl {ing.strengthLevel}</span>;
   }
 
   return (
@@ -86,7 +86,7 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
           <h4 className="font-bold capitalize text-base leading-tight">{ing.name}</h4>
         </div>
         <div className="flex items-center shrink-0">
-          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-white rounded-md border border-inherit opacity-80 shadow-sm">
+          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-inherit opacity-80 shadow-sm dark:text-slate-200">
             {ing.isKeyActive ? "BINTANG UTAMA" : ing.type}
           </span>
           {strengthBadge}
@@ -95,15 +95,15 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
       <p className="text-xs font-medium opacity-80 mb-5 leading-relaxed">{ing.benefits}</p>
 
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white/60 p-2 rounded-lg text-center border border-white">
+        <div className="bg-white/60 dark:bg-slate-700/60 p-2 rounded-lg text-center border border-white dark:border-slate-600">
           <span className="block text-[9px] font-bold uppercase opacity-60">Komedogenik</span>
           <span className="text-sm font-black">{ing.comedogenicRating}/5</span>
         </div>
-        <div className={`p-2 rounded-lg text-center border ${ing.safeForPregnancy ? "bg-emerald-100/50 border-emerald-100/50" : "bg-rose-200/50 text-rose-800 border-rose-200/50"}`}>
+        <div className={`p-2 rounded-lg text-center border ${ing.safeForPregnancy ? "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-100/50 dark:border-emerald-800" : "bg-rose-200/50 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-200/50 dark:border-rose-800"}`}>
           <span className="block text-[9px] font-bold uppercase opacity-60">Bumil</span>
           <span className="text-sm font-black">{ing.safeForPregnancy ? "✔" : "❌"}</span>
         </div>
-        <div className={`p-2 rounded-lg text-center border ${ing.safeForSensitive ? "bg-emerald-100/50 border-emerald-100/50" : "bg-rose-200/50 text-rose-800 border-rose-200/50"}`}>
+        <div className={`p-2 rounded-lg text-center border ${ing.safeForSensitive ? "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-100/50 dark:border-emerald-800" : "bg-rose-200/50 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-200/50 dark:border-rose-800"}`}>
           <span className="block text-[9px] font-bold uppercase opacity-60">Sensitif</span>
           <span className="text-sm font-black">{ing.safeForSensitive ? "✔" : "❌"}</span>
         </div>
@@ -116,6 +116,7 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
 export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisResponse }) {
   const [showAllGoodIngredients, setShowAllGoodIngredients] = useState(false);
   const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
+  const [showComedogenicIngredients, setShowComedogenicIngredients] = useState(false);
 
   // State untuk Pop-up Detail Bahan & Laporan (Klik)
   const [activeIngredient, setActiveIngredient] = useState<IngredientDb | null>(null);
@@ -245,30 +246,30 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
 
       {/* 1. KESIMPULAN FOKUS PRODUK V3 */}
       {(result.engineResult.primaryProductFocus || (result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0)) && (
-        <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
-          <h3 className="text-sm font-black text-slate-400 border-b border-slate-100 pb-4 mb-6 text-center uppercase tracking-widest">
+        <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700">
+          <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6 text-center uppercase tracking-widest">
             Profil Formulasi Produk
           </h3>
           <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1 bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-200 rounded-full blur-3xl -ml-10 -mt-10 opacity-50"></div>
+            <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-200 dark:bg-emerald-800 rounded-full blur-3xl -ml-10 -mt-10 opacity-50"></div>
               <span className="text-3xl mb-3 relative z-10">🎯</span>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Target Utama Formulasi</span>
-              <span className="text-lg font-black text-slate-800 relative z-10">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Target Utama Formulasi</span>
+              <span className="text-lg font-black text-slate-800 dark:text-slate-100 relative z-10">
                 {result.engineResult.primaryProductFocus || "Tidak Spesifik (Basic Care)"}
               </span>
             </div>
 
             {result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0 && (
-              <div className="flex-1 bg-slate-50 p-6 rounded-2xl border border-slate-200 relative overflow-hidden">
-                <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-200 rounded-full blur-3xl -mr-10 -mb-10 opacity-50"></div>
+              <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-200 dark:bg-blue-800 rounded-full blur-3xl -mr-10 -mb-10 opacity-50"></div>
                 <div className="flex items-center gap-2 mb-4 relative z-10">
                   <span className="text-xl">🎁</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Manfaat Tambahan (Sekunder)</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Manfaat Tambahan (Sekunder)</span>
                 </div>
                 <div className="flex flex-wrap gap-2 relative z-10">
                   {result.engineResult.secondaryProductFocuses.map((focus, idx) => (
-                    <span key={idx} className="bg-white text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span key={idx} className="bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm">
                       {focus}
                     </span>
                   ))}
@@ -281,12 +282,18 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
 
       {/* 2. BAHAN TERDETEKSI & BAHAN ASING */}
       {(sortedDetectedIngredients.length > 0 || result.engineResult.unknownIngredients.length > 0) && (
-        <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-200">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="bg-slate-50 dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
-              Bahan Terdeteksi Sistem <span className="text-[10px] font-medium text-slate-400 bg-white px-2 py-1 rounded border border-slate-200 hidden sm:inline-block">Klik bahan untuk detail</span>
+            <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              Bahan Terdeteksi Sistem <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hidden sm:inline-block">Klik bahan untuk detail</span>
             </h3>
-            <span className="bg-white text-slate-600 font-bold text-xs px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+            <span className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
               Total: {sortedDetectedIngredients.length + result.engineResult.unknownIngredients.length} Bahan
             </span>
           </div>
@@ -302,7 +309,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               return (
                 <button
                   key={idx}
-                  onClick={() => setActiveIngredient(ing)} // <-- Membuka modal saat diklik
+                  onClick={() => setActiveIngredient(ing)}
                   className={`px-3 py-1.5 border rounded-lg text-xs font-bold capitalize shadow-sm transition-all hover:-translate-y-0.5 active:scale-95 ${style}`}
                 >
                   {ing.name}
@@ -311,9 +318,78 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
             })}
           </div>
 
-          {/* INTEGRASI BAHAN ASING SEBAGAI DROPDOWN NOTIFIKASI */}
+          {/* Legenda Keterangan Warna — tepat di bawah badge bahan */}
+          <div className="mt-5 pt-4 border-t border-slate-200 flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span> Bintang Utama</div>
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-400"></span> Berbahaya</div>
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400"></span> Keras / Aktif</div>
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span> Penenang</div>
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-white border border-slate-300"></span> Standar</div>
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-slate-100 border border-slate-300 border-dashed"></span> Tidak Dikenali</div>
+          </div>
+
+          {/* DROPDOWN BAHAN KOMEDOGENIK — di atas bahan asing */}
+          {(() => {
+            const comedoIngredients = result.engineResult.detectedIngredients.filter(i => i.comedogenicRating >= 1);
+            const comedoLabels: Record<number, string> = {
+              1: "Sangat Rendah — Hampir tidak menyumbat",
+              2: "Rendah — Masih aman untuk sebagian orang",
+              3: "Sedang — Bisa menyumbat pori",
+              4: "Cukup Tinggi — Berpotensi besar menyumbat",
+              5: "Sangat Tinggi — Hampir pasti menyumbat pori",
+            };
+            const getComedoColor = (r: number) => {
+              if (r >= 4) return "bg-rose-100 text-rose-800 border-rose-300";
+              if (r === 3) return "bg-amber-100 text-amber-800 border-amber-300";
+              return "bg-violet-100 text-violet-800 border-violet-300";
+            };
+            if (comedoIngredients.length === 0) return null;
+            return (
+              <div className="mt-4 border-t border-slate-200 pt-5">
+                <button
+                  onClick={() => setShowComedogenicIngredients(!showComedogenicIngredients)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-violet-300 rounded-xl shadow-sm text-violet-800 text-sm font-bold hover:bg-violet-50 transition-colors w-full sm:w-auto"
+                >
+                  <span className="text-base">🧴</span>
+                  <span>Potensi Komedogenik ({comedoIngredients.length})</span>
+                  <span className="ml-auto sm:ml-2 text-violet-500">{showComedogenicIngredients ? '▲' : '▼'}</span>
+                </button>
+
+                {showComedogenicIngredients && (
+                  <div className="mt-4 p-5 bg-white rounded-2xl border border-violet-200 shadow-sm animate-in slide-in-from-top-2">
+                    <div className="bg-violet-50/50 p-4 rounded-xl text-sm text-violet-900 font-medium leading-relaxed mb-5 border border-violet-100 flex gap-4 items-start">
+                      <span className="text-2xl">🧴</span>
+                      <div>
+                        <p className="font-bold mb-1 text-violet-800">Rating Komedogenik</p>
+                        <p>Menunjukkan potensi bahan menyumbat pori-pori pada skala 1-5. Hover ikon ℹ️ untuk detail keterangan.</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {comedoIngredients
+                        .sort((a, b) => b.comedogenicRating - a.comedogenicRating)
+                        .map((ing, idx) => (
+                        <div key={idx} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border shadow-sm ${getComedoColor(ing.comedogenicRating)}`}>
+                          <span className="text-xs font-bold capitalize">{ing.name}</span>
+                          <span className="text-[10px] font-black">{ing.comedogenicRating}/5</span>
+                          <div className="group relative">
+                            <span className="cursor-help text-[10px] opacity-60">ℹ️</span>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 bg-slate-800 text-white text-[10px] font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 leading-relaxed pointer-events-none">
+                              {comedoLabels[ing.comedogenicRating] || "Data tidak tersedia"}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-slate-800"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* INTEGRASI BAHAN ASING SEBAGAI DROPDOWN NOTIFIKASI — di bawah komedogenik */}
           {result.engineResult.unknownIngredients.length > 0 && (
-            <div className="mt-6 border-t border-slate-200 pt-5">
+            <div className="mt-4 border-t border-slate-200 pt-5">
               <button
                 onClick={() => setShowUnknownIngredients(!showUnknownIngredients)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white border border-amber-300 rounded-xl shadow-sm text-amber-800 text-sm font-bold hover:bg-amber-50 transition-colors w-full sm:w-auto"
@@ -328,8 +404,6 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
 
               {showUnknownIngredients && (
                 <div className="mt-4 p-5 bg-white rounded-2xl border border-amber-200 shadow-sm animate-in slide-in-from-top-2">
-
-                  {/* Tampilan Baru yang lebih menenangkan & Otomatis */}
                   <div className="bg-amber-50/50 p-4 rounded-xl text-sm text-amber-900 font-medium leading-relaxed mb-5 border border-amber-100 flex gap-4 items-start">
                     <span className="text-2xl">⚠️</span>
                     <div>
@@ -337,7 +411,6 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
                       <p>Sistem menemukan bahan asing pada formulasi ini. Jangan khawatir, sistem kami telah merekam dan mengirimkannya secara otomatis ke tim ahli untuk ditinjau dan dimasukkan ke dalam Kamus Induk.</p>
                     </div>
                   </div>
-
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mr-2 w-full sm:w-auto mb-2 sm:mb-0">Daftar Bahan Asing:</span>
                     {result.engineResult.unknownIngredients.map((ing, idx) => (
@@ -350,35 +423,37 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               )}
             </div>
           )}
-
-          {/* Legenda Keterangan Warna */}
-          <div className="mt-6 pt-5 border-t border-slate-200 flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span> Bintang Utama</div>
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-400"></span> Berbahaya</div>
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400"></span> Keras / Aktif</div>
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400"></span> Penenang</div>
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-white border border-slate-300"></span> Standar</div>
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-slate-100 border border-slate-300 border-dashed"></span> Tidak Dikenali</div>
-          </div>
-        </div>
+        </motion.div>
       )}
 
       {/* 3. KLASTER BAHAN: PERHATIAN KHUSUS */}
       {riskIngredients.length > 0 && (
-        <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
-          <h3 className="text-lg font-black text-rose-800 mb-2 flex items-center gap-2"><span>⚠️</span> Bahan Perlu Perhatian</h3>
-          <p className="text-sm text-slate-500 mb-6 font-medium">Sistem mendeteksi bahan aktif kuat atau berisiko dalam formulasi ini.</p>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+          className="bg-rose-50/50 dark:bg-rose-950/20 p-6 md:p-8 rounded-[2rem] shadow-sm border border-rose-200 dark:border-rose-800/50"
+        >
+          <h3 className="text-lg font-black text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-2"><span>⚠️</span> Bahan Perlu Perhatian</h3>
+          <p className="text-sm text-rose-600/70 dark:text-rose-400/70 mb-6 font-medium">Sistem mendeteksi bahan aktif kuat atau berisiko dalam formulasi ini.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {riskIngredients.map((ing, idx) => <IngredientCard key={idx} ing={ing} />)}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* 4. KLASTER BAHAN: UNGGULAN & PENENANG */}
       {goodIngredients.length > 0 && (
-        <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
-          <h3 className="text-lg font-black text-emerald-800 mb-2 flex items-center gap-2"><span>🌱</span> Bahan Unggulan & Penenang</h3>
-          <p className="text-sm text-slate-500 mb-6 font-medium">Bahan-bahan ini memberikan nilai tambah berupa perawatan ekstra untuk kulit.</p>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+          className="bg-emerald-50/40 dark:bg-emerald-950/20 p-6 md:p-8 rounded-[2rem] shadow-sm border border-emerald-200 dark:border-emerald-800/50"
+        >
+          <h3 className="text-lg font-black text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-2"><span>🌱</span> Bahan Unggulan & Penenang</h3>
+          <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 mb-6 font-medium">Bahan-bahan ini memberikan nilai tambah berupa perawatan ekstra untuk kulit.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {visibleGoodIngredients.map((ing, idx) => <IngredientCard key={idx} ing={ing} />)}
           </div>
@@ -386,12 +461,12 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           {goodIngredients.length > 4 && (
             <button
               onClick={() => setShowAllGoodIngredients(!showAllGoodIngredients)}
-              className="w-full mt-6 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-bold rounded-xl border border-slate-200 transition-colors shadow-sm"
+              className="w-full mt-6 py-3.5 bg-white/60 dark:bg-emerald-900/30 hover:bg-white dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-bold rounded-xl border border-emerald-200 dark:border-emerald-700 transition-colors shadow-sm"
             >
               {showAllGoodIngredients ? "Sembunyikan Bahan ▲" : `Tampilkan ${goodIngredients.length - 4} Bahan Lainnya 🔽`}
             </button>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* 5. KESIMPULAN AKHIR AI */}

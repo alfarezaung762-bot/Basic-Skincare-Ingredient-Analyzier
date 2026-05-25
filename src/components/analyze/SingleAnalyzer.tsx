@@ -197,7 +197,7 @@ export default function SingleAnalyzer() {
         </div>
 
         {/* === AREA HASIL (HASIL ANALISIS & REKOMENDASI) === */}
-        {result && (
+        {result && !isAnalyzing && (
           <div ref={resultRef} className="animate-in fade-in zoom-in-95 duration-700 scroll-mt-24 pt-4 space-y-10">
             
             {/* BAGIAN A: Evaluasi Klinis (Hasil Analisis Langsung) */}
