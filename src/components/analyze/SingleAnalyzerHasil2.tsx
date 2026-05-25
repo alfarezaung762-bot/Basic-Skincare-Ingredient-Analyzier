@@ -18,13 +18,19 @@ export interface IngredientDb {
   strengthLevel?: number;
 }
 
+export interface FlagDetail {
+  type: "CRITICAL" | "WARNING" | "SUCCESS" | "INFO";
+  message: string;
+  pointsDeducted: number;
+}
+
 export interface EngineResult {
   matchScore: number;
   matchLabel: string;
-  matchFlags: string[];
+  matchFlags: FlagDetail[];
   safetyScore: number;
   safetyLabel: string;
-  safetyFlags: string[];
+  safetyFlags: FlagDetail[];
   detectedIngredients: IngredientDb[];
   unknownIngredients: string[];
   primaryProductFocus?: string | null;

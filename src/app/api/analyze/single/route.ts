@@ -67,8 +67,8 @@ export async function POST(req: Request) {
 
       ATURAN 2 (JELASKAN PENALTI KEPADA PENGGUNA):
       Sistem pusat memberikan penalti berikut pada skor. Gunakan informasi ini sebagai acuan penjelasan:
-      - Pengurangan Kecocokan: ${engineResult.matchFlags.length > 0 ? engineResult.matchFlags.join(" | ") : "Tidak ada pengurangan."}
-      - Pengurangan Keamanan: ${engineResult.safetyFlags.length > 0 ? engineResult.safetyFlags.join(" | ") : "Tidak ada pengurangan."}
+      - Pengurangan Kecocokan: ${engineResult.matchFlags.length > 0 ? engineResult.matchFlags.map(f => `[${f.type}] ${f.message} (-${f.pointsDeducted} Poin)`).join(" | ") : "Tidak ada pengurangan."}
+      - Pengurangan Keamanan: ${engineResult.safetyFlags.length > 0 ? engineResult.safetyFlags.map(f => `[${f.type}] ${f.message} (-${f.pointsDeducted} Poin)`).join(" | ") : "Tidak ada pengurangan."}
 
       ATURAN 3 (RUJUKAN PASTI - RAG):
       Untuk bahan yang dikenali ini, gunakan HANYA manfaat dan fungsi dari database kami:
@@ -140,11 +140,11 @@ export async function POST(req: Request) {
 
       analysisData = {
         matchExplanation: engineResult.matchFlags.length > 0
-          ? engineResult.matchFlags.map(flag => `❌ ${flag}`).join('\n')
+          ? engineResult.matchFlags.map(f => `${f.type === "CRITICAL" ? "🚨" : f.type === "WARNING" ? "⚠️" : f.type === "SUCCESS" ? "✅" : "ℹ️"} ${f.message}`).join('\n')
           : "✅ Produk ini terpantau ideal dan tidak memiliki kandungan yang bertentangan dengan kebutuhan kecocokan profil Anda.",
 
         safetyExplanation: engineResult.safetyFlags.length > 0
-          ? engineResult.safetyFlags.map(flag => `❌ ${flag}`).join('\n')
+          ? engineResult.safetyFlags.map(f => `${f.type === "CRITICAL" ? "🚨" : f.type === "WARNING" ? "⚠️" : f.type === "SUCCESS" ? "✅" : "ℹ️"} ${f.message}`).join('\n')
           : "✅ Berdasarkan kalkulasi sistem pusat, tidak ditemukan bahan keras atau toksik yang berisiko mengiritasi profil kulit Anda.",
 
         aiUnknownAnalysis: engineResult.unknownIngredients.length > 0
