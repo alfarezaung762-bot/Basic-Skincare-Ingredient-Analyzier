@@ -79,8 +79,11 @@ const FlagItem = ({ flag }: { flag: FlagDetail }) => {
   const isLong = words.length > 30;
   const displayText = isLong && !expanded ? words.slice(0, 30).join(" ") + "..." : flag.message;
 
+  const isDeteksiButa = flag.message.includes("Deteksi Buta");
+  const animationClass = isDeteksiButa ? "animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_15px_rgba(245,158,11,0.3)] ring-1 ring-amber-400" : "";
+
   return (
-    <div className={`p-4 rounded-xl border-l-4 text-xs font-semibold leading-relaxed shadow-sm flex flex-col sm:flex-row items-start gap-3 border ${style}`}>
+    <div className={`p-4 rounded-xl border-l-4 text-xs font-semibold leading-relaxed shadow-sm flex flex-col sm:flex-row items-start gap-3 border ${style} ${animationClass}`}>
       <span className="text-base shrink-0">{icon}</span>
       <div className="flex-1 w-full">
         <p>

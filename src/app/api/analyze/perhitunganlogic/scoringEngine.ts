@@ -1,6 +1,6 @@
 import { splitAliases } from "@/lib/splitAliases";
 import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
-import { MasterRuleset } from "@/lib/clinicalRules"; 
+import { MasterRuleset } from "@/lib/clinicalRules";
 
 export type UserProfile = {
   skinType: string;
@@ -172,7 +172,8 @@ export function runScoringEngine(
     // Blacklist Klinis Mutlak (Match Score Penalty)
     if (ing.blacklistedSkinTypes && ing.blacklistedSkinTypes.toLowerCase().includes(userBaseSkinType)) {
       matchScore -= 50;
-      matchFlags.push({ type: "CRITICAL", message: `Pantangan Kulit: Sangat disarankan menghindari bahan ini. (Catatan Lab: ${ing.blacklistReason || 'Berisiko untuk kulitmu'}).`, pointsDeducted: 50, culprits: [ing.name] });
+      const sensitiveText = (isSensitive && !ing.safeForSensitive) ? ' dan sensitif' : '';
+      matchFlags.push({ type: "CRITICAL", message: `Batasan Penggunaan: Sangat disarankan menghindari bahan ini pada kulit ${userBaseSkinType}${sensitiveText}. (Catatan Lab: ${ing.blacklistReason || 'Berisiko untuk kulitmu'}).`, pointsDeducted: 50, culprits: [ing.name] });
     }
 
     // Kalkulasi Beban (Burden) & Culprits Tracking
@@ -183,10 +184,10 @@ export function runScoringEngine(
     if (ing.type === "BUFFER") {
       rawBufferLoad += (ing.strengthLevel === 3 ? 6 : ing.strengthLevel === 2 ? 3 : 1);
     }
-    if (ing.comedogenicRating > 0) {
+    if (ing.comedogenicRating >= 3) {
       rawComedoLoad += ing.comedogenicRating;
       if (ing.comedogenicRating > maxSingleComedoFound) maxSingleComedoFound = ing.comedogenicRating;
-      if (ing.comedogenicRating >= 3) comedoCulprits.push(ing.name);
+      comedoCulprits.push(ing.name); // Tangkap semua bahan komedogenik agar muncul di lencana
     }
 
     // Kalkulasi Fungsi
@@ -213,21 +214,21 @@ export function runScoringEngine(
     // 1. Validasi Keamanan (Harsh & Buffer)
     if (activeRule.harsh.status === "DILARANG" && loadHarsh > 0) {
       safetyScore -= 40;
-      safetyFlags.push({ type: "CRITICAL", message: `Hindari Dulu: Kulitmu sedang rentan terhadap bahan eksfoliasi atau asam aktif.`, pointsDeducted: 40, culprits: harshCulprits });
+      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi Kuat: Saat ini kulit Anda sedang butuh istirahat dari bahan asam/eksfoliasi aktif.`, pointsDeducted: 40, culprits: harshCulprits });
     } else if (activeRule.harsh.status !== "DILARANG" && loadHarsh > activeRule.harsh.maxLoad) {
       const excess = loadHarsh - activeRule.harsh.maxLoad;
-      const penalty = Math.min(40, excess * 10);
+      const penalty = Math.min(40, excess * 5);
       safetyScore -= penalty;
-      safetyFlags.push({ type: "WARNING", message: `Hati-Hati Iritasi: Terdapat tumpukan bahan aktif yang melebihi batas toleransi kulitmu sekarang. Sangat disarankan untuk patch test!`, pointsDeducted: penalty, culprits: harshCulprits });
+      safetyFlags.push({ type: "WARNING", message: `Potensi Iritasi: Tumpukan bahan aktifnya cukup tinggi untuk toleransi kulit Anda saat ini. Sangat disarankan patch test!`, pointsDeducted: penalty, culprits: harshCulprits });
     } else if (activeRule.harsh.status !== "DILARANG" && rawHarshLoad > 0 && loadHarsh <= activeRule.harsh.maxLoad) {
-      safetyFlags.push({ type: "SUCCESS", message: `Eksfoliasi Aman: Takaran bahan aktif di produk ini tergolong lembut dan aman untuk profilmu.`, pointsDeducted: 0, culprits: harshCulprits });
+      safetyFlags.push({ type: "SUCCESS", message: `Eksfoliasi Terukur: Takaran bahan aktif di formulasi ini tergolong lembut dan aman untuk profil Anda.`, pointsDeducted: 0, culprits: harshCulprits });
     }
 
     if (activeRule.buffer.status === "WAJIB" && rawBufferLoad < activeRule.buffer.minLoad) {
       const defisit = activeRule.buffer.minLoad - rawBufferLoad;
       const penalty = Math.min(20, defisit * 5);
       safetyScore -= penalty;
-      safetyFlags.push({ type: "WARNING", message: `Kurang Penenang: Formulasi ini minim bahan soothing (penenang) untuk menyeimbangkan bahan aktif.`, pointsDeducted: penalty });
+      safetyFlags.push({ type: "WARNING", message: `Minim Penenang: Formulasi ini minim agen soothing untuk menyeimbangkan efek bahan aktifnya.`, pointsDeducted: penalty });
     } else if (isSensitive && rawBufferLoad >= 6) {
       safetyScore += 10;
       safetyFlags.push({ type: "SUCCESS", message: `Ramah Sensitif: Memiliki lapisan penenang yang sangat baik untuk meredam kemerahan.`, pointsDeducted: 0 });
@@ -236,22 +237,22 @@ export function runScoringEngine(
     if (product.productType === "SUNSCREEN") {
       if (countUvFilter === 0) {
         safetyScore = 0;
-        safetyFlags.push({ type: "CRITICAL", message: `Bukan Tabir Surya: Tidak ditemukan agen pelindung matahari (UV Filter) pada komposisinya!`, pointsDeducted: 100 });
+        safetyFlags.push({ type: "CRITICAL", message: `Tanpa Filter UV: Tidak ditemukan agen pelindung matahari utama pada komposisinya.`, pointsDeducted: 100 });
       } else if (countUvFilter < activeRule.uvFilter.minCount) {
         safetyScore -= 20;
-        safetyFlags.push({ type: "WARNING", message: `Proteksi Lemah: Jumlah perlindungan UV-nya di bawah standar untuk kebutuhan kulitmu.`, pointsDeducted: 20, culprits: uvCulprits });
+        safetyFlags.push({ type: "WARNING", message: `Proteksi Ringan: Spektrum perlindungan UV-nya mungkin kurang maksimal jika dipakai beraktivitas berat di luar ruangan.`, pointsDeducted: 20, culprits: uvCulprits });
       }
     }
 
     // 2. Validasi Tekstur (Komedo & Pelembap)
     if (maxSingleComedoFound > activeRule.maxSingleComedo) {
       matchScore -= 20;
-      matchFlags.push({ type: "CRITICAL", message: `Rawan Menyumbat: Terdapat bahan oklusif yang berisiko memperparah jerawat atau komedomu.`, pointsDeducted: 20, culprits: comedoCulprits });
+      matchFlags.push({ type: "CRITICAL", message: `Potensi Komedo: Terdapat bahan bertekstur tebal yang butuh metode double cleansing agar tidak menyumbat pori.`, pointsDeducted: 20, culprits: comedoCulprits });
     } else if (loadComedoMulti > activeRule.maxMultiComedoLoad) {
       const excess = loadComedoMulti - activeRule.maxMultiComedoLoad;
       const penalty = Math.min(30, excess * 7);
       matchScore -= penalty;
-      matchFlags.push({ type: "WARNING", message: `Rawan Beruntusan: Terlalu banyak campuran bahan ringan yang ditumpuk, berpotensi menyumbat pori-pori.`, pointsDeducted: penalty });
+      matchFlags.push({ type: "WARNING", message: `Rawan Beruntusan: Campuran beberapa bahan ringannya cukup banyak, berisiko menyumbat pori jika tidak dibersihkan dengan baik.`, pointsDeducted: penalty, culprits: comedoCulprits });
     }
 
     if (activeRule.surfactant.status === "WAJIB" && countSurfactant < activeRule.surfactant.minCount) {
@@ -262,7 +263,7 @@ export function runScoringEngine(
     // 3. Pelembap Berat Dilarang
     if (activeRule.moistHeavy.status === "DILARANG" && countMoistHeavy > 0) {
       matchScore -= 25;
-      matchFlags.push({ type: "CRITICAL", message: `Tekstur Terlalu Berat: Kandungan minyak pekat sangat dihindari untuk tingkat jerawatmu saat ini.`, pointsDeducted: 25, culprits: heavyMoistCulprits });
+      matchFlags.push({ type: "CRITICAL", message: `Tekstur Cream / Terlalu Pekat: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif.`, pointsDeducted: 25, culprits: heavyMoistCulprits });
     }
 
     // 4. Moisturizer Logic Khusus
@@ -270,18 +271,18 @@ export function runScoringEngine(
     if (product.productType === "MOISTURIZER") {
       if (totalMoist === 0) {
         matchScore -= 30;
-        matchFlags.push({ type: "CRITICAL", message: `Fungsi Gagal: Diklaim sebagai pelembap, tapi tidak ada satupun agen penghidrasi yang terdeteksi.`, pointsDeducted: 30 });
+        matchFlags.push({ type: "CRITICAL", message: `Minim Penghidrasi: Sebagai pelembap, formulasi ini kekurangan agen pengikat air utama.`, pointsDeducted: 30 });
       } else {
         const isMoistLightKurang = activeRule.moistLight.status === "WAJIB" && countMoistLight < activeRule.moistLight.minCount;
         const isMoistMediumKurang = activeRule.moistMedium.status === "WAJIB" && countMoistMedium < activeRule.moistMedium.minCount;
         if (isMoistLightKurang || isMoistMediumKurang) {
           matchScore -= 10;
-          matchFlags.push({ type: "WARNING", message: `Daya Lembap Kurang: Skincare ini kemungkinan kurang melembapkan untuk mengunci hidrasi di tipe kulitmu.`, pointsDeducted: 10 });
+          matchFlags.push({ type: "WARNING", message: `Daya Lembap Ringan: Teksturnya mungkin terasa kurang 'mengunci' hidrasi untuk kebutuhan tipe kulit Anda.`, pointsDeducted: 10 });
         }
       }
     } else if (product.productType === "SUNSCREEN") {
       if (totalMoist === 0) {
-        matchFlags.push({ type: "INFO", message: `Kurang Melembapkan: Tabir surya ini sangat ringan/kering dan tidak memiliki bahan penghidrasi. Direkomendasikan menggunakan pelembap sebelumnya.`, pointsDeducted: 0 });
+        matchFlags.push({ type: "INFO", message: `Hasil Akhir Matte/Kering: Tabir surya ini sangat ringan. Direkomendasikan menggunakan pelembap sebelumnya.`, pointsDeducted: 0 });
       }
     }
 
