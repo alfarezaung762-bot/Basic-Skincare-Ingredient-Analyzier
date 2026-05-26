@@ -45,6 +45,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         strengthLevel: Number(body.strengthLevel) || 1,
         blacklistedSkinTypes: body.blacklistedSkinTypes || null,
         blacklistReason: body.blacklistReason || null,
+        blacklistPenalty: body.blacklistPenalty !== undefined ? body.blacklistPenalty : null,
         targetFocus: body.targetFocus || null,
         aiContext: body.aiContext || null, // <-- TAMBAHAN BARU
         isVerified: Boolean(body.isVerified), // <-- TAMBAHAN BARU (Bisa diubah dari halaman Edit)

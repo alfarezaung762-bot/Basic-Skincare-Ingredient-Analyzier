@@ -53,6 +53,7 @@ export default function CreateIngredientPage() {
     isKeyActive: false,
     strengthLevel: 1,
     blacklistReason: "",
+    blacklistPenalty: "",
   });
 
   // ========================================================
@@ -174,6 +175,7 @@ export default function CreateIngredientPage() {
         isKeyActive: false,
         strengthLevel: 1,
         blacklistReason: "",
+        blacklistPenalty: "",
       }));
 
       setFocuses({
@@ -229,6 +231,8 @@ export default function CreateIngredientPage() {
       : 1;
 
     try {
+      const penaltyVal = formData.blacklistPenalty === "" ? null : parseInt(formData.blacklistPenalty as string);
+      
       const res = await fetch("/api/ingredients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -236,7 +240,8 @@ export default function CreateIngredientPage() {
           ...formData, 
           strengthLevel: finalStrengthLevel,
           blacklistedSkinTypes, 
-          targetFocus 
+          targetFocus,
+          blacklistPenalty: penaltyVal
         }),
       });
 
@@ -294,7 +299,7 @@ export default function CreateIngredientPage() {
           name: "", aliases: "", type: "BASIC", functionalCategory: "UMUM", 
           benefits: "", aiContext: "", warnings: "",
           comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
-          isKeyActive: false, strengthLevel: 1, blacklistReason: ""
+          isKeyActive: false, strengthLevel: 1, blacklistReason: "", blacklistPenalty: ""
         });
         setBlacklistedTypes({ Normal: false, Kering: false, Berminyak: false, Kombinasi: false });
         setFocuses({
@@ -492,9 +497,16 @@ export default function CreateIngredientPage() {
               </div>
               
               {hasBlacklist && !isToxic && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3">
-                  <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
-                  <textarea id="blacklistReason" required rows={2} placeholder="Wajib isi: Mengapa tipe kulit tersebut dilarang keras memakai bahan ini?" value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 placeholder-red-300" />
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3 space-y-4">
+                  <div>
+                    <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
+                    <textarea id="blacklistReason" required rows={2} placeholder="Wajib isi: Mengapa tipe kulit tersebut dilarang keras memakai bahan ini?" value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 placeholder-red-300" />
+                  </div>
+                  <div>
+                    <label htmlFor="blacklistPenalty" className="block text-xs font-bold text-red-700 uppercase mb-2">Penalti Poin (Opsional)</label>
+                    <input id="blacklistPenalty" type="number" min="1" max="100" placeholder="Default: 50" value={formData.blacklistPenalty} onChange={(e) => setFormData({...formData, blacklistPenalty: e.target.value})} className="w-full sm:w-1/3 px-4 py-3 rounded-xl border border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium bg-white text-slate-900" />
+                    <p className="text-[10px] font-medium text-slate-500 mt-1">Kosongkan untuk menggunakan nilai standar 50 poin. Jika diisi &le; 25, label akan menjadi kuning (Warning).</p>
+                  </div>
                 </motion.div>
               )}
             </div>

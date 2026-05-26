@@ -32,6 +32,7 @@ export type IngredientDb = {
   strengthLevel: number;
   blacklistedSkinTypes: string | null;
   blacklistReason: string | null;
+  blacklistPenalty: number | null;
 };
 
 export type FlagDetail = {
@@ -103,16 +104,31 @@ export function runScoringEngine(
   const unknown: string[] = [];
 
   inputList.forEach(inputItem => {
-    const matched = dictionary.find(dbItem => {
-      if (isFuzzyMatch(inputItem, dbItem.name)) return true;
+    const cleanInput = inputItem.trim().toLowerCase();
+
+    // 1. Pencarian Tepat (Exact Match)
+    let matched = dictionary.find(dbItem => {
+      if (cleanInput === dbItem.name.toLowerCase()) return true;
       if (dbItem.aliases) {
-        const aliasList = splitAliases(dbItem.aliases);
-        return aliasList.some(alias => isFuzzyMatch(inputItem, alias));
+        const aliasList = splitAliases(dbItem.aliases).map(a => a.toLowerCase());
+        return aliasList.includes(cleanInput);
       }
       return false;
     });
 
-    if (matched && !detected.some(d => d.name === matched.name)) {
+    // 2. Pencarian Samar (Fuzzy Match) jika exact match gagal
+    if (!matched) {
+      matched = dictionary.find(dbItem => {
+        if (isFuzzyMatch(cleanInput, dbItem.name.toLowerCase())) return true;
+        if (dbItem.aliases) {
+          const aliasList = splitAliases(dbItem.aliases).map(a => a.toLowerCase());
+          return aliasList.some(alias => isFuzzyMatch(cleanInput, alias));
+        }
+        return false;
+      });
+    }
+
+    if (matched && !detected.some(d => d.name === matched!.name)) {
       detected.push(matched);
     } else if (!matched && !unknown.includes(inputItem)) {
       unknown.push(inputItem);
@@ -171,9 +187,11 @@ export function runScoringEngine(
 
     // Blacklist Klinis Mutlak (Match Score Penalty)
     if (ing.blacklistedSkinTypes && ing.blacklistedSkinTypes.toLowerCase().includes(userBaseSkinType)) {
-      matchScore -= 50;
+      const penalty = ing.blacklistPenalty ?? 50;
+      matchScore -= penalty;
       const sensitiveText = (isSensitive && !ing.safeForSensitive) ? ' dan sensitif' : '';
-      matchFlags.push({ type: "CRITICAL", message: `Batasan Penggunaan: Sangat disarankan menghindari bahan ini pada kulit ${userBaseSkinType}${sensitiveText}. (Catatan Lab: ${ing.blacklistReason || 'Berisiko untuk kulitmu'}).`, pointsDeducted: 50, culprits: [ing.name] });
+      const flagType = penalty <= 25 ? "WARNING" : "CRITICAL";
+      matchFlags.push({ type: flagType, message: `Batasan Penggunaan: Sangat disarankan menghindari bahan ini pada kulit ${userBaseSkinType}${sensitiveText}. (Catatan Lab: ${ing.blacklistReason || 'Berisiko untuk kulitmu'}).`, pointsDeducted: penalty, culprits: [ing.name] });
     }
 
     // Kalkulasi Beban (Burden) & Culprits Tracking
@@ -214,7 +232,7 @@ export function runScoringEngine(
     // 1. Validasi Keamanan (Harsh & Buffer)
     if (activeRule.harsh.status === "DILARANG" && loadHarsh > 0) {
       safetyScore -= 40;
-      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi Kuat: Saat ini kulit Anda sedang butuh istirahat dari bahan asam/eksfoliasi aktif.`, pointsDeducted: 40, culprits: harshCulprits });
+      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi Kuat: Produk ini mengandung bahan aktif yang cukup kuat. Hindari atau batasi penggunaan produk ini 2–3 hari sekali.`, pointsDeducted: 40, culprits: harshCulprits });
     } else if (activeRule.harsh.status !== "DILARANG" && loadHarsh > activeRule.harsh.maxLoad) {
       const excess = loadHarsh - activeRule.harsh.maxLoad;
       const penalty = Math.min(40, excess * 5);

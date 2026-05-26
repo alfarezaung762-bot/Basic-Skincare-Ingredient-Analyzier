@@ -59,6 +59,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
     isKeyActive: false,
     strengthLevel: 1,
     blacklistReason: "",
+    blacklistPenalty: "",
     isVerified: false, 
   });
 
@@ -116,6 +117,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               isKeyActive: data.isKeyActive || false,
               strengthLevel: data.strengthLevel || 1,
               blacklistReason: data.blacklistReason || "",
+              blacklistPenalty: data.blacklistPenalty?.toString() || "",
               isVerified: data.isVerified || false,
             });
             
@@ -293,6 +295,8 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
       : 1;
 
     try {
+      const penaltyVal = formData.blacklistPenalty === "" ? null : parseInt(formData.blacklistPenalty as string);
+
       const res = await fetch(`/api/ingredients/${ingredientId}`, {
         method: "PUT", 
         headers: { "Content-Type": "application/json" },
@@ -300,7 +304,8 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
           ...formData, 
           strengthLevel: finalStrengthLevel,
           blacklistedSkinTypes, 
-          targetFocus 
+          targetFocus,
+          blacklistPenalty: penaltyVal
         }),
       });
 
@@ -326,6 +331,7 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               if (formData.isKeyActive !== (initialData.isKeyActive || false)) changedFields.push("Bahan Aktif Utama ⭐");
               if (finalStrengthLevel !== (initialData.strengthLevel || 1)) changedFields.push("Level Kekuatan");
               if (formData.blacklistReason !== (initialData.blacklistReason || "")) changedFields.push("Alasan Blacklist");
+              if (formData.blacklistPenalty !== (initialData.blacklistPenalty?.toString() || "")) changedFields.push("Penalti Blacklist");
               if (formData.isVerified !== (initialData.isVerified || false)) changedFields.push("Verifikasi ✅");
               if (targetFocus !== (initialData.targetFocus || "")) changedFields.push("Fokus Perawatan");
               if (blacklistedSkinTypes !== (initialData.blacklistedSkinTypes || "")) changedFields.push("Dilarang Keras Untuk");
@@ -545,9 +551,16 @@ export default function EditIngredientPage({ params }: { params: Promise<{ id: s
               </div>
               
               {hasBlacklist && !isToxic && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3">
-                  <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
-                  <textarea id="blacklistReason" required disabled={isViewer} rows={2} value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 disabled:opacity-70 disabled:cursor-not-allowed" />
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3 space-y-4">
+                  <div>
+                    <label htmlFor="blacklistReason" className="sr-only">Alasan Blacklist</label>
+                    <textarea id="blacklistReason" required disabled={isViewer} rows={2} value={formData.blacklistReason} onChange={(e) => setFormData({...formData, blacklistReason: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium resize-none bg-red-50 text-red-900 disabled:opacity-70 disabled:cursor-not-allowed" />
+                  </div>
+                  <div>
+                    <label htmlFor="blacklistPenalty" className="block text-xs font-bold text-red-700 uppercase mb-2">Penalti Poin (Opsional)</label>
+                    <input id="blacklistPenalty" type="number" min="1" max="100" placeholder="Default: 50" disabled={isViewer} value={formData.blacklistPenalty} onChange={(e) => setFormData({...formData, blacklistPenalty: e.target.value})} className="w-full sm:w-1/3 px-4 py-3 rounded-xl border border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none text-sm font-medium bg-white text-slate-900 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" />
+                    <p className="text-[10px] font-medium text-slate-500 mt-1">Kosongkan untuk menggunakan nilai standar 50 poin. Jika diisi &le; 25, label akan menjadi kuning (Warning).</p>
+                  </div>
                 </motion.div>
               )}
             </div>

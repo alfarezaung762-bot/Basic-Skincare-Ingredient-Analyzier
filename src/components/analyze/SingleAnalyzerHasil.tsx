@@ -75,6 +75,11 @@ const FlagItem = ({ flag }: { flag: FlagDetail }) => {
     icon = "✅";
   }
 
+  let penaltyBadgeStyle = "text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/50";
+  if (flag.type === "WARNING") {
+    penaltyBadgeStyle = "text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50";
+  }
+
   const words = flag.message.split(/\s+/);
   const isLong = words.length > 30;
   const displayText = isLong && !expanded ? words.slice(0, 30).join(" ") + "..." : flag.message;
@@ -109,7 +114,7 @@ const FlagItem = ({ flag }: { flag: FlagDetail }) => {
         )}
         {/* BADGE PENALTI SKOR */}
         {flag.pointsDeducted > 0 && (
-          <span className="inline-block mt-2.5 px-2.5 py-0.5 rounded-md bg-white/60 dark:bg-slate-700/60 text-[9px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 shadow-sm border border-rose-100 dark:border-rose-800/50">
+          <span className={`inline-block mt-2.5 px-2.5 py-0.5 rounded-md bg-white/60 dark:bg-slate-700/60 text-[9px] font-black uppercase tracking-wider shadow-sm border ${penaltyBadgeStyle}`}>
             Penalti Skor: -{flag.pointsDeducted} Poin
           </span>
         )}

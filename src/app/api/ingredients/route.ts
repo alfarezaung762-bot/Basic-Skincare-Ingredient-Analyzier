@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const { 
       name, aliases, type, functionalCategory, benefits, warnings, comedogenicRating, 
       safeForPregnancy, safeForSensitive, 
-      isKeyActive, strengthLevel, blacklistedSkinTypes, blacklistReason, targetFocus,
+      isKeyActive, strengthLevel, blacklistedSkinTypes, blacklistReason, targetFocus, blacklistPenalty,
       aiContext // <-- VARIABEL BARU
     } = body;
 
@@ -54,6 +54,7 @@ export async function POST(req: Request) {
         strengthLevel: Number(strengthLevel) || 1,
         blacklistedSkinTypes: blacklistedSkinTypes || null,
         blacklistReason: blacklistReason || null,
+        blacklistPenalty: blacklistPenalty !== undefined ? blacklistPenalty : null,
         targetFocus: targetFocus || null,
         aiContext: aiContext || null, // <-- SIMPAN KE DATABASE
       },
