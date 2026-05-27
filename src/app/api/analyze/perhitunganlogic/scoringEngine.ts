@@ -265,7 +265,7 @@ export function runScoringEngine(
     // 2. Validasi Tekstur (Komedo & Pelembap)
     if (maxSingleComedoFound > activeRule.maxSingleComedo) {
       matchScore -= 20;
-      matchFlags.push({ type: "CRITICAL", message: `Potensi Komedo: Terdapat bahan bertekstur tebal yang butuh metode double cleansing agar tidak menyumbat pori.`, pointsDeducted: 20, culprits: comedoCulprits });
+      matchFlags.push({ type: "CRITICAL", message: `Potensi Komedo: Mengandung bahan komedogenik tinggi yang berisiko menyumbat pori-pori. Pemilik kulit rentan berjerawat disarankan untuk menghindari bahan ini.`, pointsDeducted: 20, culprits: comedoCulprits });
     } else if (loadComedoMulti > activeRule.maxMultiComedoLoad) {
       const excess = loadComedoMulti - activeRule.maxMultiComedoLoad;
       const penalty = Math.min(30, excess * 7);

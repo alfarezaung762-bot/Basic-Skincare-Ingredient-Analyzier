@@ -258,6 +258,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                         log.status === "warning" ? "text-amber-600 dark:text-amber-400" :
                         log.status === "skipped" ? "text-slate-500 dark:text-slate-400" :
                         log.status === "alias_added" ? "text-blue-600 dark:text-blue-400" :
+                        log.status === "done" ? "text-emerald-600 dark:text-emerald-400" :
                         "text-red-500 dark:text-red-400"
                       }`}>
                         {log.error}

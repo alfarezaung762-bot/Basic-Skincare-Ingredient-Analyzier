@@ -782,6 +782,11 @@ export async function POST(req: Request) {
               }
               totalReportsCleaned += cleanedCount;
 
+              let correctionMsg = undefined;
+              if (normalizeString(ingredientName) !== normalizeString(finalName)) {
+                correctionMsg = `Nama dikoreksi AI menjadi: ${finalName}`;
+              }
+
               results.push({
                 name: ingredientName,
                 success: true,
@@ -800,7 +805,8 @@ export async function POST(req: Request) {
                 reportsCleaned: cleanedCount,
                 model: research.modelUsed,
                 triedModels: research.triedModels,
-                usedExternalSource: research.usedExternalSource
+                usedExternalSource: research.usedExternalSource,
+                reason: correctionMsg
               });
 
             } catch (dbError: any) {
