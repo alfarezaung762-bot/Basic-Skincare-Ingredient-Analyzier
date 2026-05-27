@@ -73,22 +73,41 @@ function levenshtein(a: string, b: string): number {
 
 function isFuzzyMatch(input: string, target: string): boolean {
   if (input === target) return true;
-  if (input.length >= 5 && target.includes(input)) return true;
-  if (input.length >= 4 && target.length >= 4 && levenshtein(input, target) <= 2) return true;
+
+  // 1. Cek Levenshtein Distance (Toleransi Typo)
+  // Syarat: Panjang kata harus mirip agar terhindar dari singkatan yang mencocokkan kata panjang
+  if (input.length >= 4 && target.length >= 4) {
+    const lengthDiff = Math.abs(input.length - target.length);
+    if (lengthDiff <= 3 && levenshtein(input, target) <= 2) {
+      return true;
+    }
+  }
+
+  // 2. Cek Substring (Includes) dengan Word Boundary
+  // Mencegah kata generik pendek (seperti 'water') meng-hijack bahan yang tidak relevan
+  if (input.length >= 6) {
+    // Escape karakter regex dari input
+    const escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escapedInput}\\b`, 'i');
+    if (regex.test(target)) return true;
+  }
+
   return false;
 }
 
 function getMatchLabel(score: number): string {
+  if (score === 100) return "Sempurna";
   if (score >= 90) return "Sangat Cocok";
-  if (score >= 70) return "Cocok";
-  if (score >= 40) return "Kurang Cocok";
+  if (score >= 75) return "Cocok";
+  if (score >= 50) return "Kurang Optimal";
   return "Tidak Cocok";
 }
 
 function getSafetyLabel(score: number): string {
-  if (score >= 90) return "Sangat Aman";
-  if (score >= 70) return "Aman / Adaptasi";
-  if (score >= 40) return "Hati-hati";
+  if (score === 100) return "Sangat Aman";
+  if (score >= 80) return "Aman";
+  if (score >= 60) return "Butuh Adaptasi / Hati-hati";
+  if (score >= 40) return "Berisiko / Tidak Disarankan";
   return "Hindari Mutlak";
 }
 
@@ -106,26 +125,49 @@ export function runScoringEngine(
   inputList.forEach(inputItem => {
     const cleanInput = inputItem.trim().toLowerCase();
 
-    // 1. Pencarian Tepat (Exact Match)
-    let matched = dictionary.find(dbItem => {
-      if (cleanInput === dbItem.name.toLowerCase()) return true;
-      if (dbItem.aliases) {
-        const aliasList = splitAliases(dbItem.aliases).map(a => a.toLowerCase());
-        return aliasList.includes(cleanInput);
-      }
-      return false;
-    });
+    // Generate variasi pencarian untuk menangani nama yang memiliki kurung
+    // Misal: "Mentha Piperita (Peppermint) Oil" -> ["mentha piperita (peppermint) oil", "mentha piperita oil", "peppermint"]
+    const searchTerms = [cleanInput];
+    
+    if (cleanInput.includes('(') && cleanInput.includes(')')) {
+      const withoutParens = cleanInput.replace(/\([^)]+\)/g, '').replace(/\s+/g, ' ').trim();
+      if (withoutParens && !searchTerms.includes(withoutParens)) searchTerms.push(withoutParens);
 
-    // 2. Pencarian Samar (Fuzzy Match) jika exact match gagal
-    if (!matched) {
+      const inParensMatch = cleanInput.match(/\(([^)]+)\)/);
+      if (inParensMatch && inParensMatch[1]) {
+        const insideParens = inParensMatch[1].trim();
+        if (insideParens && !searchTerms.includes(insideParens)) searchTerms.push(insideParens);
+      }
+    }
+
+    let matched: IngredientDb | undefined = undefined;
+
+    // 1. Pencarian Tepat (Exact Match)
+    for (const term of searchTerms) {
       matched = dictionary.find(dbItem => {
-        if (isFuzzyMatch(cleanInput, dbItem.name.toLowerCase())) return true;
+        if (term === dbItem.name.toLowerCase()) return true;
         if (dbItem.aliases) {
           const aliasList = splitAliases(dbItem.aliases).map(a => a.toLowerCase());
-          return aliasList.some(alias => isFuzzyMatch(cleanInput, alias));
+          return aliasList.includes(term);
         }
         return false;
       });
+      if (matched) break;
+    }
+
+    // 2. Pencarian Samar (Fuzzy Match) jika exact match gagal
+    if (!matched) {
+      for (const term of searchTerms) {
+        matched = dictionary.find(dbItem => {
+          if (isFuzzyMatch(term, dbItem.name.toLowerCase())) return true;
+          if (dbItem.aliases) {
+            const aliasList = splitAliases(dbItem.aliases).map(a => a.toLowerCase());
+            return aliasList.some(alias => isFuzzyMatch(term, alias));
+          }
+          return false;
+        });
+        if (matched) break;
+      }
     }
 
     if (matched && !detected.some(d => d.name === matched!.name)) {
@@ -185,13 +227,13 @@ export function runScoringEngine(
       safetyFlags.push({ type: "CRITICAL", message: `Alergi Mutlak: Memicu alergi Anda.`, pointsDeducted: 100, culprits: [ing.name] });
     }
 
-    // Blacklist Klinis Mutlak (Match Score Penalty)
+    // Blacklist Klinis Mutlak (Safety Score Penalty)
     if (ing.blacklistedSkinTypes && ing.blacklistedSkinTypes.toLowerCase().includes(userBaseSkinType)) {
       const penalty = ing.blacklistPenalty ?? 50;
-      matchScore -= penalty;
+      safetyScore -= penalty;
       const sensitiveText = (isSensitive && !ing.safeForSensitive) ? ' dan sensitif' : '';
       const flagType = penalty <= 25 ? "WARNING" : "CRITICAL";
-      matchFlags.push({ type: flagType, message: `Batasan Penggunaan: Sangat disarankan menghindari bahan ini pada kulit ${userBaseSkinType}${sensitiveText}. (Catatan Lab: ${ing.blacklistReason || 'Berisiko untuk kulitmu'}).`, pointsDeducted: penalty, culprits: [ing.name] });
+      safetyFlags.push({ type: flagType, message: `Batasan Penggunaan: Sangat disarankan menghindari bahan ini pada kulit ${userBaseSkinType}${sensitiveText}. (Catatan Lab: ${ing.blacklistReason || 'Berisiko untuk kulitmu'}).`, pointsDeducted: penalty, culprits: [ing.name] });
     }
 
     // Kalkulasi Beban (Burden) & Culprits Tracking

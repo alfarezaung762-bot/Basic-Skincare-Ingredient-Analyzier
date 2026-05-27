@@ -7,23 +7,13 @@
 
 /**
  * Membagi string alias menjadi array yang sudah dibersihkan.
- * - Format BARU (disimpan oleh AI/admin): pisah dengan ";"
- * - Format LAMA (data lama di DB): pisah dengan "," (regex khusus agar koma dalam kurung aman)
+ * - Mendukung pemisahan dengan ";" ATAU "," (selama koma tidak berada di dalam kurung)
  */
 export function splitAliases(aliasStr: string | null | undefined): string[] {
   if (!aliasStr || !aliasStr.trim()) return [];
 
-  // Deteksi format: jika ada titik koma, gunakan titik koma sebagai pemisah
-  if (aliasStr.includes(';')) {
-    return aliasStr
-      .split(';')
-      .map(a => a.replace(/[()]/g, '').trim().toLowerCase())
-      .filter(a => a.length > 0);
-  }
-
-  // Fallback: format lama dengan koma (koma dalam kurung diabaikan)
   return aliasStr
-    .split(/,(?![^()]*\))/g)
+    .split(/;|,(?![^()]*\))/g)
     .map(a => a.replace(/[()]/g, '').trim().toLowerCase())
     .filter(a => a.length > 0);
 }
@@ -34,15 +24,8 @@ export function splitAliases(aliasStr: string | null | undefined): string[] {
 export function splitAliasesRaw(aliasStr: string | null | undefined): string[] {
   if (!aliasStr || !aliasStr.trim()) return [];
 
-  if (aliasStr.includes(';')) {
-    return aliasStr
-      .split(';')
-      .map(a => a.trim())
-      .filter(a => a.length > 0);
-  }
-
   return aliasStr
-    .split(/,(?![^()]*\))/g)
+    .split(/;|,(?![^()]*\))/g)
     .map(a => a.trim())
     .filter(a => a.length > 0);
 }

@@ -254,13 +254,27 @@ export default function SingleAnalyzerHasil({
           )}
 
           <div className="flex flex-col items-center">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">Kecocokan Profil Kulit</h3>
-            <HalfDonutChart score={result.engineResult.matchScore} label={result.engineResult.matchLabel} colorClass={result.engineResult.matchScore >= 75 ? 'text-emerald-500' : result.engineResult.matchScore >= 40 ? 'text-amber-500' : 'text-rose-500'} />
+            <div className="relative group flex items-center justify-center gap-1.5 mb-6 cursor-help" tabIndex={0}>
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Kecocokan Profil Kulit</h3>
+              <span className="text-slate-400 dark:text-slate-500 text-xs">ⓘ</span>
+              <div className="absolute bottom-full mb-2 w-56 p-3 bg-slate-800 text-white text-[10px] leading-relaxed font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible focus:opacity-100 focus:visible transition-all z-30 text-center shadow-xl border border-slate-700 pointer-events-none">
+                Menilai sejauh mana produk sesuai dengan jenis dan target kulitmu (seperti tekstur dan kelembapan). Skor rendah berarti produk kurang efektif atau kurang nyaman untuk estetikamu.
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+              </div>
+            </div>
+            <HalfDonutChart score={result.engineResult.matchScore} label={result.engineResult.matchLabel} colorClass={result.engineResult.matchScore >= 75 ? 'text-emerald-500' : result.engineResult.matchScore >= 50 ? 'text-amber-500' : 'text-rose-500'} />
             <RenderFlags flags={result.engineResult.matchFlags} />
           </div>
           <div className="flex flex-col items-center pt-8 md:pt-0 md:pl-10">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">Tingkat Keamanan Produk</h3>
-            <HalfDonutChart score={result.engineResult.safetyScore} label={result.engineResult.safetyLabel} colorClass={result.engineResult.safetyScore >= 70 ? 'text-emerald-500' : result.engineResult.safetyScore >= 40 ? 'text-amber-500' : 'text-rose-500'} />
+            <div className="relative group flex items-center justify-center gap-1.5 mb-6 cursor-help" tabIndex={0}>
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tingkat Keamanan Produk</h3>
+              <span className="text-slate-400 dark:text-slate-500 text-xs">ⓘ</span>
+              <div className="absolute bottom-full mb-2 w-56 p-3 bg-slate-800 text-white text-[10px] leading-relaxed font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible focus:opacity-100 focus:visible transition-all z-30 text-center shadow-xl border border-slate-700 pointer-events-none">
+                Menilai tingkat keamanan klinis produk. Memperhitungkan risiko alergi, iritasi, kerusakan barrier, dan bahan toksik. Skor rendah berarti produk berisiko medis jika digunakan.
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+              </div>
+            </div>
+            <HalfDonutChart score={result.engineResult.safetyScore} label={result.engineResult.safetyLabel} colorClass={result.engineResult.safetyScore >= 80 ? 'text-emerald-500' : result.engineResult.safetyScore >= 60 ? 'text-amber-500' : 'text-rose-500'} />
             <RenderFlags flags={result.engineResult.safetyFlags} />
           </div>
         </div>

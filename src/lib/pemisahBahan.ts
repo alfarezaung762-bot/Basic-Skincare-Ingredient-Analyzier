@@ -39,7 +39,7 @@ export function ekstrakDaftarBahan(rawText: string): string[] {
   // 5. Bersihkan karakter khusus yang tersisa, kembalikan placeholder koma, dan bersihkan spasi
   let cleanedParts = parts
     .map(item => {
-      let cleaned = item.replace(/[\(\)\[\]\{\}\*]/g, ' '); // Ganti kurung dengan spasi agar kata tidak menempel
+      let cleaned = item.replace(/[\[\]\{\}\*]/g, ' '); // Ganti kurung siku/kurawal dengan spasi, TAPI pertahankan kurung biasa ()
       cleaned = cleaned.replace(/__KOMA__/g, ','); // Kembalikan koma pada angka (1,2-Hexanediol)
       cleaned = cleaned.replace(/\s+/g, ' ').trim().toLowerCase(); // Normalisasi spasi
       return cleaned;
