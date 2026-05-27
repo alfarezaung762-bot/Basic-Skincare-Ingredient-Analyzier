@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface AdminHeaderProps {
   adminName: string;
@@ -58,10 +59,21 @@ export default function AdminHeader({ adminName, adminRole, onLogout, title, sub
           {isDark ? "☀️" : "🌙"}
         </button>
 
-        <div className="text-left md:text-right">
+        <div className="text-left md:text-right hidden sm:block">
           <p className="text-sm font-black text-slate-900 dark:text-slate-100">{adminName}</p>
           <p className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">{adminRole}</p>
         </div>
+
+        {/* Tombol Manajemen Akun Khusus Superadmin */}
+        {adminRole === "SUPERADMIN" && (
+          <Link 
+            href="/admin/management" 
+            className="px-4 py-2 shrink-0 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 dark:hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95 border border-purple-200 dark:border-purple-800 flex items-center gap-2"
+          >
+            <span>👑</span> <span className="hidden md:inline">Manajemen Akun</span>
+          </Link>
+        )}
+
         <button 
           onClick={onLogout} 
           className="px-5 py-2 shrink-0 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-600 dark:hover:text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95"

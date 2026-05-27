@@ -15,7 +15,7 @@ interface DeepResearchContextType {
   researchSummary: any;
   showResearchModal: boolean;
   setShowResearchModal: (show: boolean) => void;
-  startResearch: (names: string[], adminName: string, adminRole: string, engine: ResearchEngine) => Promise<void>;
+  startResearch: (names: string[], adminName: string, adminRole: string, engine: ResearchEngine, useLiveSearch: boolean) => Promise<void>;
   cancelResearch: () => void;
 }
 
@@ -38,7 +38,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
     // Keep modal open to show partial results
   };
 
-  const startResearch = async (names: string[], adminName: string, adminRole: string, engine: ResearchEngine) => {
+  const startResearch = async (names: string[], adminName: string, adminRole: string, engine: ResearchEngine, useLiveSearch: boolean = false) => {
     if (isResearching) return;
 
     setIsResearching(true);
@@ -54,7 +54,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/admin/deep-research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model }),
+        body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model, useLiveSearch }),
         signal: controller.signal,
       });
 
@@ -120,6 +120,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                   conflictInci: event.conflictInci,
                   conflictType: event.conflictType,
                   triedModels: event.triedModels,
+                  usedExternalSource: event.usedExternalSource,
                 }]);
               }
             } else if (event.type === "complete") {
@@ -238,6 +239,9 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="shrink-0">{log.status === "done" ? "✅" : log.status === "error" ? "❌" : log.status === "warning" ? "⚠️" : log.status === "alias_added" ? "🔗" : "⏭️"}</span>
                         <span className="capitalize truncate">{log.name}</span>
+                        {log.usedExternalSource && (
+                          <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm">SUMBER LUAR</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {log.aliasCount !== undefined && log.aliasCount > 0 && (
@@ -250,7 +254,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                     </div>
                     {/* Detail konflik/error di bawah nama */}
                     {log.error && (
-                      <div className={`mt-1.5 text-[10px] font-medium leading-relaxed pl-6 ${
+                      <div className={`mt-1.5 text-[10px] font-medium leading-relaxed pl-6 break-words whitespace-pre-wrap max-h-40 overflow-y-auto pr-2 ${
                         log.status === "warning" ? "text-amber-600 dark:text-amber-400" :
                         log.status === "skipped" ? "text-slate-500 dark:text-slate-400" :
                         log.status === "alias_added" ? "text-blue-600 dark:text-blue-400" :

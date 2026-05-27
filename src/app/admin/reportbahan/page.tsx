@@ -52,6 +52,7 @@ export default function AdminReportBahan() {
   const [selectedEngine, setSelectedEngine] = useState<ResearchEngine>({ provider: "gemini", model: "gemini-2.5-pro" });
   const [customEndpoint, setCustomEndpoint] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [useLiveSearch, setUseLiveSearch] = useState(false);
 
   // ========================================================
   // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & POLLING DATA
@@ -238,7 +239,7 @@ export default function AdminReportBahan() {
       engineToUse.model = customEndpoint.trim();
     }
     
-    startResearch(selectedNames, adminName, adminRole, engineToUse);
+    startResearch(selectedNames, adminName, adminRole, engineToUse, useLiveSearch);
     setSelectedIds(new Set());
   };
 
@@ -411,9 +412,10 @@ export default function AdminReportBahan() {
             </Link>
           )}
 
-          {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50">
-              <span>👑 Manajemen Akun</span>
+          {/* PERENDERAN BERSYARAT: Tombol Pusat AI */}
+          {(isSuperAdmin || adminRole === "ADMIN") && (
+            <Link href="/admin/pusat-ai" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
+              <span>🧠 Pusat AI</span>
             </Link>
           )}
         </motion.div>
@@ -515,6 +517,19 @@ export default function AdminReportBahan() {
                               <option value={JSON.stringify({provider: "byteplus", model: "custom"})}>-- Gunakan Endpoint ID Custom --</option>
                             </optgroup>
                           </select>
+
+                          {selectedEngine.provider === "gemini" && selectedEngine.model.startsWith("gemini-2") && (
+                            <label className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                              <input 
+                                type="checkbox"
+                                checked={useLiveSearch}
+                                onChange={(e) => setUseLiveSearch(e.target.checked)}
+                                disabled={isResearching}
+                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
+                              />
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 select-none">🌍 Live Search</span>
+                            </label>
+                          )}
 
                           {selectedEngine.provider === "byteplus" && selectedEngine.model === "custom" && (
                             <input 

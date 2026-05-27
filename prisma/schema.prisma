@@ -273,3 +273,17 @@ model Banner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ==========================================
+// 7. AI COMMAND CENTER CONFIG
+// ==========================================
+
+model AIPromptConfig {
+  id                   String   @id @default("singleton_ai_config") // Digunakan sebagai penanda singleton
+  dataTemplate         String   @db.Text // JSON string: format field yang diminta
+  prioritizedSources   String   @db.Text // JSON array atau string dipisah koma
+  allowExternalSources Boolean  @default(false)
+  systemPrompt         String   @db.Text // System prompt yang mengandung {{ATURAN_SISTEM}}
+  
+  updatedAt            DateTime @updatedAt
+}

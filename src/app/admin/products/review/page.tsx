@@ -203,9 +203,10 @@ export default function AdminReviewsDashboard() {
             </Link>
           )}
 
-          {isSuperAdmin && (
-            <Link href="/admin/management" className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50">
-              <span>👑 Manajemen Akun</span>
+          {/* PERENDERAN BERSYARAT: Tombol Pusat AI */}
+          {(isSuperAdmin || adminRole === "ADMIN") && (
+            <Link href="/admin/pusat-ai" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
+              <span>🧠 Pusat AI</span>
             </Link>
           )}
         </motion.div>

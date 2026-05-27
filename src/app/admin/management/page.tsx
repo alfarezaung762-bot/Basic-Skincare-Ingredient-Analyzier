@@ -21,6 +21,7 @@ const AVAILABLE_PERMISSIONS = [
   { id: "MANAGE_KATALOG", label: "🛒 Katalog Produk", desc: "Akses kelola produk afiliasi" },
   { id: "MANAGE_ULASAN", label: "⭐ Moderasi Ulasan", desc: "Akses hapus komentar toksik/spam" },
   { id: "MANAGE_BENNER", label: "🖼️ Kelola Banner", desc: "Akses mengelola banner slider di beranda" },
+  { id: "MANAGE_AI", label: "🧠 Pusat AI", desc: "Akses mengelola pengaturan & template AI" },
 ];
 
 export default function AdminManagement() {
@@ -175,10 +176,10 @@ export default function AdminManagement() {
             <span>🖼️ Kelola Banner</span>
           </Link>
 
-          {/* TAB AKTIF */}
-          <div className="shrink-0 md:ml-auto px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
-            <span>👑 Manajemen Akun</span>
-          </div>
+          {/* Tombol Pusat AI */}
+          <Link href="/admin/pusat-ai" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
+            <span>🧠 Pusat AI</span>
+          </Link>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">

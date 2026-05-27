@@ -96,23 +96,111 @@ const extractJson = (text: string) => {
 // ========================================================
 // FUNGSI UTAMA: Riset satu bahan via berbagai AI (dengan fallback otomatis)
 // ========================================================
-async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro"): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean; triedModels?: string[] }> {
+async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro", useLiveSearch: boolean = false): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean; triedModels?: string[], usedExternalSource?: boolean }> {
   const currentDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const currentYear = new Date().getFullYear();
   
-  const prompt = `Kamu adalah ahli dermatologi, kosmesi, dan kimia farmasi internasional dengan pengalaman 20+ tahun.
+  // Ambil Config AI dari DB
+  let aiConfig = await prisma.aIPromptConfig.findUnique({ where: { id: 'singleton_ai_config' } });
+  if (!aiConfig) {
+    aiConfig = {
+      id: 'singleton_ai_config',
+      dataTemplate: "Nama (INCI), Sifat Kimia, Level Kekuatan, Fungsi Khusus, Sinonim / Alias, Manfaat Singkat (Untuk Pengguna), Analisis Mendalam (Khusus Mesin AI), Komedogenik (0-5), Aman Bumil, Aman Sensitif, Fokus Perawatan, Dilarang Keras Untuk",
+      prioritizedSources: "EWG, Paula's Choice, INCIDecoder, CIR (Cosmetic Ingredient Review), PubMed",
+      allowExternalSources: false,
+      systemPrompt: "Kamu adalah ahli dermatologi, kosmesi, dan kimia farmasi internasional dengan pengalaman 20+ tahun.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}",
+      updatedAt: new Date()
+    };
+  }
 
-TANGGAL ANALISIS: ${currentDate}
-INSTRUKSI WAKTU: Gunakan data paling terbaru yang tersedia hingga tahun ${currentYear}. Prioritaskan sumber dari jurnal SINTA-1, PubMed, CIR (Cosmetic Ingredient Review), dan referensi dermatologi terkini. Jika data comedogenic atau keamanan telah diperbarui dalam penelitian terbaru, gunakan data terbaru tersebut.
+  // Ekstrak Sumber Prioritas jika bentuk JSON
+  let sourcesList = "";
+  try {
+    const parsedSources = JSON.parse(aiConfig.prioritizedSources);
+    
+    const formatSource = (item: any) => {
+      if (!item) return "Tidak dibatasi";
+      const sumber = item.sumber || "Tidak dibatasi";
+      const rule = item.izinkanLuar ? "[BOLEH CARI DI SUMBER LUAR JIKA TIDAK ADA]" : "[HANYA SUMBER INI - DILARANG CARI DI TEMPAT LAIN]";
+      return `${sumber} ${rule}`;
+    };
 
-Analisis bahan skincare "${ingredientName}" berdasarkan penelitian resmi dermatologi.
+    sourcesList = `
+    - Komedogenik (0-5): ${formatSource(parsedSources.komedogenik)}
+    - Sifat Kimia: ${formatSource(parsedSources.sifatKimia)}
+    - Level Kekuatan (1-3): ${formatSource(parsedSources.levelKekuatan)}
+    - Fungsi Khusus: ${formatSource(parsedSources.fungsiKhusus)}
+    - Keamanan (Bumil & Sensitif): ${formatSource(parsedSources.amanBumilSensitif)}
+    - Bahan Aktif (Key Active): ${formatSource(parsedSources.bahanAktif)}
+    - Fokus Perawatan: ${formatSource(parsedSources.fokusPerawatan)}
+    - Dilarang Keras (Blacklist): ${formatSource(parsedSources.dilarangKeras)}
+    - Analisis Mendalam: ${formatSource(parsedSources.analisisMendalam)}
+    - Manfaat Singkat: ${formatSource(parsedSources.manfaatSingkat)}
+    `;
+  } catch (e) {
+    sourcesList = aiConfig.prioritizedSources || "Tidak dibatasi";
+  }
 
-LAKUKAN PENCARIAN 2 TAHAP:
-- TAHAP 1: Identifikasi bahan, nama INCI resmi, alias, dan properti dasar.
-- TAHAP 2: VERIFIKASI KHUSUS comedogenicRating — cari data spesifik dari database Kligman & Mills, penelitian comedogenicity terbaru, atau CIR. JANGAN default ke 0 kecuali BENAR-BENAR terbukti non-komedogenik.
+  const currentMonth = new Date().toLocaleString('id-ID', { month: 'long' });
+  const dynamicVersion = `VERSI ${currentMonth.toUpperCase()} ${currentYear}`;
 
-Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value HARUS berupa STRING kecuali yang ditandai angka/boolean):
+  const aturanSistem = `ATURAN SISTEM & KATEGORISASI DATABASE (${dynamicVersion}):
+Tugasmu adalah melakukan ekstraksi data saintifik bahan skincare secara ketat, tanpa jargon berlebihan di bagian awam, dan sangat medis di bagian analisis.
 
+[SIFAT KIMIA / type]
+- HARSH (Keras/Eksfoliator): Bahan pengelupas atau aktif kuat yang berpotensi memicu iritasi dan berisiko merusak skin barrier alami jika digunakan berlebihan.
+- BUFFER (Penyokong/Penenang): Bahan pendukung yang TIDAK "menyembuhkan" kulit, melainkan meredakan inflamasi dan menyediakan lingkungan/komponen penyokong yang ideal agar skin barrier dapat memulihkan dirinya sendiri secara alami.
+- TOXIC: Dilarang mutlak/karsinogenik (FDA/SCCS).
+- BASIC: Bahan netral, pelarut, pengemulsi, pengawet yang aman.
+
+[LEVEL KEKUATAN / strengthLevel] (SKALA 1-3)
+Jika BASIC atau TOXIC, WAJIB bernilai 1.
+JIKA HARSH (Evaluasi Penetrasi Molekuler):
+- 1 (Rendah/Lembut): Molekul besar (PHA, LHA, Mandelic). Meresap lambat di permukaan, ramah pemula.
+- 2 (Menengah): Molekul sedang (Lactic Acid, Salicylic Acid standar). Penetrasi moderat.
+- 3 (Sangat Kuat): Molekul amat kecil (Glycolic Acid, Retinol murni) yang menembus kulit dengan sangat cepat dan dalam. Berisiko tinggi mengoyak skin barrier jika tanpa kehati-hatian.
+
+JIKA BUFFER (Evaluasi Daya Sokong Inflamasi):
+- 1 (Rendah/Lembut): Ekstrak tumbuhan dasar sebagai hidrasi penyokong (Aloe Vera, Chamomile extract).
+- 2 (Menengah): Senyawa murni dengan uji klinis penenang standar (Panthenol 2-5%).
+- 3 (Sangat Kuat): Isolat tingkat medis untuk meredam inflamasi berat dan memberi fondasi kuat bagi perbaikan barrier (Madecassoside murni, Kompleks Ceramide NP/AP/EOP tinggi).
+
+[FUNGSI KHUSUS / functionalCategory]
+- PELEMBAP_HUMEKTAN (Pelembap Air/Ringan): Bahan yang menarik dan mengikat molekul air ke dalam kulit (Contoh: Glycerin, Hyaluronic Acid, Propylene Glycol).
+- PELEMBAP_EMOLIEN (Pelembap Lipid/Sedang): Bahan yang mengisi celah antar sel kulit untuk menghaluskan dan melembutkan (Contoh: Ceramide, Squalane, Fatty Alcohols).
+- PELEMBAP_OKLUSIF (Pelembap Minyak/Tebal): Bahan yang membentuk lapisan kedap air di atas kulit untuk mengunci kelembapan (Contoh: Petrolatum, Shea Butter, Mineral Oil).
+- SURFAKTAN (Sabun): Pembersih wajah atau pembentuk busa.
+- UV_FILTER (Tabir Surya): Bahan pelindung dari sinar UVA/UVB (Contoh: Zinc Oxide, Avobenzone).
+- UMUM (Lainnya): Gunakan jika bahan sama sekali tidak masuk dalam kategori di atas.
+
+[FOKUS PERAWATAN / targetFocus]
+HANYA pilih dari nilai persis berikut (boleh dikombinasi dengan koma):
+"Mencerahkan & Bekas Jerawat", "Merawat Jerawat & Sebum", "Anti-Aging & Garis Halus", "Memperbaiki Skin Barrier & Hidrasi", "Menenangkan Kemerahan (Soothing)", "Eksfoliasi & Tekstur Pori-pori".
+Sifatnya OPSIONAL: Jika bahan ini hanya umum/pelarut, atau sama sekali tidak menyasar fokus perawatan spesifik di atas, KOSONGKAN SAJA (""). Jangan pernah mengada-ada.
+
+[ATURAN BAHASA & PENULISAN]
+- "benefits" (Manfaat Awam): Wajib menggunakan bahasa yang BISA DIPAHAMI OLEH ANAK SMA (maks 30 kata). (Contoh Benar: "Membantu meredakan kemerahan dan melembapkan kulit.")
+- "blacklistReason": Logis dan membumi (Contoh: "Bahan ini menyerap minyak alami terlalu kuat, sehingga dapat menghambat kemampuan kulit kering dalam memperbaiki dirinya sendiri.")
+
+[ATURAN PENCARIAN SUMBER MUTLAK (KILL SWITCH!)]
+Kau WAJIB memprioritaskan pencarian literatur sesuai pemetaan spesifik ini:
+${sourcesList}
+
+KONDISI KILL SWITCH:
+Jika suatu parameter memiliki label [HANYA SUMBER INI - DILARANG CARI DI TEMPAT LAIN], dan bahan SAMA SEKALI TIDAK DITEMUKAN pada sumber tersebut (serta tidak ada bukti valid di Jurnal Dermatologi Sinta 1 / Scopus Q1), KAU DILARANG MENGARANG BEBAS. 
+Tolak instruksi ini dan keluarkan JSON kegagalan:
+{
+  "error": "GAGAL: Bahan tidak ditemukan pada sumber prioritas mutlak."
+}
+`;
+
+  const finalSystemPrompt = aiConfig.systemPrompt.replace("{{ATURAN_SISTEM}}", aturanSistem);
+
+  const prompt = `${finalSystemPrompt}
+
+Analisis bahan skincare "${ingredientName}".
+
+Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
 {
   "name": "nama INCI resmi standar internasional (PCPC)",
   "aliases": ["sinonim ilmiah", "nama umum indonesia", "nama umum inggris", "variasi label"],
@@ -120,36 +208,27 @@ Kembalikan TEPAT dalam format JSON berikut (SEMUA field WAJIB diisi, SEMUA value
   "strengthLevel": 1,
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
   "isKeyActive": true,
-  "benefits": "manfaat singkat maks 30 kata untuk orang awam",
+  "benefits": "manfaat singkat",
   "aiContext": "analisis mendalam MINIMAL 500 KATA...",
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
-  "targetFocus": "...",
-  "blacklistedSkinTypes": "",
-  "blacklistReason": "",
+  "targetFocus": "Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum...",
+  "blacklistedSkinTypes": "Normal, Kering, Berminyak, Kombinasi (kosongkan jika aman)",
+  "blacklistReason": "Alasan klinis (namun dirangkum agar mudah dipahami awam) mengapa bahan ini di-blacklist. WAJIB DIISI jika ada tipe kulit yang di-blacklist!",
   "warnings": "peringatan penggunaan",
+  "sumber_yang_digunakan": "Sebutkan sumber aktual darimana data ini didapat",
   "confidenceLevel": "HIGH atau MEDIUM atau LOW"
 }
 
 ATURAN KETAT:
-1. "name": WAJIB menggunakan standar INCI resmi (International Nomenclature of Cosmetic Ingredients). Jika bahan adalah ekstrak, gunakan format 'Genus Species Extract'. Jika bahan adalah air, gunakan 'Aqua'. JANGAN gunakan nama pasaran sebagai field 'name'.
-2. "aliases": WAJIB berupa JSON Array of Strings, BUKAN string biasa. Contoh BENAR: ["Water", "Air", "Purified Water"]. Contoh SALAH: "Water, Air, Purified Water". Setiap elemen array hanya boleh berisi nama kimia atau nama dagang murni. DILARANG KERAS menambahkan deskripsi dalam kurung.
-3. "type": BASIC=umum/standar, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya.
-4. "strengthLevel": angka 1-3. Gunakan 2 atau 3 HANYA jika type=HARSH atau BUFFER. Untuk BASIC/TOXIC selalu 1.
-5. "functionalCategory": Pilih yang PALING tepat. Ceramide/lipid = PELEMBAP_OKLUSIF. Hyaluronic/glycerin = PELEMBAP_HUMEKTAN. Minyak/ester = PELEMBAP_EMOLIEN. SLS/SLES = SURFAKTAN. Zinc oxide/titanium = UV_FILTER. Lainnya = UMUM.
-6. "isKeyActive": true jika ini bahan aktif utama yang memiliki klaim fungsi spesifik. false jika hanya bahan pendukung.
-7. "benefits": STRING, maks 30 kata, bahasa mudah dipahami.
-8. "aiContext": STRING, WAJIB MINIMAL 500 KATA. Analisis teknis mendalam.
-9. "targetFocus": STRING, pilih dari: Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum, Anti-Aging & Garis Halus, Memperbaiki Skin Barrier & Hidrasi, Menenangkan Kemerahan (Soothing), Eksfoliasi & Tekstur Pori-pori.
-10. "blacklistedSkinTypes": STRING, pilih dari daftar resmi.
-11. "comedogenicRating": angka 0-5 berdasarkan standar dermatologi resmi Kligman & Mills. JANGAN selalu 0. Cari data aktual.
-12. Jika TOXIC: safeForPregnancy=false, safeForSensitive=false.
-13. Pastikan SEMUA sinonim adalah BENAR secara kimia. JANGAN BERHALUSINASI.
-14. Pastikan nama di field "name" benar-benar ada di database INCI resmi PCPC atau CosIng EU.
-15. "confidenceLevel": Isi "HIGH" jika kamu 90%+ yakin datanya akurat. "MEDIUM" jika 60-89%. "LOW" jika kurang dari 60% — data mungkin tidak reliable.
+1. "name": WAJIB menggunakan standar INCI resmi. JANGAN gunakan nama pasaran.
+2. "aliases": WAJIB JSON Array of Strings murni.
+3. Pastikan data tidak melanggar ATURAN SISTEM.
+4. Jika sumber prioritas diisi dan data tidak ditemukan di sana ATAU di jurnal bereputasi tinggi, "confidenceLevel" WAJIB LOW atau kembalikan { "error": "..." }.
+5. JIKA field "blacklistedSkinTypes" memiliki nilai (bukan kosong), maka Anda WAJIB MENGISI field "blacklistReason" dengan alasan klinis yang didukung data medis, NAMUN harus ditulis ulang menggunakan bahasa yang mudah dipahami oleh orang awam. DILARANG KERAS MENGOSONGKAN "blacklistReason" JIKA ADA BLACKLIST!
 
-Kembalikan HANYA JSON tanpa markdown.`;
+Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang menggunakan format markdown \`\`\`json.`;
 
   // Bangun daftar model yang akan dicoba
   const modelsToTry: string[] = [modelName];
@@ -189,9 +268,15 @@ Kembalikan HANYA JSON tanpa markdown.`;
           generationConfig.responseMimeType = "application/json";
         }
 
+        const tools: any[] = [];
+        if (useLiveSearch && !isGemmaModel(currentModel) && currentModel.includes("gemini")) {
+          tools.push({ googleSearch: {} });
+        }
+
         const model = genAI.getGenerativeModel({
           model: currentModel,
           generationConfig,
+          tools: tools.length > 0 ? tools : undefined,
         });
 
         const result = await model.generateContent(prompt);
@@ -227,11 +312,17 @@ Kembalikan HANYA JSON tanpa markdown.`;
         parsed = extractJson(responseText);
       }
 
+      // ANTI-HALUSINASI: Cek Kill Switch (Error dari AI)
+      if (parsed.error) {
+        console.warn(`[Deep Research] ⚠️ AI Kill Switch Triggered untuk "${ingredientName}": ${parsed.error}`);
+        return { success: false, error: parsed.error, modelUsed: currentModel, isHallucination: true, triedModels };
+      }
+
       // ANTI-HALUSINASI: Cek confidenceLevel
       const confidence = String(parsed.confidenceLevel || "HIGH").toUpperCase();
       if (confidence === "LOW") {
         console.warn(`[Deep Research] ⚠️ AI melaporkan confidence LOW untuk "${ingredientName}". Dibatalkan karena rawan halusinasi.`);
-        return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH (rawan halusinasi). Silakan riset manual.`, modelUsed: currentModel, isHallucination: true, triedModels };
+        return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH. Bahan kemungkinan fiktif atau kurang data riset medis.`, modelUsed: currentModel, isHallucination: true, triedModels };
       }
 
       // Validasi: aiContext harus >= 400 kata
@@ -247,9 +338,15 @@ Kembalikan HANYA JSON tanpa markdown.`;
           if (!isGemmaModel(currentModel)) {
             generationConfig.responseMimeType = "application/json";
           }
+          const tools: any[] = [];
+          if (useLiveSearch && !isGemmaModel(currentModel) && currentModel.includes("gemini")) {
+            tools.push({ googleSearch: {} });
+          }
+
           const model = genAI.getGenerativeModel({
             model: currentModel,
             generationConfig,
+            tools: tools.length > 0 ? tools : undefined,
           });
           const retryResult = await model.generateContent(retryPrompt);
           retryParsed = extractJson(retryResult.response.text());
@@ -276,7 +373,19 @@ Kembalikan HANYA JSON tanpa markdown.`;
       }
 
       console.log(`[Deep Research] ✅ Berhasil: "${ingredientName}" (${wordCount} kata, model: ${currentModel})`);
-      return { success: true, data: parsed, modelUsed: currentModel, triedModels };
+      
+      let usedExternalSource = false;
+      const sourcesUsed = (parsed.sumber_yang_digunakan || "").toLowerCase();
+      if (aiConfig.prioritizedSources && aiConfig.prioritizedSources.trim() !== "") {
+        const pSources = aiConfig.prioritizedSources.toLowerCase().split(",").map((s: string) => s.trim());
+        const hasPriority = pSources.some((ps: string) => sourcesUsed.includes(ps));
+        if (!hasPriority && sourcesUsed !== "") {
+           usedExternalSource = true;
+           console.log(`[Deep Research] ⚠️ Menggunakan sumber luar: ${sourcesUsed}`);
+        }
+      }
+
+      return { success: true, data: parsed, modelUsed: currentModel, triedModels, usedExternalSource };
 
     } catch (err: any) {
       const errorMsg = err.response?.data?.error?.message || err.message;
@@ -315,7 +424,7 @@ Kembalikan HANYA JSON tanpa markdown.`;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { names, adminName, adminRole, provider, model } = body;
+    const { names, adminName, adminRole, provider, model, useLiveSearch } = body;
 
     if (!names || !Array.isArray(names) || names.length === 0) {
       return NextResponse.json({ message: "Daftar bahan kosong." }, { status: 400 });
@@ -375,7 +484,7 @@ export async function POST(req: Request) {
           skippedCount: skippedNames.length,
         });
 
-        const results: { name: string; success: boolean; aliasCount: number; model?: string; error?: string }[] = [];
+        const results: { name: string; success: boolean; aliasCount: number; model?: string; error?: string; usedExternalSource?: boolean }[] = [];
         let totalAliasesFound = 0;
         let totalReportsCleaned = 0;
 
@@ -393,7 +502,7 @@ export async function POST(req: Request) {
             status: "researching",
           });
 
-          const research = await researchIngredient(ingredientName, provider, model);
+          const research = await researchIngredient(ingredientName, provider, model, useLiveSearch);
 
           // ANTI-HALUSINASI: Jika AI melaporkan LOW confidence, kirim event khusus
           if (!research.success && research.isHallucination) {
@@ -677,7 +786,8 @@ export async function POST(req: Request) {
                 name: ingredientName,
                 success: true,
                 aliasCount,
-                model: research.modelUsed
+                model: research.modelUsed,
+                usedExternalSource: research.usedExternalSource
               });
 
               sendEvent({
@@ -690,6 +800,7 @@ export async function POST(req: Request) {
                 reportsCleaned: cleanedCount,
                 model: research.modelUsed,
                 triedModels: research.triedModels,
+                usedExternalSource: research.usedExternalSource
               });
 
             } catch (dbError: any) {
