@@ -109,6 +109,10 @@ async function researchIngredient(ingredientName: string, provider: string = "ge
       prioritizedSources: "EWG, Paula's Choice, INCIDecoder, CIR (Cosmetic Ingredient Review), PubMed",
       allowExternalSources: false,
       systemPrompt: "Kamu adalah ahli dermatologi, kosmesi, dan kimia farmasi internasional dengan pengalaman 20+ tahun.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}",
+      aihybridPromptingredient: "",
+      aihybridModelPriority: null,
+      aihybridUseExternalSources: false,
+      aihybridReferenceSources: null,
       updatedAt: new Date()
     };
   }

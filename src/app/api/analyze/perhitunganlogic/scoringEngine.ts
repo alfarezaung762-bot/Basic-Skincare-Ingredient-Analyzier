@@ -74,6 +74,17 @@ function levenshtein(a: string, b: string): number {
 function isFuzzyMatch(input: string, target: string): boolean {
   if (input === target) return true;
 
+  // 1. Validasi Angka Besi (Strict Number Matching) - Anti Halusinasi AI
+  // Mencegah PEG-8 cocok dengan PEG-32, atau Polyquaternium-7 dengan Polyquaternium-43
+  const inputNumbers = input.match(/\d+/g)?.join('');
+  const targetNumbers = target.match(/\d+/g)?.join('');
+  
+  if (inputNumbers || targetNumbers) {
+    if (inputNumbers !== targetNumbers) {
+      return false; // Jika salah satu punya angka, atau dua-duanya punya angka tapi beda, langsung GAGAL match.
+    }
+  }
+
   // 1. Cek Levenshtein Distance (Toleransi Typo)
   // Syarat: Panjang kata harus mirip agar terhindar dari singkatan yang mencocokkan kata panjang
   if (input.length >= 4 && target.length >= 4) {
@@ -121,6 +132,7 @@ export function runScoringEngine(
   const inputList = ekstrakDaftarBahan(product.ingredientsRaw);
   const detected: IngredientDb[] = [];
   const unknown: string[] = [];
+  const detectedInciNames = new Set<string>();
 
   inputList.forEach(inputItem => {
     const cleanInput = inputItem.trim().toLowerCase();
@@ -170,9 +182,29 @@ export function runScoringEngine(
       }
     }
 
-    if (matched && !detected.some(d => d.name === matched!.name)) {
-      detected.push(matched);
-    } else if (!matched && !unknown.includes(inputItem)) {
+    if (matched) {
+      if (!detectedInciNames.has(matched.name)) {
+        detectedInciNames.add(matched.name);
+        
+        const clonedMatch = { ...matched };
+        // Ambil nama asli dari input pengguna (tanpa kurung jika ada, agar bersih)
+        // Jika input asli adalah "Water (Aqua)", cleanOriginal menjadi "Water"
+        let cleanOriginal = inputItem.replace(/\([^)]+\)/g, '').replace(/\s+/g, ' ').trim();
+        // Jika hasil pembersihan kosong (misal inputnya "(Water)"), gunakan input aslinya
+        if (!cleanOriginal) cleanOriginal = inputItem.replace(/[()]/g, '').trim();
+
+        // Hindari duplikasi konyol (seperti perbedaan spasi/kurung kecil)
+        const isSignificantlyDifferent = !clonedMatch.name.toLowerCase().includes(cleanOriginal.toLowerCase()) && 
+                                         !cleanOriginal.toLowerCase().includes(clonedMatch.name.toLowerCase());
+        
+        if (cleanOriginal && isSignificantlyDifferent) {
+          // OPSI 3: Konvensi Penamaan Ganda (Otomatis)
+          clonedMatch.name = `${clonedMatch.name} (${cleanOriginal})`;
+        }
+        
+        detected.push(clonedMatch);
+      }
+    } else if (!unknown.includes(inputItem)) {
       unknown.push(inputItem);
     }
   });

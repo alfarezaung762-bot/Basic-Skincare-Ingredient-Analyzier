@@ -34,6 +34,13 @@ export default function PusatAIPage() {
   });
   const [systemPrompt, setSystemPrompt] = useState("");
 
+  // AI Hybrid Tab 2 State
+  const [activeTab, setActiveTab] = useState<"research" | "hybrid">("research");
+  const [hybridPrompt, setHybridPrompt] = useState("Anda adalah seorang Konsultan Dermatologi Kosmetik kelas dunia dan Ahli Formulasi (Cosmetic Chemist). Tugas Anda adalah menganalisis interaksi antar bahan dalam formulasi skincare dan memberikan penilaian profesional yang mudah dipahami orang awam.");
+  const [hybridModels, setHybridModels] = useState("gemma-4-31b-it, gemma-4-26b-a4b-it, gemini-3.1-flash-lite-preview, gemini-3.1-flash-preview, gemini-2.5-flash");
+  const [hybridUseExternal, setHybridUseExternal] = useState(false);
+  const [hybridReferences, setHybridReferences] = useState("CIR (Cosmetic Ingredient Review), PubChem, JCAD, Paula's Choice Ingredient Dictionary, SkinSort, SCCS");
+
   useEffect(() => {
     const profileString = sessionStorage.getItem("adminProfile");
 
@@ -102,6 +109,17 @@ export default function PusatAIPage() {
           // Fallback if older text format
         }
         setSystemPrompt(data.systemPrompt || "");
+
+        // Load AI Hybrid config
+        if (data.aihybridPromptingredient) setHybridPrompt(data.aihybridPromptingredient);
+        if (data.aihybridModelPriority) {
+          try {
+            const models = JSON.parse(data.aihybridModelPriority);
+            if (Array.isArray(models)) setHybridModels(models.join(", "));
+          } catch { /* keep default */ }
+        }
+        if (typeof data.aihybridUseExternalSources === 'boolean') setHybridUseExternal(data.aihybridUseExternalSources);
+        if (data.aihybridReferenceSources) setHybridReferences(data.aihybridReferenceSources);
       }
     } catch (error) {
       console.error("Failed to fetch AI config", error);
@@ -119,6 +137,10 @@ export default function PusatAIPage() {
         body: JSON.stringify({
           prioritizedSources: JSON.stringify(prioritizedSources),
           systemPrompt,
+          aihybridPromptingredient: hybridPrompt,
+          aihybridModelPriority: JSON.stringify(hybridModels.split(',').map(m => m.trim()).filter(Boolean)),
+          aihybridUseExternalSources: hybridUseExternal,
+          aihybridReferenceSources: hybridReferences,
         }),
       });
 
@@ -195,6 +217,24 @@ export default function PusatAIPage() {
           </div>
         </motion.div>
 
+        {/* TAB SWITCH */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("research")}
+            className={`flex-1 px-5 py-3 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'research' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+          >
+            🔬 Deep Research
+          </button>
+          <button
+            onClick={() => setActiveTab("hybrid")}
+            className={`flex-1 px-5 py-3 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'hybrid' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+          >
+            🧠 AI Hybrid Analyzer
+          </button>
+        </div>
+
+        {/* TAB 1: DEEP RESEARCH (EXISTING) */}
+        {activeTab === "research" && (
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
           className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-6"
@@ -290,6 +330,117 @@ export default function PusatAIPage() {
           </div>
 
         </motion.div>
+        )}
+
+        {/* TAB 2: AI HYBRID ANALYZER */}
+        {activeTab === "hybrid" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
+          className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-indigo-200 dark:border-indigo-800/50 space-y-6"
+        >
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            🧠 Konfigurasi AI Hybrid Analyzer
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium -mt-3">
+            Mengatur perilaku AI saat menganalisis interaksi antar bahan dalam formulasi skincare.
+          </p>
+
+          <div className="space-y-6">
+            {/* 1. Prompt Identitas AI (Editable) */}
+            <div>
+              <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-2">
+                ✏️ Prompt Identitas AI (Editable)
+              </label>
+              <textarea
+                value={hybridPrompt}
+                onChange={(e) => setHybridPrompt(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-32 custom-scrollbar text-sm"
+                placeholder="Anda adalah seorang Konsultan Dermatologi..."
+              />
+            </div>
+
+            {/* 2. Aturan Perilaku (LOCKED — Read-only) */}
+            <div className="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-300 dark:border-slate-600">
+              <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
+                🔒 Aturan Perilaku Sistem (Dikunci Permanen)
+              </label>
+              <div className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed font-mono bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                <p>• AI HANYA bisa MENGURANGI/MENETRALISIR penalti (maks 50 poin per item)</p>
+                <p>• AI TIDAK bisa menambah skor atau memberikan bonus positif</p>
+                <p>• Penalti MUTLAK (Toksik, Hamil, Alergi, Tanpa UV) TIDAK bisa disentuh</p>
+                <p>• Bahan tanpa aiContext + sumber luar OFF = AI dilarang menyesuaikan</p>
+                <p>• Output WAJIB bahasa Indonesia, DILARANG menyebutkan angka skor</p>
+                <p>• AI wajib mempertimbangkan urutan bahan (konsentrasi tinggi → rendah)</p>
+              </div>
+            </div>
+
+            {/* 3. Sumber Referensi (Editable + Toggle) */}
+            <div>
+              <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2">
+                📖 Sumber Referensi Formulasi
+              </label>
+              <div className="flex items-center gap-3 mb-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hybridUseExternal}
+                    onChange={(e) => setHybridUseExternal(e.target.checked)}
+                    className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  />
+                  <span className={`text-sm font-bold ${hybridUseExternal ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    {hybridUseExternal ? '🟢 AI boleh merujuk sumber luar' : '🔴 AI hanya pakai database (aiContext)'}
+                  </span>
+                </label>
+              </div>
+              {hybridUseExternal && (
+                <textarea
+                  value={hybridReferences}
+                  onChange={(e) => setHybridReferences(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-20 text-sm"
+                  placeholder="CIR, PubChem, JCAD, Paula's Choice..."
+                />
+              )}
+            </div>
+
+            {/* 4. Model AI Prioritas (Editable) */}
+            <div>
+              <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2">
+                🤖 Urutan Model AI (Fallback Cascade)
+              </label>
+              <textarea
+                value={hybridModels}
+                onChange={(e) => setHybridModels(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-20 font-mono text-sm"
+                placeholder="gemma-4-31b-it, gemini-2.5-flash, ..."
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Pisahkan dengan koma. Model pertama akan dicoba terlebih dahulu. Jika gagal, lanjut ke berikutnya.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-indigo-100 dark:border-indigo-800/30">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <span>💾</span> Simpan Konfigurasi Hybrid
+                </>
+              )}
+            </button>
+          </div>
+
+        </motion.div>
+        )}
+
       </div>
     </div>
   );

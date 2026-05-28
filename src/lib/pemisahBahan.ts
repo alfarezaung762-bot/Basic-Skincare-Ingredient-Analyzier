@@ -19,17 +19,30 @@ export function ekstrakDaftarBahan(rawText: string): string[] {
   text = text.replace(/\s-\s/g, ',');
 
   // 2. Cegah kata yang dempet karena typo copy-paste (CamelCase)
-  // Misal: "GlikolKlorfenesin" -> "Glikol, Klorfenesin"
-  // Hanya berlaku jika huruf kecil diikuti huruf besar tanpa spasi.
-  text = text.replace(/([a-z])([A-Z])/g, '$1, $2');
+  // [DIHAPUS] Fitur ini dimatikan karena merusak bahan valid bersistem kapital (BeeSwax, PolyQuaternium, dll).
+  // Di dunia nyata, 100% komposisi menggunakan tanda baca koma/titik koma.
+
+  // 2.5. NORMALISASI SLASH (Spasi sebelum slash → tanpa spasi)
+  // Banyak kemasan Indonesia menulis "Caprylic/ Capric" dengan spasi setelah slash.
+  // Database menyimpan "Caprylic/Capric" tanpa spasi → mismatch fatal.
+  // Regex: mendeteksi "/ " (slash diikuti spasi) dan mengganti jadi "/" (slash saja)
+  text = text.replace(/\/\s+/g, '/');
 
   // 3. HAPUS PERSENTASE SECARA AMAN (BUKAN MENGHAPUS SEMUA ANGKA!)
-  // Menghapus: "10%", "0.5%", "10 %"
+  // Menghapus: "10%", "0.5%", "10 %", "(0.5%)", "(0.02%)", "(0)"
+  // Langkah A: Hapus angka persentase yang ada di dalam kurung, termasuk kurungnya
+  // Contoh: "Triethanolamine (0.5%)" → "Triethanolamine"
+  // Contoh: "Phenoxyethanol(0)" → "Phenoxyethanol"
+  text = text.replace(/\s*\([0-9]+(?:\.[0-9]+)?\s*%?\)/g, '');
+  // Langkah B: Hapus persentase biasa (tanpa kurung)
+  // Contoh: "Homosalate 5%" → "Homosalate"
   text = text.replace(/[0-9]+(?:\.[0-9]+)?\s*%/g, '');
 
   // 3.5. LINDUNGI ANGKA DENGAN KOMA (Misal: 1,2-Hexanediol)
-  // Ganti digit-koma-digit dengan placeholder sementara
-  text = text.replace(/(\d)\s*,\s*(\d)/g, '$1__KOMA__$2');
+  // Ganti digit-koma-digit HANYA jika koma LANGSUNG menempel tanpa spasi
+  // "1,2-Hexanediol" → dilindungi ✅ (koma langsung antara 1 dan 2)
+  // "Glycereth-26, 1,2-Hexanediol" → koma pemisah TIDAK dilindungi ✅ (ada spasi setelah koma)
+  text = text.replace(/(\d),(\d)/g, '$1__KOMA__$2');
 
   // 4. Pisahkan berdasarkan koma, titik koma, atau baris baru (newline)
   // PENTING: Jangan memotong koma yang berada di dalam kurung!
@@ -39,8 +52,10 @@ export function ekstrakDaftarBahan(rawText: string): string[] {
   // 5. Bersihkan karakter khusus yang tersisa, kembalikan placeholder koma, dan bersihkan spasi
   let cleanedParts = parts
     .map(item => {
-      let cleaned = item.replace(/[\[\]\{\}\*]/g, ' '); // Ganti kurung siku/kurawal dengan spasi, TAPI pertahankan kurung biasa ()
+      let cleaned = item.replace(/[\[\]\{\}\*"\u201C\u201D]/g, ' '); // Ganti kurung siku/kurawal/bintang/tanda kutip OCR dengan spasi
       cleaned = cleaned.replace(/__KOMA__/g, ','); // Kembalikan koma pada angka (1,2-Hexanediol)
+      cleaned = cleaned.replace(/\.+$/g, ''); // Hapus titik di akhir kata (sering muncul dari OCR/copy-paste, misal: "Disodium Edta.")
+      cleaned = cleaned.replace(/\(\s*\)/g, ''); // Hapus kurung kosong sisa pembersihan persentase, misal: "Triethanolamine ()" → "Triethanolamine"
       cleaned = cleaned.replace(/\s+/g, ' ').trim().toLowerCase(); // Normalisasi spasi
       return cleaned;
     })

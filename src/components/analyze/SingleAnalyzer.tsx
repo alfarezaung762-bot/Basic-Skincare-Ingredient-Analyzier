@@ -51,10 +51,11 @@ export default function SingleAnalyzer() {
 
     try {
       // 1. Jalankan Analisis Utama (Evaluasi Laboratorium Klinis)
-      const response = await fetch("/api/analyze/single", {
+      const endpoint = analysisMode === "HYBRID" ? "/api/analyze/ai-hybrid" : "/api/analyze/single";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productName, productType, ingredients, mode: analysisMode }),
+        body: JSON.stringify({ productName, productType, ingredients }),
       });
 
       if (!response.ok) {

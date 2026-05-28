@@ -46,22 +46,36 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { dataTemplate, prioritizedSources, allowExternalSources, systemPrompt } = body;
+    const { 
+      dataTemplate, prioritizedSources, allowExternalSources, systemPrompt,
+      // AI Hybrid fields
+      aihybridPromptingredient, aihybridModelPriority, aihybridUseExternalSources, aihybridReferenceSources
+    } = body;
+
+    const updateData: any = {};
+    if (dataTemplate !== undefined) updateData.dataTemplate = dataTemplate;
+    if (prioritizedSources !== undefined) updateData.prioritizedSources = prioritizedSources;
+    if (allowExternalSources !== undefined) updateData.allowExternalSources = allowExternalSources;
+    if (systemPrompt !== undefined) updateData.systemPrompt = systemPrompt;
+    // AI Hybrid
+    if (aihybridPromptingredient !== undefined) updateData.aihybridPromptingredient = aihybridPromptingredient;
+    if (aihybridModelPriority !== undefined) updateData.aihybridModelPriority = aihybridModelPriority;
+    if (aihybridUseExternalSources !== undefined) updateData.aihybridUseExternalSources = aihybridUseExternalSources;
+    if (aihybridReferenceSources !== undefined) updateData.aihybridReferenceSources = aihybridReferenceSources;
 
     const config = await prisma.aIPromptConfig.upsert({
       where: { id: CONFIG_ID },
-      update: {
-        dataTemplate,
-        prioritizedSources,
-        allowExternalSources,
-        systemPrompt,
-      },
+      update: updateData,
       create: {
         id: CONFIG_ID,
         dataTemplate: dataTemplate || DEFAULT_CONFIG.dataTemplate,
         prioritizedSources: prioritizedSources || DEFAULT_CONFIG.prioritizedSources,
         allowExternalSources: allowExternalSources ?? DEFAULT_CONFIG.allowExternalSources,
         systemPrompt: systemPrompt || DEFAULT_CONFIG.systemPrompt,
+        aihybridPromptingredient: aihybridPromptingredient || "",
+        aihybridModelPriority: aihybridModelPriority || null,
+        aihybridUseExternalSources: aihybridUseExternalSources ?? false,
+        aihybridReferenceSources: aihybridReferenceSources || null,
       },
     });
 

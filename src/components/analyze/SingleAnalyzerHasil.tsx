@@ -45,6 +45,22 @@ export interface FullAnalysisResponse {
   engineResult: EngineResult;
   analysis: AiAnalysis;
   historyId: string;
+  aiHybridData?: {
+    formulationFocus?: {
+      primary: string;
+      secondary: string[];
+      agreesWithEngine: boolean;
+      reasoning: string;
+    };
+    synergyAnalysis?: { pair: string; effect: string; verdict: "POSITIVE" | "NEUTRAL" }[];
+    warningsAndAdvice?: {
+      clashes: { pair: string; risk: string; severity: "LOW" | "MEDIUM" | "HIGH"; contextualAdvice: string }[];
+      generalAdvice: string[];
+    };
+    aiUnknownAnalysis?: string;
+    adjustmentsSummary?: { trigger: string; neutralizers: string[]; restored: number; type: string }[];
+    modelUsed?: string;
+  } | null;
 }
 
 export interface UserProfileSummary {

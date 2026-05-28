@@ -285,5 +285,11 @@ model AIPromptConfig {
   allowExternalSources Boolean  @default(false)
   systemPrompt         String   @db.Text // System prompt yang mengandung {{ATURAN_SISTEM}}
   
+  // AI Hybrid Analyzer — Konfigurasi terpisah untuk analisis formulasi
+  aihybridPromptingredient  String   @default("") @db.Text  // System prompt khusus AI Hybrid
+  aihybridModelPriority     String?  @db.Text               // JSON array urutan model fallback
+  aihybridUseExternalSources Boolean @default(false)         // Toggle: AI hanya pakai DB atau boleh cari luar
+  aihybridReferenceSources  String?  @db.Text               // Sumber referensi formulasi (editable admin)
+
   updatedAt            DateTime @updatedAt
 }
