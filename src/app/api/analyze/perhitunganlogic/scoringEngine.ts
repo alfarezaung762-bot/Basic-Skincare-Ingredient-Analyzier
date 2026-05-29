@@ -78,7 +78,7 @@ function isFuzzyMatch(input: string, target: string): boolean {
   // Mencegah PEG-8 cocok dengan PEG-32, atau Polyquaternium-7 dengan Polyquaternium-43
   const inputNumbers = input.match(/\d+/g)?.join('');
   const targetNumbers = target.match(/\d+/g)?.join('');
-  
+
   if (inputNumbers || targetNumbers) {
     if (inputNumbers !== targetNumbers) {
       return false; // Jika salah satu punya angka, atau dua-duanya punya angka tapi beda, langsung GAGAL match.
@@ -118,7 +118,7 @@ function getSafetyLabel(score: number): string {
   if (score === 100) return "Sangat Aman";
   if (score >= 80) return "Aman";
   if (score >= 60) return "Butuh Adaptasi / Hati-hati";
-  if (score >= 40) return "Berisiko / Tidak Disarankan";
+  if (score >= 40) return "Berisiko / batasi penggunaan";
   return "Hindari Mutlak";
 }
 
@@ -140,7 +140,7 @@ export function runScoringEngine(
     // Generate variasi pencarian untuk menangani nama yang memiliki kurung
     // Misal: "Mentha Piperita (Peppermint) Oil" -> ["mentha piperita (peppermint) oil", "mentha piperita oil", "peppermint"]
     const searchTerms = [cleanInput];
-    
+
     if (cleanInput.includes('(') && cleanInput.includes(')')) {
       const withoutParens = cleanInput.replace(/\([^)]+\)/g, '').replace(/\s+/g, ' ').trim();
       if (withoutParens && !searchTerms.includes(withoutParens)) searchTerms.push(withoutParens);
@@ -185,7 +185,7 @@ export function runScoringEngine(
     if (matched) {
       if (!detectedInciNames.has(matched.name)) {
         detectedInciNames.add(matched.name);
-        
+
         const clonedMatch = { ...matched };
         // Ambil nama asli dari input pengguna (tanpa kurung jika ada, agar bersih)
         // Jika input asli adalah "Water (Aqua)", cleanOriginal menjadi "Water"
@@ -194,14 +194,14 @@ export function runScoringEngine(
         if (!cleanOriginal) cleanOriginal = inputItem.replace(/[()]/g, '').trim();
 
         // Hindari duplikasi konyol (seperti perbedaan spasi/kurung kecil)
-        const isSignificantlyDifferent = !clonedMatch.name.toLowerCase().includes(cleanOriginal.toLowerCase()) && 
-                                         !cleanOriginal.toLowerCase().includes(clonedMatch.name.toLowerCase());
-        
+        const isSignificantlyDifferent = !clonedMatch.name.toLowerCase().includes(cleanOriginal.toLowerCase()) &&
+          !cleanOriginal.toLowerCase().includes(clonedMatch.name.toLowerCase());
+
         if (cleanOriginal && isSignificantlyDifferent) {
           // OPSI 3: Konvensi Penamaan Ganda (Otomatis)
           clonedMatch.name = `${clonedMatch.name} (${cleanOriginal})`;
         }
-        
+
         detected.push(clonedMatch);
       }
     } else if (!unknown.includes(inputItem)) {
@@ -306,7 +306,7 @@ export function runScoringEngine(
     // 1. Validasi Keamanan (Harsh & Buffer)
     if (activeRule.harsh.status === "DILARANG" && loadHarsh > 0) {
       safetyScore -= 40;
-      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi Kuat: Produk ini mengandung bahan aktif yang cukup kuat. Hindari atau batasi penggunaan produk ini 2–3 hari sekali.`, pointsDeducted: 40, culprits: harshCulprits });
+      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi Kuat — Atur Frekuensi: Produk ini mengandung bahan aktif yang cukup kuat. Hindari atau batasi penggunaan produk ini 2–3 hari sekali.`, pointsDeducted: 40, culprits: harshCulprits });
     } else if (activeRule.harsh.status !== "DILARANG" && loadHarsh > activeRule.harsh.maxLoad) {
       const excess = loadHarsh - activeRule.harsh.maxLoad;
       const penalty = Math.min(40, excess * 5);
@@ -320,7 +320,7 @@ export function runScoringEngine(
       const defisit = activeRule.buffer.minLoad - rawBufferLoad;
       const penalty = Math.min(20, defisit * 5);
       safetyScore -= penalty;
-      safetyFlags.push({ type: "WARNING", message: `Minim Penenang: Formulasi ini minim agen soothing untuk menyeimbangkan efek bahan aktifnya.`, pointsDeducted: penalty });
+      safetyFlags.push({ type: "WARNING", message: `Formulasi Kurang Lembut: Produk ini kurang mengandung bahan penenang (seperti Centella atau Aloe Vera) untuk menyeimbangkan efek bahan aktif yang ada. Disarankan pairing dengan produk soothing/moisturizing setelah pemakaian.`, pointsDeducted: penalty });
     } else if (isSensitive && rawBufferLoad >= 6) {
       safetyScore += 10;
       safetyFlags.push({ type: "SUCCESS", message: `Ramah Sensitif: Memiliki lapisan penenang yang sangat baik untuk meredam kemerahan.`, pointsDeducted: 0 });
@@ -338,8 +338,10 @@ export function runScoringEngine(
 
     // 2. Validasi Tekstur (Komedo & Pelembap)
     if (maxSingleComedoFound > activeRule.maxSingleComedo) {
-      matchScore -= 20;
-      matchFlags.push({ type: "CRITICAL", message: `Potensi Komedo: Mengandung bahan komedogenik tinggi yang berisiko menyumbat pori-pori. Pemilik kulit rentan berjerawat disarankan untuk menghindari bahan ini.`, pointsDeducted: 20, culprits: comedoCulprits });
+      const comedoPenalty = isWashOff ? 5 : 20;  // Facewash: -5 (bilas), Leave-on: -20
+      const comedoFlagType: FlagDetail["type"] = isWashOff ? "WARNING" : "CRITICAL";
+      matchScore -= comedoPenalty;
+      matchFlags.push({ type: comedoFlagType, message: `Potensi Komedo: Mengandung bahan komedogenik tinggi yang berisiko menyumbat pori-pori. Pemilik kulit rentan berjerawat disarankan untuk menghindari bahan ini.`, pointsDeducted: comedoPenalty, culprits: comedoCulprits });
     } else if (loadComedoMulti > activeRule.maxMultiComedoLoad) {
       const excess = loadComedoMulti - activeRule.maxMultiComedoLoad;
       const penalty = Math.min(30, excess * 7);

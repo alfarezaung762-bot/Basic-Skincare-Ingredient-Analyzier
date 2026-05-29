@@ -43,10 +43,32 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const logs = await prisma.adminLog.findMany({
+    const adminLogs = await prisma.adminLog.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(logs, { status: 200 });
+
+    const aiLogs = await prisma.aiAdjustmentLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100, // Limit to 100 recent
+    });
+
+    // Map AI Logs to match AdminLog format for the frontend
+    const mappedAiLogs = aiLogs.map(ai => ({
+      id: ai.id,
+      adminName: "AI Hybrid Engine",
+      adminEmail: ai.modelUsed,
+      adminRole: "AI",
+      action: "ADJUST",
+      entity: "AI_ADJUSTMENT",
+      details: `[${ai.targetScore}] Mengurangi penalti bahan ${ai.triggerIngredient} dari ${ai.originalPenalty} menjadi ${ai.adjustedPenalty} (-${ai.pointsRestored} pts). Produk: ${ai.productName}. Alasan: ${ai.reasoning}`,
+      createdAt: ai.createdAt,
+    }));
+
+    const combined = [...adminLogs, ...mappedAiLogs].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return NextResponse.json(combined, { status: 200 });
   } catch (error: any) {
     console.error("GET AdminLog Error:", error.message);
     return NextResponse.json({ message: "Gagal mengambil data log admin" }, { status: 500 });

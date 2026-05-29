@@ -255,10 +255,25 @@ model AdminLog {
   adminEmail  String   // Email atau username admin
   adminRole   String   // Role (SUPERADMIN, ADMIN, VIEWER)
   action      String   // LOGIN, CREATE, UPDATE, DELETE
-  entity      String   // INGREDIENT, PRODUCT, REVIEW, AUTH
-  details     String   @db.Text // Deskripsi lengkap (ex: "Menambahkan bahan Salicylic Acid")
+  entity      String   // INGREDIENT, PRODUCT, REVIEW, AUTH, AI_ADJUSTMENT
+  details     String   @db.Text // Deskripsi lengkap
   
   createdAt   DateTime @default(now())
+}
+
+model AiAdjustmentLog {
+  id                String   @id @default(cuid())
+  userId            String
+  productName       String
+  triggerIngredient String
+  originalPenalty   Int
+  adjustedPenalty   Int
+  pointsRestored    Int
+  reasoning         String   @db.Text
+  adjustmentType    String
+  modelUsed         String
+  targetScore       String   // "MATCH" atau "SAFETY"
+  createdAt         DateTime @default(now())
 }
 
 // ==========================================

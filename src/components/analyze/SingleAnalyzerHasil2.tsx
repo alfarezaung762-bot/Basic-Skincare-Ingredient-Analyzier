@@ -48,6 +48,7 @@ export interface FullAnalysisResponse {
   analysis: AiAnalysis;
   historyId: string;
   aiHybridData?: {
+    overallVerdict?: string;
     formulationFocus?: {
       primary: string;
       secondary: string[];
@@ -133,6 +134,7 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
   const [showAllGoodIngredients, setShowAllGoodIngredients] = useState(false);
   const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
   const [showComedogenicIngredients, setShowComedogenicIngredients] = useState(false);
+  const [showAiUnknownAnalysis, setShowAiUnknownAnalysis] = useState(false);
   const [showAiConsultation, setShowAiConsultation] = useState(false);
 
   // State untuk Pop-up Detail Bahan & Laporan (Klik)
@@ -294,6 +296,18 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               </div>
             )}
           </div>
+
+          {/* KECOCOKAN FOKUS AI */}
+          {result.aiHybridData?.formulationFocus?.reasoning && (
+            <div className="mt-6 p-5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+              <h4 className="text-sm font-black text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                <span>🎯</span>Kecocokan Fokus
+              </h4>
+              <p className="text-xs font-medium text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                {result.aiHybridData.formulationFocus.reasoning}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -385,18 +399,18 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
                       {comedoIngredients
                         .sort((a, b) => b.comedogenicRating - a.comedogenicRating)
                         .map((ing, idx) => (
-                        <div key={idx} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border shadow-sm ${getComedoColor(ing.comedogenicRating)}`}>
-                          <span className="text-xs font-bold capitalize">{ing.name}</span>
-                          <span className="text-[10px] font-black">{ing.comedogenicRating}/5</span>
-                          <div className="group relative">
-                            <span className="cursor-help text-[10px] opacity-60">ℹ️</span>
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 bg-slate-800 text-white text-[10px] font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 leading-relaxed pointer-events-none">
-                              {comedoLabels[ing.comedogenicRating] || "Data tidak tersedia"}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-slate-800"></div>
+                          <div key={idx} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border shadow-sm ${getComedoColor(ing.comedogenicRating)}`}>
+                            <span className="text-xs font-bold capitalize">{ing.name}</span>
+                            <span className="text-[10px] font-black">{ing.comedogenicRating}/5</span>
+                            <div className="group relative">
+                              <span className="cursor-help text-[10px] opacity-60">ℹ️</span>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 bg-slate-800 text-white text-[10px] font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 leading-relaxed pointer-events-none">
+                                {comedoLabels[ing.comedogenicRating] || "Data tidak tersedia"}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-slate-800"></div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 )}
@@ -436,6 +450,26 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
                       </div>
                     ))}
                   </div>
+
+                  {/* Tombol Analisis AI — hanya tampil jika AI Hybrid aktif */}
+                  {result.aiHybridData?.aiUnknownAnalysis && (
+                    <div className="mt-4 pt-4 border-t border-amber-100">
+                      <button
+                        onClick={() => setShowAiUnknownAnalysis(!showAiUnknownAnalysis)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-700 text-sm font-bold hover:bg-indigo-100 transition-colors w-full sm:w-auto"
+                      >
+                        <span>🤖</span>
+                        <span>Analisis Bahan Asing (Oleh AI)</span>
+                        <span className="ml-auto sm:ml-2">{showAiUnknownAnalysis ? '▲' : '▼'}</span>
+                      </button>
+
+                      {showAiUnknownAnalysis && (
+                        <div className="mt-3 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 text-xs text-indigo-900 font-medium leading-relaxed">
+                          {result.aiHybridData.aiUnknownAnalysis}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -505,8 +539,8 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
                 🧠
               </div>
               <div className="text-left">
-                <h3 className="text-base font-black text-slate-800 dark:text-slate-100">Konsultasi AI Hybrid</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Analisis formulasi mendalam oleh AI Dermatologi</p>
+                <h3 className="text-base font-black text-slate-800 dark:text-slate-100">Rangkuman Analisis Produk</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Rangkuman penilaian produk oleh AI</p>
               </div>
             </div>
             <span className="text-indigo-500 dark:text-indigo-400 text-lg font-bold shrink-0 ml-4">
@@ -518,81 +552,85 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           {showAiConsultation && (
             <div className="px-6 md:px-8 pb-6 md:pb-8 space-y-5 animate-in slide-in-from-top-2 duration-300 border-t border-indigo-100 dark:border-indigo-900/50 pt-6">
 
-              {/* SINERGI BAHAN */}
-              {result.aiHybridData.synergyAnalysis && result.aiHybridData.synergyAnalysis.length > 0 && (
-                <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-800/50">
-                  <h4 className="text-sm font-black text-emerald-800 dark:text-emerald-300 mb-3 flex items-center gap-2">🔗 Sinergi Bahan</h4>
-                  <div className="space-y-3">
-                    {result.aiHybridData.synergyAnalysis.map((syn, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5 text-sm">
-                        <span className="text-emerald-500 shrink-0 mt-0.5">✅</span>
-                        <div>
-                          <span className="font-bold text-emerald-900 dark:text-emerald-200">{syn.pair}</span>
-                          <p className="text-emerald-700 dark:text-emerald-400 text-xs font-medium mt-0.5 leading-relaxed">{syn.effect}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {/* VERDICT UTAMA */}
+              {result.aiHybridData.overallVerdict && (
+                <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800/50">
+                  <h4 className="text-sm font-black text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2">🏆 Verdict Utama</h4>
+                  <p className="text-sm font-medium text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                    {result.aiHybridData.overallVerdict}
+                  </p>
                 </div>
               )}
 
-              {/* PERINGATAN & SARAN (GABUNGAN) */}
-              {result.aiHybridData.warningsAndAdvice && (
-                <div className="bg-amber-50/50 dark:bg-amber-950/20 p-5 rounded-2xl border border-amber-200 dark:border-amber-800/50">
-                  <h4 className="text-sm font-black text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">⚡ Peringatan & Saran Penggunaan</h4>
-                  
-                  {/* Clashes */}
-                  {result.aiHybridData.warningsAndAdvice.clashes.length > 0 && (
-                    <div className="space-y-3 mb-4">
-                      {result.aiHybridData.warningsAndAdvice.clashes.map((clash, idx) => (
-                        <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-amber-200 dark:border-amber-800/50">
-                          <div className="flex items-start gap-2 mb-2">
-                            <span className={`text-xs font-black px-2 py-0.5 rounded-md shrink-0 ${
-                              clash.severity === 'HIGH' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
-                              clash.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
-                              'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                            }`}>
-                              {clash.severity === 'HIGH' ? '🔴' : clash.severity === 'MEDIUM' ? '🟡' : '🔵'} {clash.severity}
-                            </span>
-                            <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{clash.pair}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-2">{clash.risk}</p>
-                          <div className="bg-indigo-50 dark:bg-indigo-950/30 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
-                            <p className="text-xs text-indigo-800 dark:text-indigo-300 font-medium leading-relaxed">💡 {clash.contextualAdvice}</p>
+              {/* SARAN PEMAKAIAN */}
+              {result.aiHybridData.warningsAndAdvice?.generalAdvice && result.aiHybridData.warningsAndAdvice.generalAdvice.length > 0 && (
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-800/30">
+                  <h4 className="text-sm font-black text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">💊 Saran Pemakaian</h4>
+                  <ul className="space-y-1.5">
+                    {result.aiHybridData.warningsAndAdvice.generalAdvice.map((advice, idx) => (
+                      <li key={idx} className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-start gap-2">
+                        <span className="text-indigo-500 shrink-0">•</span>
+                        <span>{advice}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* SINERGI & PERINGATAN */}
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">🔗⚡ Sinergi & Peringatan Bahan</h4>
+
+                <div className="space-y-4">
+                  {/* Sinergi */}
+                  {result.aiHybridData.synergyAnalysis && result.aiHybridData.synergyAnalysis.length > 0 && (
+                    <div className="space-y-3">
+                      <h5 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Sinergi Positif</h5>
+                      {result.aiHybridData.synergyAnalysis.map((syn, idx) => (
+                        <div key={idx} className="flex items-start gap-2.5 text-sm bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                          <span className="text-emerald-500 shrink-0 mt-0.5">✅</span>
+                          <div>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{syn.pair}</span>
+                            <p className="text-slate-600 dark:text-slate-400 text-xs font-medium mt-0.5 leading-relaxed">{syn.effect}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* General Advice */}
-                  {result.aiHybridData.warningsAndAdvice.generalAdvice.length > 0 && (
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
-                      <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">💊 Saran untuk profil kulit Anda:</p>
-                      <ul className="space-y-1.5">
-                        {result.aiHybridData.warningsAndAdvice.generalAdvice.map((advice, idx) => (
-                          <li key={idx} className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-start gap-2">
-                            <span className="text-indigo-500 shrink-0">•</span>
-                            <span>{advice}</span>
-                          </li>
-                        ))}
-                      </ul>
+                  {/* Peringatan (Clashes) */}
+                  {result.aiHybridData.warningsAndAdvice?.clashes && result.aiHybridData.warningsAndAdvice.clashes.length > 0 && (
+                    <div className="space-y-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <h5 className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Perlu Perhatian</h5>
+                      {result.aiHybridData.warningsAndAdvice.clashes.map((clash, idx) => (
+                        <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                          <div className="flex items-start gap-2 mb-1.5">
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${clash.severity === 'HIGH' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
+                              clash.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                              }`}>
+                              {clash.severity === 'HIGH' ? '🔴' : clash.severity === 'MEDIUM' ? '🟡' : '🔵'}
+                            </span>
+                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{clash.pair}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1.5">{clash.risk}</p>
+                          <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-lg leading-relaxed">
+                            💡 {clash.contextualAdvice}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* AI UNKNOWN ANALYSIS */}
-              {result.aiHybridData.aiUnknownAnalysis && result.engineResult.unknownIngredients.length > 0 && (
-                <div className="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-sm font-black text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">🔍 Analisis Bahan Asing oleh AI</h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{result.aiHybridData.aiUnknownAnalysis}</p>
+                  {(!result.aiHybridData.synergyAnalysis?.length && !result.aiHybridData.warningsAndAdvice?.clashes?.length) && (
+                    <p className="text-xs text-slate-500 italic">Tidak ada sinergi spesifik atau peringatan interaksi bahan yang perlu dikhawatirkan.</p>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* MODEL USED BADGE */}
               {result.aiHybridData.modelUsed && (
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-end mt-2">
                   <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
                     🤖 Model: {result.aiHybridData.modelUsed}
                   </span>

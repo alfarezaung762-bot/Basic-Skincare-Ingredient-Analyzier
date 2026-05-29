@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { runScoringEngine, UserProfile, ProductInput, EngineResult, FlagDetail } from "../perhitunganlogic/scoringEngine";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -12,6 +13,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 // ========================
 // TYPES
 // ========================
+export type ModelProvider = "gemini" | "byteplus" | "deepseek";
+
+export interface ModelConfig {
+  provider: ModelProvider;
+  model: string;
+  label?: string;
+}
+
 interface PenaltyAdjustment {
   targetScore: "MATCH" | "SAFETY";
   originalPenalty: number;
@@ -25,6 +34,7 @@ interface PenaltyAdjustment {
 }
 
 interface AiHybridResult {
+  overallVerdict?: string;
   formulationFocus: {
     primary: string;
     secondary: string[];
@@ -50,16 +60,10 @@ interface AiHybridResult {
 }
 
 // Default fallback model list
-const DEFAULT_MODELS = [
-  "gemma-4-31b-it",
-  "gemma-4-26b-a4b-it",
-  "gemini-3.1-flash-lite-preview",
-  "gemini-3.1-flash-preview",
-  "gemini-3-flash-preview",
-  "gemini-3-flash",
-  "gemini-2.5-pro",
-  "gemini-2.5-flash",
-  "gemini-1.5-flash-latest"
+const DEFAULT_MODELS: ModelConfig[] = [
+  { provider: "gemini", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { provider: "gemini", model: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { provider: "gemini", model: "gemini-1.5-flash-latest", label: "Gemini 1.5 Flash" }
 ];
 
 const DEFAULT_REFERENCE_SOURCES = "CIR (Cosmetic Ingredient Review), PubChem, JCAD (Journal of Cosmetic & Aesthetic Dermatology), Paula's Choice Ingredient Dictionary, SkinSort, SCCS (Scientific Committee on Consumer Safety)";
@@ -85,6 +89,8 @@ const IMMUTABLE_PENALTY_KEYWORDS = [
 // ========================
 // VALIDATION FUNCTIONS
 // ========================
+const INVALID_NEUTRALIZERS = ['aqua', 'water', 'air', 'polyacrylamide', 'carbomer', 'xanthan gum', 'phenoxyethanol', 'glycerin', 'butylene glycol'];
+
 function validateAdjustments(
   adjustments: PenaltyAdjustment[],
   engineResult: EngineResult,
@@ -101,30 +107,36 @@ function validateAdjustments(
       return false;
     }
 
-    // 2. Cek neutralizerIngredients ADA di formulasi
+    // 2. Filter neutralizerIngredients dari bahan dasar yang dilarang (BUG-2)
+    adj.neutralizerIngredients = adj.neutralizerIngredients.filter(n =>
+      !INVALID_NEUTRALIZERS.includes(n.toLowerCase())
+    );
+
+    // 3. Cek neutralizerIngredients ADA di formulasi
     for (const neutralizer of adj.neutralizerIngredients) {
       const nLower = neutralizer.toLowerCase();
       if (!detectedNamesLower.some(n => n.includes(nLower) || nLower.includes(n))) {
-        console.warn(`[AI-Hybrid] ❌ BUANG adjustment: neutralizer "${neutralizer}" tidak ditemukan di formulasi`);
-        return false;
+        console.warn(`[AI-Hybrid] ❌ BUANG neutralizer "${neutralizer}" tidak ditemukan di formulasi`);
+        // Remove from the array instead of rejecting the whole adjustment
+        adj.neutralizerIngredients = adj.neutralizerIngredients.filter(n => n !== neutralizer);
       }
     }
 
-    // 3. Clamp pointsRestored: maks 50
+    // 4. Clamp pointsRestored: maks 50
     adj.pointsRestored = Math.min(50, Math.max(0, adj.pointsRestored));
 
-    // 4. adjustedPenalty tidak boleh LEBIH BESAR dari originalPenalty (AI hanya KURANGI)
+    // 5. adjustedPenalty tidak boleh LEBIH BESAR dari originalPenalty (AI hanya KURANGI)
     if (Math.abs(adj.adjustedPenalty) > Math.abs(adj.originalPenalty)) {
       console.warn(`[AI-Hybrid] ❌ BUANG adjustment: adjustedPenalty (${adj.adjustedPenalty}) > originalPenalty (${adj.originalPenalty})`);
       return false;
     }
 
-    // 5. adjustedPenalty tidak boleh POSITIF (tidak bisa jadi buff)
+    // 6. adjustedPenalty tidak boleh POSITIF (tidak bisa jadi buff)
     if (adj.adjustedPenalty > 0) {
       adj.adjustedPenalty = 0; // Clamp ke netral
     }
 
-    // 6. Tidak duplikat (1 trigger = 1 adjustment)
+    // 7. Tidak duplikat (1 trigger = 1 adjustment)
     const key = `${adj.triggerIngredient.toLowerCase()}_${adj.targetScore}`;
     if (seen.has(key)) {
       console.warn(`[AI-Hybrid] ❌ BUANG adjustment duplikat: ${key}`);
@@ -132,7 +144,7 @@ function validateAdjustments(
     }
     seen.add(key);
 
-    // 7. Recalculate pointsRestored
+    // 8. Recalculate pointsRestored
     adj.pointsRestored = Math.abs(adj.originalPenalty) - Math.abs(adj.adjustedPenalty);
     adj.pointsRestored = Math.min(50, Math.max(0, adj.pointsRestored));
 
@@ -177,11 +189,22 @@ function replaceNeutralizedFlags(
 
     if (adj && adj.pointsRestored > 0) {
       const newType: FlagDetail["type"] = adj.adjustedPenalty === 0 ? "SUCCESS" : "WARNING";
+
+      // BUG-1 Fix: Ekstrak prefix dari flag asli (sebelum titik dua pertama)
+      const colonIndex = flag.message.indexOf(':');
+      const originalPrefix = colonIndex > 0 ? flag.message.substring(0, colonIndex + 1) : '';
+
+      // BUG-2 Fix: Keep original culprits, only append valid neutralizers
+      const newCulprits = Array.from(new Set([
+        ...(flag.culprits || []),
+        ...adj.neutralizerIngredients
+      ]));
+
       return {
         type: newType,
-        message: sanitizeReasoning(adj.reasoning),
+        message: `${originalPrefix} ${sanitizeReasoning(adj.reasoning)}`.trim(),
         pointsDeducted: Math.abs(adj.adjustedPenalty),
-        culprits: [adj.triggerIngredient, ...adj.neutralizerIngredients]
+        culprits: newCulprits
       };
     }
 
@@ -242,11 +265,18 @@ export async function POST(req: Request) {
     const useExternal = aiConfig?.aihybridUseExternalSources ?? false;
     const referenceSources = aiConfig?.aihybridReferenceSources || DEFAULT_REFERENCE_SOURCES;
 
-    let modelList: string[] = DEFAULT_MODELS;
+    let modelList: ModelConfig[] = DEFAULT_MODELS;
     if (aiConfig?.aihybridModelPriority) {
       try {
         const parsed = JSON.parse(aiConfig.aihybridModelPriority);
-        if (Array.isArray(parsed) && parsed.length > 0) modelList = parsed;
+        // Dukung backward compatibility jika array of string
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (typeof parsed[0] === "string") {
+            modelList = parsed.map((m: string) => ({ provider: "gemini", model: m }));
+          } else {
+            modelList = parsed;
+          }
+        }
       } catch { /* use default */ }
     }
 
@@ -305,28 +335,81 @@ ATURAN 1 — SUMBER KEBENARAN:
 Semua data parameter bahan berikut adalah FAKTA dari database terverifikasi. DILARANG mengarang parameter yang tidak ada.
 ${!useExternal ? "MODE DATABASE SAJA: Anda HANYA boleh menganalisis berdasarkan data di bawah ini. DILARANG menambahkan klaim dari sumber luar." : `MODE SUMBER DIPERLUAS: Anda boleh merujuk sumber terpercaya berikut untuk memperkuat analisis: ${referenceSources}`}
 
-ATURAN 2 — BATASAN PENYESUAIAN PENALTI:
+ATURAN 2 — BATASAN PENYESUAIAN PENALTI & KONTEKS KOSONG:
 - Anda HANYA bisa MENGURANGI/MENETRALISIR penalti (maks 50 poin per item).
 - Anda TIDAK BISA menambah skor melebihi batas atau memberikan bonus positif.
 - adjustedPenalty HARUS ≤ 0 (negatif atau nol). Nol artinya penalti dinetralisir sepenuhnya.
 - PENALTI MUTLAK yang TIDAK BOLEH disentuh: Bahan Toksik, Risiko Janin/Hamil, Alergi Mutlak, Tanpa Filter UV.
-- Untuk bahan dengan aiContext KOSONG dan mode DATABASE SAJA: DILARANG menyesuaikan penalti bahan tersebut.
+- Untuk bahan dengan aiContext KOSONG: Anda boleh menganalisis berdasarkan pengetahuan umum Anda (khususnya untuk mencari neutralizer/buffering), tetapi Anda WAJIB menyebutkan bahwa bahan ini 'belum dianalisis mendalam secara internal' dalam reasoning.
 
-ATURAN 3 — PERTIMBANGAN URUTAN BAHAN:
-Daftar bahan skincare disusun dari konsentrasi TERTINGGI ke TERENDAH (regulasi kosmetik internasional).
-Bahan di posisi 1-5 = konsentrasi tinggi (>5%). Posisi 6-15 = sedang (1-5%). Posisi 16+ = rendah (<1%).
-Gunakan informasi posisi ini untuk menilai apakah efek negatif bahan diminimalkan oleh konsentrasi rendah.
+ATURAN 3 — PERTIMBANGAN URUTAN BAHAN (BERDASARKAN REGULASI):
+Menurut EU Regulation 1223/2009 Annex VI dan FDA:
+- Bahan skincare WAJIB dicantumkan berurutan dari konsentrasi TERTINGGI ke TERENDAH HANYA untuk bahan dengan konsentrasi ≥1%.
+- Bahan dengan konsentrasi <1% BOLEH dicantumkan dalam urutan BEBAS di bagian akhir.
+- Pewarna, pengawet, dan pewangi biasanya selalu di bawah 1%.
+PANDUAN POSISI UNTUK ANALISIS:
+- Posisi 1-5: Konsentrasi signifikan/dominan (solvent, base, primary actives).
+- Posisi 6-15: Konsentrasi menengah (secondary actives, emulsifiers).
+- Posisi 16+: Kemungkinan besar konsentrasi rendah (<1%) dan urutannya mungkin acak.
+KAMU DILARANG menyebutkan angka persentase spesifik (seperti ">5%", "3%", atau "<1%").
+Gunakan frasa deskriptif seperti: "konsentrasi signifikan", "konsentrasi menengah", atau "kemungkinan konsentrasi rendah (berada di posisi akhir formulasi)".
 
-ATURAN 4 — BAHASA OUTPUT:
+ATURAN 4 — BAHASA OUTPUT & TONE PESAN:
 Gunakan bahasa Indonesia yang mudah dipahami orang awam. DILARANG menyebutkan angka skor atau persentase.
+TONE CAMPURAN:
+- Untuk peringatan CRITICAL/berat: gunakan nada TEGAS dan langsung. Contoh: "STOP pemakaian jika muncul kemerahan." atau "HINDARI produk ini."
+- Untuk peringatan WARNING/sedang: gunakan nada LEMBUT dan membimbing. Contoh: "Disarankan membatasi pemakaian..." atau "Coba lakukan patch test terlebih dahulu..."
+- Untuk SUCCESS: gunakan nada positif. Contoh: "Aman dipakai rutin."
 
 ATURAN 5 — FOKUS FORMULASI:
 Pilih fokus utama dari HANYA 6 kategori ini:
 ${FOCUS_CATEGORIES.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
-ATURAN 6 — SARAN KONTEKSTUAL:
-Tipe produk: ${productType} — ${productTypeContext[productType] || ""}
-Berikan saran yang spesifik untuk tipe produk ini. Untuk HARSH pada FACEWASH: pertimbangkan bahwa waktu kontak singkat mengurangi risiko. Untuk KOMEDOGENIK: pertimbangkan posisi urutan bahan sebagai indikator konsentrasi.
+ATURAN 6 — SARAN KONTEKSTUAL BERDASARKAN TIPE PRODUK (SANGAT PENTING):
+Tipe produk saat ini: ${productType}
+
+PANDUAN SEVERITY PER TIPE PRODUK:
+
+${productType === "FACEWASH" ? `FACEWASH (Produk bilas — waktu kontak ~60 detik):
+- EKSFOLIASI: Efek berkurang karena kontak singkat. Sarankan "gunakan 1x sehari di malam hari" atau "jadikan sabun pembersih kedua setelah micellar water". Untuk kulit sensitif: "batasi 2-3x seminggu".
+- IRITASI: Efek berkurang karena kontak singkat. Sarankan "lakukan patch test, gunakan 1x sehari". Jika ada bahan penenang di formulasi, sebutkan bahwa hal itu membantu.
+- KOMEDO: Efek SANGAT berkurang karena langsung dibilas. Jelaskan bahwa durasi kontak singkat membuat risiko penyumbatan pori jauh lebih kecil dibanding produk yang menempel. Namun tetap perhatikan posisi urutan bahan — jika bahan komedogenik di posisi awal (konsentrasi tinggi), tetap beri peringatan.
+- BATASAN PENGGUNAAN (Blacklist Kulit): Durasi singkat bisa meringankan efek. Jelaskan alasannya kenapa berbahaya TAPI sampaikan juga bahwa kontak singkat mengurangi risiko. Beri saran konkret seperti "batasi 1x sehari" atau "gunakan hanya jika tidak ada alternatif lain".` : ""}
+
+${productType === "MOISTURIZER" ? `MOISTURIZER (Produk leave-on — menempel di kulit berjam-jam):
+- EKSFOLIASI: Efek PENUH karena menempel lama. Sarankan "HANYA gunakan di malam hari, 2-3x seminggu. WAJIB pakai sunscreen di pagi hari karena kulit jadi lebih sensitif terhadap UV."
+- IRITASI: Efek PENUH. Sarankan "lakukan patch test selama 3 hari di belakang telinga atau rahang. Jika muncul kemerahan, STOP penggunaan." Beri saran oleskan tipis-tipis.
+- KOMEDO: Efek PENUH karena bahan meresap penuh. Sarankan "patch test 3 hari, hindari area T-zone jika berminyak, oleskan tipis-tipis." Posisi urutan bahan sangat penting di sini.
+- BATASAN PENGGUNAAN (Blacklist Kulit): TIDAK ADA keringanan dari durasi kontak. Sampaikan dengan tegas bahwa bahan ini berbahaya untuk tipe kulit tersebut. Sarankan "HINDARI produk ini" atau "ganti ke produk yang lebih aman".` : ""}
+
+${productType === "SUNSCREEN" ? `SUNSCREEN (Produk leave-on + terpapar sinar UV):
+- EKSFOLIASI: Sangat jarang terjadi di sunscreen. Jika ada: "JANGAN gunakan tanpa lapisan pelindung tambahan."
+- IRITASI: Efek PENUH + risiko bertambah saat reapply. Sarankan "lakukan patch test sebelum pemakaian seharian. Perhatikan apakah iritasi bertambah saat reapply."
+- KOMEDO: Efek PENUH. Sarankan "pilih formula non-comedogenic jika kulit berminyak. Bersihkan dengan double cleansing di malam hari."
+- BATASAN PENGGUNAAN (Blacklist Kulit): TIDAK ADA keringanan. Jika bahan berbahaya untuk kulit tertentu, sarankan "GANTI produk sunscreen". Ingatkan pentingnya perlindungan UV tapi bukan dengan produk yang merusak kulit.` : ""}
+
+ATURAN 7 — NEUTRALIZER HARUS RELEVAN (SANGAT PENTING):
+neutralizerIngredients HARUS berisi bahan yang SECARA ILMIAH menetralkan efek trigger.
+- Untuk komedogenik: neutralizer = bahan eksfoliator ringan, oil-control, atau anti-komedogenik aktif (Squalane, Niacinamide, Salicylic Acid).
+- Untuk harsh/irritant: neutralizer = bahan soothing/buffer (Centella, Ceramide, Aloe Vera, Panthenol).
+- DILARANG KERAS memasukkan pelarut (Aqua/Water), pH adjuster (Citric Acid), pengental (Carbomer, Xanthan Gum, Polyacrylamide), atau pengawet (Phenoxyethanol) sebagai neutralizer. Jika tidak ada penetral ilmiah di formulasi, jangan kurangi penaltinya!
+
+ATURAN 8 — STRUKTUR REASONING WAJIB (SANGAT PENTING):
+Setiap field "reasoning" dalam penaltyAdjustments HARUS mengikuti alur sebab-akibat-aksi secara NATURAL (tanpa tag eksplisit):
+
+1. Mulai dengan MASALAH: Sebutkan bahan pemicu dan efek negatifnya secara singkat.
+2. Lanjut dengan PENYEIMBANG: Jelaskan kenapa bisa ternetralisir — sebutkan bahan neutralizer, tipe produk (bilas/leave-on), dan posisi urutan bahan jika relevan.
+3. Akhiri dengan KESIMPULAN + SARAN PEMAKAIAN KONKRET. Pilih salah satu:
+   - Jika ternetralisir penuh: "Aman dipakai rutin."
+   - Jika ternetralisir sebagian: "Disarankan lakukan patch test terlebih dahulu." + saran frekuensi
+   - Jika eksfoliasi kuat: Sertakan frekuensi pemakaian spesifik (misal "gunakan 1x sehari di malam hari" atau "batasi 2-3x seminggu")
+   - Jika tetap berbahaya: "Hindari produk ini jika kulit [tipe kulit tertentu]."
+
+CONTOH REASONING YANG BAIK:
+"Lauric Acid memiliki potensi komedogenik yang cukup tinggi. Namun karena ini adalah produk bilas (facewash), durasi kontak dengan kulit sangat singkat (sekitar 60 detik), sehingga risiko penyumbatan pori berkurang drastis. Ditambah kehadiran Sodium Cocoyl Glycinate yang membantu membersihkan residu. Aman dipakai rutin untuk pembersihan harian."
+
+CONTOH REASONING YANG BURUK (JANGAN LAKUKAN INI):
+"Keberadaan bahan penenang yang intens dalam formulasi ini menetralkan risiko iritasi." (Tidak jelas bahan apa yang jadi masalah, tidak ada saran aksi untuk pengguna)
 
 === DATA PROFIL PENGGUNA ===
 - Tipe Kulit: ${profile.skinType}
@@ -357,6 +440,7 @@ ${focusTallyCtx}
 === FORMAT OUTPUT (JSON KETAT) ===
 Kembalikan HANYA JSON valid tanpa markdown code block:
 {
+  "overallVerdict": "Rangkuman 2-3 kalimat: apakah produk ini cocok untuk user, apa kelebihannya, dan apa yang perlu diwaspadai. Gunakan bahasa awam yang mudah dipahami. Contoh: 'Produk ini cocok untuk kulit berminyak sensitif Anda. Formulasi didominasi bahan pembersih lembut dengan perlindungan barrier yang baik. Perhatikan kandungan Citric Acid yang bisa mengiritasi jika digunakan berlebihan.'",
   "formulationFocus": {
     "primary": "salah satu dari 6 kategori di atas",
     "secondary": ["kategori lain jika relevan"],
@@ -371,7 +455,7 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
       "pointsRestored": 15,
       "triggerIngredient": "Nama Bahan Pemicu",
       "neutralizerIngredients": ["Bahan Penetralisir 1"],
-      "reasoning": "Penjelasan bahasa awam untuk catatan lab pengguna",
+      "reasoning": "Penjelasan bahasa awam: mulai dari masalah bahan, lalu kenapa bisa ternetralisir, akhiri dengan saran pemakaian konkret (frekuensi, patch test, dll). Ikuti ATURAN 8.",
       "scientificBasis": "Referensi ilmiah",
       "adjustmentType": "COMEDO_DILUTION"
     }
@@ -395,27 +479,69 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
     let aiResult: AiHybridResult | null = null;
     let usedModel = "";
 
-    for (const modelName of modelList) {
+    for (const modelConfig of modelList) {
       try {
-        console.log(`[AI-Hybrid] 🤖 Mencoba model: ${modelName}...`);
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const currentModel = modelConfig.model;
+        const provider = modelConfig.provider;
+        console.log(`[AI-Hybrid] 🤖 Mencoba model: ${currentModel} (${provider})...`);
 
-        // Per-model timeout: 15 detik
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        let responseText = "";
 
-        const result = await model.generateContent(systemPrompt);
-        clearTimeout(timeoutId);
+        if (provider === "gemini") {
+          const model = genAI.getGenerativeModel({
+            model: currentModel,
+            generationConfig: {
+              responseMimeType: "application/json",
+            }
+          });
+          const result = await model.generateContent(systemPrompt);
+          responseText = result.response.text();
+        } else {
+          // OpenAI Compatible (BytePlus / DeepSeek)
+          let client: OpenAI;
+          if (provider === "byteplus") {
+            let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
+            if (byteplusUrl.includes("ark.byteplus.com")) {
+              byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+            }
+            client = new OpenAI({
+              apiKey: process.env.BYTEPLUS_API_KEY || "",
+              baseURL: byteplusUrl,
+            });
+          } else {
+            client = new OpenAI({
+              apiKey: process.env.DEEPSEEK_API_KEY || "",
+              baseURL: "https://api.deepseek.com",
+            });
+          }
 
-        const responseText = await result.response.text();
-        const cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        aiResult = JSON.parse(cleaned);
-        usedModel = modelName;
+          const response = await client.chat.completions.create({
+            model: currentModel,
+            messages: [{ role: "system", content: systemPrompt }],
+            temperature: 0.2
+          });
+          responseText = response.choices[0].message.content || "{}";
+        }
 
-        console.log(`[AI-Hybrid] ✅ Berhasil dengan model: ${modelName}`);
+        // Parse JSON dengan RegExp Fallback (BUG-3)
+        let cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        try {
+          aiResult = JSON.parse(cleaned);
+        } catch (parseError) {
+          console.warn(`[AI-Hybrid] ⚠️ Gagal parse JSON langsung, mencoba fallback ekstraksi RegExp...`);
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            aiResult = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error(`Tidak dapat mengekstrak JSON valid dari respons.`);
+          }
+        }
+
+        usedModel = currentModel;
+        console.log(`[AI-Hybrid] ✅ Berhasil dengan model: ${currentModel}`);
         break;
       } catch (err: any) {
-        console.warn(`[AI-Hybrid] ⚠️ Model ${modelName} gagal: ${err.message}`);
+        console.warn(`[AI-Hybrid] ⚠️ Model ${modelConfig.model} gagal: ${err.message}`);
         continue; // Pindah ke model berikutnya
       }
     }
@@ -453,13 +579,35 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
       finalMatchScore = Math.max(0, Math.min(100, Math.round(finalMatchScore)));
       finalSafetyScore = Math.max(0, Math.min(100, Math.round(finalSafetyScore)));
 
+      // Logging Audit Penyesuaian AI (FITUR-3)
+      if (validatedAdjustments.length > 0) {
+        try {
+          await prisma.aiAdjustmentLog.createMany({
+            data: validatedAdjustments.map(adj => ({
+              userId: userId,
+              productName: productName || "Produk Tanpa Nama",
+              triggerIngredient: adj.triggerIngredient,
+              originalPenalty: adj.originalPenalty,
+              adjustedPenalty: adj.adjustedPenalty,
+              pointsRestored: adj.pointsRestored,
+              reasoning: adj.reasoning,
+              adjustmentType: adj.adjustmentType || "UNKNOWN",
+              modelUsed: usedModel,
+              targetScore: adj.targetScore,
+            }))
+          });
+        } catch (logErr) {
+          console.error(`[AI-Hybrid] ❌ Gagal menyimpan AiAdjustmentLog:`, logErr);
+        }
+      }
+
       // Ganti flag yang ter-netralisir
       finalMatchFlags = replaceNeutralizedFlags(finalMatchFlags, validatedAdjustments, "MATCH");
       finalSafetyFlags = replaceNeutralizedFlags(finalSafetyFlags, validatedAdjustments, "SAFETY");
 
       // Rebuild match/safety labels
       const getMatchLabel = (s: number) => s === 100 ? "Sempurna" : s >= 90 ? "Sangat Cocok" : s >= 75 ? "Cocok" : s >= 50 ? "Kurang Optimal" : "Tidak Cocok";
-      const getSafetyLabel = (s: number) => s === 100 ? "Sangat Aman" : s >= 80 ? "Aman" : s >= 60 ? "Butuh Adaptasi / Hati-hati" : s >= 40 ? "Berisiko / Tidak Disarankan" : "Hindari Mutlak";
+      const getSafetyLabel = (s: number) => s === 100 ? "Sangat Aman" : s >= 80 ? "Aman" : s >= 60 ? "Butuh Adaptasi / Hati-hati" : s >= 40 ? "Berisiko / Batasi Penggunaan" : "Hindari Mutlak";
 
       // AI Hybrid data for frontend consultation card
       aiHybridData = {
@@ -522,6 +670,20 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
         aiResponse: { ...analysisData, aiHybridData },
       }
     });
+
+    // FITUR-2: FIFO 10 Slot History per user (hanya hitung yang belum di-save)
+    const unsavedHistories = await prisma.analysisHistory.findMany({
+      where: { userId, isSaved: false },
+      orderBy: { createdAt: "desc" },
+      select: { id: true }
+    });
+
+    if (unsavedHistories.length > 10) {
+      const idsToDelete = unsavedHistories.slice(10).map(h => h.id);
+      await prisma.analysisHistory.deleteMany({
+        where: { id: { in: idsToDelete } }
+      });
+    }
 
     return NextResponse.json({
       engineResult,

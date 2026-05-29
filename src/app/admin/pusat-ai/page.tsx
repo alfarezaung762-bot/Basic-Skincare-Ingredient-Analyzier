@@ -37,7 +37,18 @@ export default function PusatAIPage() {
   // AI Hybrid Tab 2 State
   const [activeTab, setActiveTab] = useState<"research" | "hybrid">("research");
   const [hybridPrompt, setHybridPrompt] = useState("Anda adalah seorang Konsultan Dermatologi Kosmetik kelas dunia dan Ahli Formulasi (Cosmetic Chemist). Tugas Anda adalah menganalisis interaksi antar bahan dalam formulasi skincare dan memberikan penilaian profesional yang mudah dipahami orang awam.");
-  const [hybridModels, setHybridModels] = useState("gemma-4-31b-it, gemma-4-26b-a4b-it, gemini-3.1-flash-lite-preview, gemini-3.1-flash-preview, gemini-2.5-flash");
+  interface ModelConfig {
+    provider: "gemini" | "byteplus" | "deepseek";
+    model: string;
+    label?: string;
+  }
+
+  const [hybridModels, setHybridModels] = useState<ModelConfig[]>([
+    { provider: "gemini", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { provider: "byteplus", model: "ep-20260505074455-nplpn", label: "DeepSeek-V3.2" },
+    { provider: "gemini", model: "gemini-2.5-pro", label: "Gemini 2.5 Pro" }
+  ]);
+  const [newModelConfig, setNewModelConfig] = useState<ModelConfig>({ provider: "gemini", model: "", label: "" });
   const [hybridUseExternal, setHybridUseExternal] = useState(false);
   const [hybridReferences, setHybridReferences] = useState("CIR (Cosmetic Ingredient Review), PubChem, JCAD, Paula's Choice Ingredient Dictionary, SkinSort, SCCS");
 
@@ -115,7 +126,13 @@ export default function PusatAIPage() {
         if (data.aihybridModelPriority) {
           try {
             const models = JSON.parse(data.aihybridModelPriority);
-            if (Array.isArray(models)) setHybridModels(models.join(", "));
+            if (Array.isArray(models) && models.length > 0) {
+              if (typeof models[0] === 'string') {
+                setHybridModels(models.map((m: string) => ({ provider: "gemini", model: m })));
+              } else {
+                setHybridModels(models);
+              }
+            }
           } catch { /* keep default */ }
         }
         if (typeof data.aihybridUseExternalSources === 'boolean') setHybridUseExternal(data.aihybridUseExternalSources);
@@ -138,7 +155,7 @@ export default function PusatAIPage() {
           prioritizedSources: JSON.stringify(prioritizedSources),
           systemPrompt,
           aihybridPromptingredient: hybridPrompt,
-          aihybridModelPriority: JSON.stringify(hybridModels.split(',').map(m => m.trim()).filter(Boolean)),
+          aihybridModelPriority: JSON.stringify(hybridModels),
           aihybridUseExternalSources: hybridUseExternal,
           aihybridReferenceSources: hybridReferences,
         }),
@@ -402,19 +419,116 @@ export default function PusatAIPage() {
               )}
             </div>
 
-            {/* 4. Model AI Prioritas (Editable) */}
+            {/* 4. Model AI Prioritas (Editable & Sortable) */}
             <div>
               <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2">
                 🤖 Urutan Model AI (Fallback Cascade)
               </label>
-              <textarea
-                value={hybridModels}
-                onChange={(e) => setHybridModels(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-20 font-mono text-sm"
-                placeholder="gemma-4-31b-it, gemini-2.5-flash, ..."
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Pisahkan dengan koma. Model pertama akan dicoba terlebih dahulu. Jika gagal, lanjut ke berikutnya.
+              
+              <div className="space-y-3 mb-4">
+                {hybridModels.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
+                    <div className="flex flex-col gap-1">
+                      <button 
+                        onClick={() => {
+                          if (idx === 0) return;
+                          const newArr = [...hybridModels];
+                          const temp = newArr[idx - 1];
+                          newArr[idx - 1] = newArr[idx];
+                          newArr[idx] = temp;
+                          setHybridModels(newArr);
+                        }}
+                        disabled={idx === 0}
+                        className="text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors p-1"
+                      >▲</button>
+                      <button 
+                        onClick={() => {
+                          if (idx === hybridModels.length - 1) return;
+                          const newArr = [...hybridModels];
+                          const temp = newArr[idx + 1];
+                          newArr[idx + 1] = newArr[idx];
+                          newArr[idx] = temp;
+                          setHybridModels(newArr);
+                        }}
+                        disabled={idx === hybridModels.length - 1}
+                        className="text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors p-1"
+                      >▼</button>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0 flex items-center gap-3">
+                      <span className="shrink-0 w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-full text-xs font-bold">
+                        {idx + 1}
+                      </span>
+                      <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${item.provider === 'gemini' ? 'bg-emerald-100 text-emerald-700' : item.provider === 'byteplus' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                        {item.provider.toUpperCase()}
+                      </span>
+                      <div className="flex flex-col truncate">
+                        <span className="font-mono text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{item.model}</span>
+                        {item.label && <span className="text-xs text-slate-500 truncate">{item.label}</span>}
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setHybridModels(hybridModels.filter((_, i) => i !== idx))}
+                      className="shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      title="Hapus Model"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Form Tambah Model */}
+              <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
+                <p className="text-sm font-bold text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                  <span>➕</span> Tambah Model Baru
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-3">
+                  <div className="sm:col-span-3">
+                    <select 
+                      value={newModelConfig.provider}
+                      onChange={(e) => setNewModelConfig({...newModelConfig, provider: e.target.value as any})}
+                      className="w-full px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-sm outline-none"
+                    >
+                      <option value="gemini">Gemini</option>
+                      <option value="byteplus">BytePlus (OpenAI)</option>
+                      <option value="deepseek">DeepSeek (OpenAI)</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-5">
+                    <input 
+                      type="text" 
+                      placeholder="Model ID / Endpoint" 
+                      value={newModelConfig.model}
+                      onChange={(e) => setNewModelConfig({...newModelConfig, model: e.target.value})}
+                      className="w-full px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-sm outline-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <input 
+                      type="text" 
+                      placeholder="Label (Opsional)" 
+                      value={newModelConfig.label}
+                      onChange={(e) => setNewModelConfig({...newModelConfig, label: e.target.value})}
+                      className="w-full px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-sm outline-none"
+                    />
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (!newModelConfig.model.trim()) return alert("Model ID harus diisi!");
+                    setHybridModels([...hybridModels, { ...newModelConfig }]);
+                    setNewModelConfig({ provider: "gemini", model: "", label: "" });
+                  }}
+                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold text-sm rounded-lg transition-colors w-full sm:w-auto"
+                >
+                  Tambahkan ke Antrean
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+                Model pertama (nomor 1) akan dicoba terlebih dahulu. Jika mengalami limit/error, sistem akan otomatis beralih (fallback) ke model nomor 2, dan seterusnya.
               </p>
             </div>
           </div>
