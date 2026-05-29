@@ -43,6 +43,11 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
       setIsDark(true);
       document.documentElement.setAttribute("data-theme", "dark");
     }
+    // Auto-open SingleAnalyzer jika datang dari halaman History
+    if (!isGuest && sessionStorage.getItem("autoOpenAnalyzer") === "true") {
+      setActiveView("single");
+      sessionStorage.removeItem("autoOpenAnalyzer");
+    }
   }, []);
 
   const toggleTheme = () => {

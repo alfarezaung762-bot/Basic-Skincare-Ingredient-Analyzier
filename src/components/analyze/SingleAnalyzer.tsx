@@ -26,6 +26,7 @@ export default function SingleAnalyzer() {
   const resultRef = useRef<HTMLDivElement>(null);
 
   // Ambil profil pengguna saat pertama kali komponen dimuat
+  // + Baca data dari sessionStorage jika datang dari halaman History
   useEffect(() => {
     fetch('/api/profile')
       .then(res => res.ok ? res.json() : null)
@@ -34,6 +35,22 @@ export default function SingleAnalyzer() {
         else if (data && data.profile) setUserProfile(data.profile);
       })
       .catch(() => console.log("Gagal memuat profil"));
+
+    // Pre-fill form dari History page (Analisis Ulang)
+    const savedProduct = sessionStorage.getItem("lastAnalysisProduct");
+    const savedIngredients = sessionStorage.getItem("lastAnalysisIngredients");
+    const savedType = sessionStorage.getItem("lastAnalysisType");
+
+    if (savedIngredients) {
+      if (savedProduct) setProductName(savedProduct);
+      setIngredients(savedIngredients);
+      if (savedType) setProductType(savedType);
+
+      // Bersihkan sessionStorage agar tidak menempel di refresh berikutnya
+      sessionStorage.removeItem("lastAnalysisProduct");
+      sessionStorage.removeItem("lastAnalysisIngredients");
+      sessionStorage.removeItem("lastAnalysisType");
+    }
   }, []);
 
   const handleOCRClick = () => {
