@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export type ResearchEngine = {
   provider: "gemini" | "byteplus" | "openrouter";
   model: string;
+  useReasoning?: boolean;
 };
 
 interface DeepResearchContextType {
@@ -54,7 +55,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/admin/deep-research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model, useLiveSearch }),
+        body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model, useLiveSearch, useReasoning: engine.useReasoning }),
         signal: controller.signal,
       });
 

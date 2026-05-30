@@ -529,12 +529,35 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
             }
           });
 
-          const response = await client.chat.completions.create({
+          // Check if reasoning is enabled for this model in the config
+          const useReasoning = (modelConfig as any).useReasoning || false;
+
+          const payload: any = {
             model: currentModel,
             messages: [{ role: "user", content: systemPrompt }],
             temperature: 0.2
-          });
-          responseText = response.choices[0].message.content || "{}";
+          };
+          if (useReasoning) {
+            payload.reasoning = { enabled: true };
+          }
+
+          try {
+            const response = await client.chat.completions.create(payload);
+            responseText = response.choices[0].message.content || "{}";
+          } catch (error) {
+            if (useReasoning) {
+              console.log(`[AI Hybrid] OpenRouter reasoning failed for ${currentModel}. Retrying without reasoning...`);
+              const fallbackPayload: any = {
+                model: currentModel,
+                messages: [{ role: "user", content: systemPrompt }],
+                temperature: 0.2
+              };
+              const response = await client.chat.completions.create(fallbackPayload);
+              responseText = response.choices[0].message.content || "{}";
+            } else {
+              throw error;
+            }
+          }
         } else {
           // OpenAI Compatible (BytePlus)
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";

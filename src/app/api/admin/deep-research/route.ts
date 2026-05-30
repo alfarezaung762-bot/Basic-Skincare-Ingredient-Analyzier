@@ -96,7 +96,7 @@ const extractJson = (text: string) => {
 // ========================================================
 // FUNGSI UTAMA: Riset satu bahan via berbagai AI (dengan fallback otomatis)
 // ========================================================
-async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro", useLiveSearch: boolean = false): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean; triedModels?: string[], usedExternalSource?: boolean }> {
+async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro", useLiveSearch: boolean = false, useReasoning: boolean = false): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean; triedModels?: string[], usedExternalSource?: boolean }> {
   const currentDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const currentYear = new Date().getFullYear();
   
@@ -297,14 +297,35 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
         });
         console.log(`[Deep Research] OpenRouter Request: Model=${currentModel}`);
 
-        const response = await client.chat.completions.create({
+        const payload: any = {
           model: currentModel,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
-        });
+        };
 
-        const responseText = response.choices[0].message.content || "{}";
-        parsed = extractJson(responseText);
+        if (useReasoning) {
+          payload.reasoning = { enabled: true };
+        }
+
+        try {
+          const response = await client.chat.completions.create(payload);
+          const responseText = response.choices[0].message.content || "{}";
+          parsed = extractJson(responseText);
+        } catch (error) {
+          if (useReasoning) {
+            console.log(`[Deep Research] OpenRouter reasoning failed for ${currentModel}. Retrying without reasoning...`);
+            const fallbackPayload: any = {
+              model: currentModel,
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.2,
+            };
+            const response = await client.chat.completions.create(fallbackPayload);
+            const responseText = response.choices[0].message.content || "{}";
+            parsed = extractJson(responseText);
+          } else {
+            throw error;
+          }
+        }
       } else {
         // OpenAI Compatible (BytePlus)
         let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
@@ -374,12 +395,34 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
               "X-Title": "Skincare Analyzer",
             }
           });
-          const response = await client.chat.completions.create({
+          // useReasoning is already passed as a parameter to researchIngredient
+          const payload: any = {
             model: currentModel,
             messages: [{ role: "user", content: retryPrompt }],
             temperature: 0.2,
-          });
-          retryParsed = extractJson(response.choices[0].message.content || "{}");
+          };
+
+          if (useReasoning) {
+            payload.reasoning = { enabled: true };
+          }
+
+          try {
+            const response = await client.chat.completions.create(payload);
+            retryParsed = extractJson(response.choices[0].message.content || "{}");
+          } catch (error) {
+            if (useReasoning) {
+              console.log(`[Deep Research Fallback] OpenRouter reasoning failed for ${currentModel}. Retrying without reasoning...`);
+              const fallbackPayload: any = {
+                model: currentModel,
+                messages: [{ role: "user", content: retryPrompt }],
+                temperature: 0.2,
+              };
+              const response = await client.chat.completions.create(fallbackPayload);
+              retryParsed = extractJson(response.choices[0].message.content || "{}");
+            } else {
+              throw error;
+            }
+          }
         } else {
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
           if (byteplusUrl.includes("ark.byteplus.com")) {
@@ -454,7 +497,7 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { names, adminName, adminRole, provider, model, useLiveSearch } = body;
+    const { names, adminName, adminRole, provider, model, useLiveSearch, useReasoning } = body;
 
     if (!names || !Array.isArray(names) || names.length === 0) {
       return NextResponse.json({ message: "Daftar bahan kosong." }, { status: 400 });
@@ -532,7 +575,7 @@ export async function POST(req: Request) {
             status: "researching",
           });
 
-          const research = await researchIngredient(ingredientName, provider, model, useLiveSearch);
+          const research = await researchIngredient(ingredientName, provider, model, useLiveSearch, useReasoning);
 
           // ANTI-HALUSINASI: Jika AI melaporkan LOW confidence, kirim event khusus
           if (!research.success && research.isHallucination) {

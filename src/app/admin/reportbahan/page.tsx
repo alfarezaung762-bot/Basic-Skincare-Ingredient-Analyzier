@@ -499,8 +499,11 @@ export default function AdminReportBahan() {
                       {selectedIds.size > 0 && (
                         <div className="flex items-center gap-2">
                           <select
-                            value={JSON.stringify(selectedEngine)}
-                            onChange={(e) => setSelectedEngine(JSON.parse(e.target.value))}
+                            value={JSON.stringify({ provider: selectedEngine.provider, model: selectedEngine.model })}
+                            onChange={(e) => {
+                              const newEngine = JSON.parse(e.target.value);
+                              setSelectedEngine({ ...newEngine, useReasoning: selectedEngine.useReasoning });
+                            }}
                             disabled={isResearching}
                             className="px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                           >
@@ -540,6 +543,19 @@ export default function AdminReportBahan() {
                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
                               />
                               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 select-none">🌍 Live Search</span>
+                            </label>
+                          )}
+
+                          {selectedEngine.provider === "openrouter" && (
+                            <label className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedEngine.useReasoning || false}
+                                onChange={(e) => setSelectedEngine({ ...selectedEngine, useReasoning: e.target.checked })}
+                                disabled={isResearching}
+                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 disabled:opacity-50 cursor-pointer"
+                              />
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 select-none">🧠 Reasoning</span>
                             </label>
                           )}
 

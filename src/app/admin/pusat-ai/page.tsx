@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, Reorder } from "framer-motion";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 
@@ -41,6 +41,7 @@ export default function PusatAIPage() {
     provider: "gemini" | "byteplus" | "openrouter";
     model: string;
     label?: string;
+    useReasoning?: boolean;
   }
 
   const [hybridModels, setHybridModels] = useState<ModelConfig[]>([
@@ -425,59 +426,94 @@ export default function PusatAIPage() {
                 🤖 Urutan Model AI (Fallback Cascade)
               </label>
               
-              <div className="space-y-3 mb-4">
+              <Reorder.Group axis="y" values={hybridModels} onReorder={setHybridModels} className="space-y-3 mb-6">
                 {hybridModels.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
-                    <div className="flex flex-col gap-1">
-                      <button 
-                        onClick={() => {
-                          if (idx === 0) return;
-                          const newArr = [...hybridModels];
-                          const temp = newArr[idx - 1];
-                          newArr[idx - 1] = newArr[idx];
-                          newArr[idx] = temp;
-                          setHybridModels(newArr);
-                        }}
-                        disabled={idx === 0}
-                        className="text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors p-1"
-                      >▲</button>
-                      <button 
-                        onClick={() => {
-                          if (idx === hybridModels.length - 1) return;
-                          const newArr = [...hybridModels];
-                          const temp = newArr[idx + 1];
-                          newArr[idx + 1] = newArr[idx];
-                          newArr[idx] = temp;
-                          setHybridModels(newArr);
-                        }}
-                        disabled={idx === hybridModels.length - 1}
-                        className="text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors p-1"
-                      >▼</button>
+                  <Reorder.Item 
+                    key={`${item.provider}-${item.model}`} 
+                    value={item} 
+                    className="group flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm cursor-grab active:cursor-grabbing relative"
+                  >
+                    {/* Urutan Controls: Drag Handle */}
+                    <div className="flex flex-col items-center justify-center border-r border-slate-100 dark:border-slate-700 pr-3 shrink-0 text-slate-300 hover:text-slate-500 transition-colors" title="Tahan dan geser untuk mengurutkan">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                      </svg>
                     </div>
                     
                     <div className="flex-1 min-w-0 flex items-center gap-3">
                       <span className="shrink-0 w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-full text-xs font-bold">
-                        {idx + 1}
+                        {hybridModels.indexOf(item) + 1}
                       </span>
                       <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${item.provider === 'gemini' ? 'bg-emerald-100 text-emerald-700' : item.provider === 'byteplus' ? 'bg-blue-100 text-blue-700' : item.provider === 'openrouter' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700'}`}>
                         {item.provider.toUpperCase()}
                       </span>
+                      {item.provider === 'openrouter' && (
+                        <label className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-md bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={item.useReasoning || false}
+                            onChange={(e) => {
+                              const newArr = [...hybridModels];
+                              const currentIdx = hybridModels.indexOf(item);
+                              newArr[currentIdx] = { ...item, useReasoning: e.target.checked };
+                              setHybridModels(newArr);
+                            }}
+                            className="w-3 h-3 text-purple-600 rounded focus:ring-purple-500 cursor-pointer"
+                          />
+                          <span className="text-[10px] font-black text-purple-700 dark:text-purple-300 select-none">
+                            🧠 Reasoning
+                          </span>
+                        </label>
+                      )}
                       <div className="flex flex-col truncate">
                         <span className="font-mono text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{item.model}</span>
                         {item.label && <span className="text-xs text-slate-500 truncate">{item.label}</span>}
                       </div>
                     </div>
                     
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {hybridModels.indexOf(item) !== 0 && (
+                        <button 
+                          onClick={() => {
+                            const currentIdx = hybridModels.indexOf(item);
+                            const newArr = [...hybridModels];
+                            newArr.splice(currentIdx, 1);
+                            newArr.unshift(item);
+                            setHybridModels(newArr);
+                          }}
+                          className="shrink-0 px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md transition-colors"
+                          title="Pindahkan ke Paling Atas"
+                        >
+                          ↑ Puncak
+                        </button>
+                      )}
+                      {hybridModels.indexOf(item) !== hybridModels.length - 1 && (
+                        <button 
+                          onClick={() => {
+                            const currentIdx = hybridModels.indexOf(item);
+                            const newArr = [...hybridModels];
+                            newArr.splice(currentIdx, 1);
+                            newArr.push(item);
+                            setHybridModels(newArr);
+                          }}
+                          className="shrink-0 px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md transition-colors"
+                          title="Pindahkan ke Paling Bawah"
+                        >
+                          ↓ Dasar
+                        </button>
+                      )}
+                    </div>
+                    
                     <button 
-                      onClick={() => setHybridModels(hybridModels.filter((_, i) => i !== idx))}
+                      onClick={() => setHybridModels(hybridModels.filter((_, i) => i !== hybridModels.indexOf(item)))}
                       className="shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       title="Hapus Model"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                     </button>
-                  </div>
+                  </Reorder.Item>
                 ))}
-              </div>
+              </Reorder.Group>
 
               {/* Form Tambah Model */}
               <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
@@ -496,13 +532,24 @@ export default function PusatAIPage() {
                       <option value="openrouter">OpenRouter</option>
                     </select>
                   </div>
-                  <div className="sm:col-span-5">
+                  <div className="sm:col-span-5 relative group">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 dark:text-indigo-500 cursor-help flex items-center justify-center w-5 h-5 rounded-full border border-indigo-200 dark:border-indigo-700 text-[10px] font-bold bg-white dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">
+                      ?
+                    </div>
+                    {/* Tooltip Hover */}
+                    <div className="absolute opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-900 text-white text-[11px] p-2.5 rounded-lg shadow-xl text-center font-medium leading-relaxed">
+                      {newModelConfig.provider === 'gemini' && "Masukkan versi model Gemini. Contoh: gemini-3.1-flash-lite-preview"}
+                      {newModelConfig.provider === 'byteplus' && "Masukkan Endpoint ID dari dasbor Ark, berawalan 'ep-'. Contoh: ep-20260505-nplpn"}
+                      {newModelConfig.provider === 'openrouter' && "Masukkan format 'developer/nama-model' sesuai situs OpenRouter. Contoh: anthropic/claude-3.5-sonnet"}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                    </div>
+
                     <input 
                       type="text" 
-                      placeholder="Model ID / Endpoint" 
+                      placeholder={newModelConfig.provider === 'gemini' ? "e.g. gemini-3.1-flash" : newModelConfig.provider === 'byteplus' ? "e.g. ep-202605..." : "e.g. anthropic/claude-3"}
                       value={newModelConfig.model}
                       onChange={(e) => setNewModelConfig({...newModelConfig, model: e.target.value})}
-                      className="w-full px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-sm outline-none"
+                      className="w-full pl-3 pr-9 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all focus:ring-2 focus:ring-indigo-500/50"
                     />
                   </div>
                   <div className="sm:col-span-4">
@@ -515,6 +562,21 @@ export default function PusatAIPage() {
                     />
                   </div>
                 </div>
+
+                {newModelConfig.provider === 'openrouter' && (
+                  <div className="mb-4 flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={newModelConfig.useReasoning || false}
+                        onChange={(e) => setNewModelConfig({...newModelConfig, useReasoning: e.target.checked})}
+                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                      />
+                      🧠 Gunakan Mode Reasoning (Khusus OpenRouter)
+                    </label>
+                  </div>
+                )}
+
                 <button 
                   onClick={() => {
                     if (!newModelConfig.model.trim()) return alert("Model ID harus diisi!");
