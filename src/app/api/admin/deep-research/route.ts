@@ -286,25 +286,36 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
         parsed = extractJson(responseText);
-      } else {
-        // OpenAI Compatible (BytePlus / DeepSeek)
-        let client: OpenAI;
-        if (provider === "byteplus") {
-          let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
-          if (byteplusUrl.includes("ark.byteplus.com")) {
-            byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+      } else if (provider === "openrouter") {
+        const client = new OpenAI({
+          apiKey: process.env.OPENROUTER_API_KEY || "",
+          baseURL: "https://openrouter.ai/api/v1",
+          defaultHeaders: {
+            "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
+            "X-Title": "Skincare Analyzer",
           }
-          client = new OpenAI({
-            apiKey: process.env.BYTEPLUS_API_KEY || "",
-            baseURL: byteplusUrl,
-          });
-          console.log(`[Deep Research] BytePlus Request: URL=${byteplusUrl}, Model=${currentModel}`);
-        } else {
-          client = new OpenAI({
-            apiKey: process.env.DEEPSEEK_API_KEY || "",
-            baseURL: "https://api.deepseek.com",
-          });
+        });
+        console.log(`[Deep Research] OpenRouter Request: Model=${currentModel}`);
+
+        const response = await client.chat.completions.create({
+          model: currentModel,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2,
+        });
+
+        const responseText = response.choices[0].message.content || "{}";
+        parsed = extractJson(responseText);
+      } else {
+        // OpenAI Compatible (BytePlus)
+        let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
+        if (byteplusUrl.includes("ark.byteplus.com")) {
+          byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
         }
+        const client = new OpenAI({
+          apiKey: process.env.BYTEPLUS_API_KEY || "",
+          baseURL: byteplusUrl,
+        });
+        console.log(`[Deep Research] BytePlus Request: URL=${byteplusUrl}, Model=${currentModel}`);
 
         const response = await client.chat.completions.create({
           model: currentModel,
@@ -354,14 +365,29 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
           });
           const retryResult = await model.generateContent(retryPrompt);
           retryParsed = extractJson(retryResult.response.text());
+        } else if (provider === "openrouter") {
+          let client = new OpenAI({
+            apiKey: process.env.OPENROUTER_API_KEY || "",
+            baseURL: "https://openrouter.ai/api/v1",
+            defaultHeaders: {
+              "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
+              "X-Title": "Skincare Analyzer",
+            }
+          });
+          const response = await client.chat.completions.create({
+            model: currentModel,
+            messages: [{ role: "user", content: retryPrompt }],
+            temperature: 0.2,
+          });
+          retryParsed = extractJson(response.choices[0].message.content || "{}");
         } else {
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
           if (byteplusUrl.includes("ark.byteplus.com")) {
             byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
           }
           let client = new OpenAI({
-            apiKey: provider === "byteplus" ? process.env.BYTEPLUS_API_KEY || "" : process.env.DEEPSEEK_API_KEY || "",
-            baseURL: provider === "byteplus" ? byteplusUrl : "https://api.deepseek.com",
+            apiKey: process.env.BYTEPLUS_API_KEY || "",
+            baseURL: byteplusUrl,
           });
           const response = await client.chat.completions.create({
             model: currentModel,

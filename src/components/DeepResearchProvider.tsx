@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useRef, ReactNode } from "r
 import { motion, AnimatePresence } from "framer-motion";
 
 export type ResearchEngine = {
-  provider: "gemini" | "byteplus" | "deepseek";
+  provider: "gemini" | "byteplus" | "openrouter";
   model: string;
 };
 

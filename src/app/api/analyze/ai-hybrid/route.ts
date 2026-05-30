@@ -13,7 +13,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 // ========================
 // TYPES
 // ========================
-export type ModelProvider = "gemini" | "byteplus" | "deepseek";
+export type ModelProvider = "gemini" | "byteplus" | "openrouter";
 
 export interface ModelConfig {
   provider: ModelProvider;
@@ -89,6 +89,29 @@ const IMMUTABLE_PENALTY_KEYWORDS = [
 // ========================
 // VALIDATION FUNCTIONS
 // ========================
+
+// Helper untuk mengekstrak JSON secara aman (tahan terhadap tag <think> model reasoning)
+const extractJson = (text: string) => {
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (match) {
+    try {
+      return JSON.parse(match[1]);
+    } catch (e) {}
+  }
+  
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const jsonStr = text.substring(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {}
+  }
+  
+  return JSON.parse(text);
+};
+
 const INVALID_NEUTRALIZERS = ['aqua', 'water', 'air', 'polyacrylamide', 'carbomer', 'xanthan gum', 'phenoxyethanol', 'glycerin', 'butylene glycol'];
 
 function validateAdjustments(
@@ -496,45 +519,47 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
           });
           const result = await model.generateContent(systemPrompt);
           responseText = result.response.text();
-        } else {
-          // OpenAI Compatible (BytePlus / DeepSeek)
-          let client: OpenAI;
-          if (provider === "byteplus") {
-            let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
-            if (byteplusUrl.includes("ark.byteplus.com")) {
-              byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+        } else if (provider === "openrouter") {
+          const client = new OpenAI({
+            apiKey: process.env.OPENROUTER_API_KEY || "",
+            baseURL: "https://openrouter.ai/api/v1",
+            defaultHeaders: {
+              "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
+              "X-Title": "Skincare Analyzer",
             }
-            client = new OpenAI({
-              apiKey: process.env.BYTEPLUS_API_KEY || "",
-              baseURL: byteplusUrl,
-            });
-          } else {
-            client = new OpenAI({
-              apiKey: process.env.DEEPSEEK_API_KEY || "",
-              baseURL: "https://api.deepseek.com",
-            });
-          }
+          });
 
           const response = await client.chat.completions.create({
             model: currentModel,
-            messages: [{ role: "system", content: systemPrompt }],
+            messages: [{ role: "user", content: systemPrompt }],
+            temperature: 0.2
+          });
+          responseText = response.choices[0].message.content || "{}";
+        } else {
+          // OpenAI Compatible (BytePlus)
+          let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
+          if (byteplusUrl.includes("ark.byteplus.com")) {
+            byteplusUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+          }
+          const client = new OpenAI({
+            apiKey: process.env.BYTEPLUS_API_KEY || "",
+            baseURL: byteplusUrl,
+          });
+
+          const response = await client.chat.completions.create({
+            model: currentModel,
+            messages: [{ role: "user", content: systemPrompt }],
             temperature: 0.2
           });
           responseText = response.choices[0].message.content || "{}";
         }
 
-        // Parse JSON dengan RegExp Fallback (BUG-3)
-        let cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        // Ekstraksi JSON Tahan Banting (Aman dari <think> tags)
         try {
-          aiResult = JSON.parse(cleaned);
+          aiResult = extractJson(responseText);
         } catch (parseError) {
-          console.warn(`[AI-Hybrid] ⚠️ Gagal parse JSON langsung, mencoba fallback ekstraksi RegExp...`);
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            aiResult = JSON.parse(jsonMatch[0]);
-          } else {
-            throw new Error(`Tidak dapat mengekstrak JSON valid dari respons.`);
-          }
+          console.warn(`[AI-Hybrid] ⚠️ Gagal parse JSON dari respons.`);
+          throw new Error(`Tidak dapat mengekstrak JSON valid dari respons.`);
         }
 
         usedModel = currentModel;

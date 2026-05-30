@@ -38,7 +38,7 @@ export default function PusatAIPage() {
   const [activeTab, setActiveTab] = useState<"research" | "hybrid">("research");
   const [hybridPrompt, setHybridPrompt] = useState("Anda adalah seorang Konsultan Dermatologi Kosmetik kelas dunia dan Ahli Formulasi (Cosmetic Chemist). Tugas Anda adalah menganalisis interaksi antar bahan dalam formulasi skincare dan memberikan penilaian profesional yang mudah dipahami orang awam.");
   interface ModelConfig {
-    provider: "gemini" | "byteplus" | "deepseek";
+    provider: "gemini" | "byteplus" | "openrouter";
     model: string;
     label?: string;
   }
@@ -459,7 +459,7 @@ export default function PusatAIPage() {
                       <span className="shrink-0 w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-full text-xs font-bold">
                         {idx + 1}
                       </span>
-                      <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${item.provider === 'gemini' ? 'bg-emerald-100 text-emerald-700' : item.provider === 'byteplus' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                      <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${item.provider === 'gemini' ? 'bg-emerald-100 text-emerald-700' : item.provider === 'byteplus' ? 'bg-blue-100 text-blue-700' : item.provider === 'openrouter' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700'}`}>
                         {item.provider.toUpperCase()}
                       </span>
                       <div className="flex flex-col truncate">
@@ -493,7 +493,7 @@ export default function PusatAIPage() {
                     >
                       <option value="gemini">Gemini</option>
                       <option value="byteplus">BytePlus (OpenAI)</option>
-                      <option value="deepseek">DeepSeek (OpenAI)</option>
+                      <option value="openrouter">OpenRouter</option>
                     </select>
                   </div>
                   <div className="sm:col-span-5">

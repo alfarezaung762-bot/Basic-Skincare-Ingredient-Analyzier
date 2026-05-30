@@ -28,7 +28,7 @@ interface MismatchReport {
 
 export default function AdminReportBahan() {
   const router = useRouter();
-  
+
   const [unknownReports, setUnknownReports] = useState<UnknownReport[]>([]);
   const [mismatchReports, setMismatchReports] = useState<MismatchReport[]>([]);
   const [ingredients, setIngredients] = useState<any[]>([]);
@@ -59,7 +59,7 @@ export default function AdminReportBahan() {
   // ========================================================
   useEffect(() => {
     const profileString = sessionStorage.getItem("adminProfile");
-    
+
     if (!profileString) {
       router.push("/admin/login");
       return;
@@ -91,7 +91,7 @@ export default function AdminReportBahan() {
       fetchReports(true);
 
       const intervalId = setInterval(() => {
-        fetchReports(false); 
+        fetchReports(false);
       }, 5000);
 
       return () => clearInterval(intervalId);
@@ -104,7 +104,7 @@ export default function AdminReportBahan() {
 
   const fetchReports = async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
-    
+
     try {
       const [reportsRes, ingredientsRes] = await Promise.all([
         fetch("/api/admin/reportbahan"),
@@ -150,7 +150,7 @@ export default function AdminReportBahan() {
 
   const handleDeleteUnknown = async (id: string, name: string) => {
     if (isViewer) return; // Cegah Viewer jika memaksa fungsi
-    
+
     if (!window.confirm(`Abaikan dan hapus bahan "${name}" dari antrean sistem?`)) return;
     try {
       const res = await fetch(`/api/admin/reportbahan?id=${id}&type=unknown`, { method: "DELETE" });
@@ -164,18 +164,18 @@ export default function AdminReportBahan() {
     if (isViewer) return; // Cegah Viewer jika memaksa fungsi
 
     if (!window.confirm(`Abaikan dan hapus semua laporan pengguna terkait "${ingredientName}"?`)) return;
-    
+
     const reportsToDelete = mismatchReports.filter(r => r.ingredientName === ingredientName);
-    
+
     try {
       await Promise.all(
-        reportsToDelete.map(r => 
+        reportsToDelete.map(r =>
           fetch(`/api/admin/reportbahan?id=${r.id}&type=mismatch`, { method: "DELETE" })
         )
       );
-      
+
       setMismatchReports(prev => prev.filter(r => r.ingredientName !== ingredientName));
-      setSelectedIngredient(null); 
+      setSelectedIngredient(null);
     } catch (error) {
       alert("Terjadi kesalahan saat menghapus laporan pengguna.");
     }
@@ -211,24 +211,24 @@ export default function AdminReportBahan() {
       setSelectedIds(new Set());
       return;
     }
-    
+
     // Filter: hanya yang tampil di search DAN tidak di-claim admin lain
-    const selectable = unknownReports.filter(r => 
+    const selectable = unknownReports.filter(r =>
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
       !(r.analyzedBy && r.analyzedBy !== adminName)
     );
-    
+
     const ids = selectable.slice(0, 50).map(r => r.id);
     setSelectedIds(new Set(ids));
   };
 
   const handleDeepResearch = () => {
     if (!canManageKamus || selectedIds.size === 0 || isResearching) return;
-    
+
     const selectedNames = unknownReports
       .filter(r => selectedIds.has(r.id))
       .map(r => r.name);
-      
+
     // Jika custom endpoint dipilih, gunakan isinya
     const engineToUse = { ...selectedEngine };
     if (engineToUse.provider === "byteplus" && engineToUse.model === "custom") {
@@ -237,17 +237,23 @@ export default function AdminReportBahan() {
         return;
       }
       engineToUse.model = customEndpoint.trim();
+    } else if (engineToUse.provider === "openrouter" && engineToUse.model === "custom") {
+      if (!customEndpoint.trim()) {
+        alert("Silakan masukkan Model ID terlebih dahulu!");
+        return;
+      }
+      engineToUse.model = customEndpoint.trim();
     }
-    
+
     startResearch(selectedNames, adminName, adminRole, engineToUse, useLiveSearch);
     setSelectedIds(new Set());
   };
 
   const handleToggleClaim = async (id: string, type: "unknown" | "mismatch", currentClaim: string | null | undefined) => {
     if (isViewer) return;
-    
+
     const action = currentClaim ? "unclaim" : "claim";
-    
+
     // Jika sedang di-claim orang lain, beri peringatan (tapi admin masih bisa ambil alih jika perlu)
     if (currentClaim && currentClaim !== adminName && action === "claim") {
       if (!window.confirm(`Bahan ini sedang dianalisis oleh ${currentClaim}. Ambil alih?`)) return;
@@ -259,7 +265,7 @@ export default function AdminReportBahan() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, type, adminName, action })
       });
-      
+
       if (res.ok) {
         // Update local state untuk feedback instan
         if (type === "unknown") {
@@ -321,7 +327,7 @@ export default function AdminReportBahan() {
                 </div>
                 <button onClick={() => setSelectedIngredient(null)} className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-200 rounded-full transition-colors font-bold">✕</button>
               </div>
-              
+
               <div className="overflow-y-auto pr-2 space-y-3 mb-6 flex-1">
                 {groupedMismatch[selectedIngredient]?.map((report, idx) => (
                   <div key={report.id} className="bg-rose-50/50 p-4 rounded-xl border border-rose-100 relative">
@@ -333,20 +339,20 @@ export default function AdminReportBahan() {
                   </div>
                 ))}
               </div>
-              
+
               {/* AKSI MODAL DENGAN PERENDERAN BERSYARAT */}
               <div className="flex gap-3 shrink-0 pt-4 border-t border-slate-100 dark:border-slate-800 dark:border-slate-800 mt-auto">
                 {!isViewer && (
-                  <button 
+                  <button
                     onClick={() => handleDeleteMismatchGroup(selectedIngredient)}
                     className="flex-1 py-3 bg-white dark:bg-slate-900 dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 text-slate-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 transition-colors shadow-sm active:scale-95"
                   >
                     🗑️ Abaikan Semua
                   </button>
                 )}
-                
+
                 {canManageKamus && (
-                  <button 
+                  <button
                     onClick={() => handleQuickEdit(selectedIngredient)}
                     className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-transparent transition-colors shadow-sm active:scale-95"
                   >
@@ -369,9 +375,9 @@ export default function AdminReportBahan() {
       {/* MODAL DEEP RESEARCH PROGRESS DIPINDAHKAN KE GLOBAL PROVIDER */}
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-        
+
         {/* Header Admin */}
-        <AdminHeader 
+        <AdminHeader
           adminName={adminName}
           adminRole={adminRole}
           onLogout={handleLogout}
@@ -384,7 +390,7 @@ export default function AdminReportBahan() {
           <Link href="/admin/dashboard" className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg transition-all flex items-center gap-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
             <span>📚 Kamus Bahan Utama</span>
           </Link>
-          
+
           <div className="shrink-0 px-5 py-2.5 font-bold text-sm rounded-lg flex items-center gap-2 bg-slate-900 text-white shadow-md cursor-default">
             <span>❓ Pusat Tinjauan</span>
             <div className="flex gap-1 ml-1">
@@ -422,17 +428,17 @@ export default function AdminReportBahan() {
 
         {/* Konten Utama */}
         <div className="bg-white dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          
+
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div className="flex gap-4">
-              <button 
+              <button
                 onClick={() => setActiveTab("SYSTEM")}
                 className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "SYSTEM" ? 'border-slate-900 text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
               >
-                🤖 Laporan Sistem (Bahan Asing) 
+                🤖 Laporan Sistem (Bahan Asing)
                 {unknownReports.length > 0 && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{unknownReports.length}</span>}
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab("USER")}
                 className={`pb-2 px-2 text-sm font-bold transition-all flex items-center gap-2 border-b-2 ${activeTab === "USER" ? 'border-slate-900 text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
               >
@@ -440,19 +446,19 @@ export default function AdminReportBahan() {
                 {Object.keys(groupedMismatch).length > 0 && <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{Object.keys(groupedMismatch).length}</span>}
               </button>
             </div>
-            
+
             {/* SEARCH INPUT (Tersedia untuk Kedua Tab) */}
             <div className="relative w-full md:w-72">
-              <input 
-                type="text" 
-                placeholder={activeTab === "SYSTEM" ? "Cari bahan asing..." : "Cari bahan atau keluhan..."} 
+              <input
+                type="text"
+                placeholder={activeTab === "SYSTEM" ? "Cari bahan asing..." : "Cari bahan atau keluhan..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
               />
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
                 >
@@ -472,12 +478,12 @@ export default function AdminReportBahan() {
               {activeTab === "SYSTEM" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                   <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">Bahan yang dimasukkan pengguna tetapi belum ada di database.</p>
-                  
+
                   {/* SELECTION BAR + DEEP RESEARCH BUTTON */}
                   {unknownReports.length > 0 && canManageKamus && (
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                       <div className="flex items-center gap-3">
-                        <button 
+                        <button
                           onClick={toggleSelectAll}
                           disabled={isResearching}
                           className="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100 px-3 py-1.5 bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-lg transition-all active:scale-95 disabled:opacity-50"
@@ -492,35 +498,41 @@ export default function AdminReportBahan() {
                       </div>
                       {selectedIds.size > 0 && (
                         <div className="flex items-center gap-2">
-                          <select 
-                            value={JSON.stringify(selectedEngine)} 
+                          <select
+                            value={JSON.stringify(selectedEngine)}
                             onChange={(e) => setSelectedEngine(JSON.parse(e.target.value))}
                             disabled={isResearching}
                             className="px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                           >
                             <optgroup label="Google Gemini">
-                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3.1-flash-lite-preview"})}>Gemini 3.1 Flash-Lite Preview</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3.1-flash-preview"})}>Gemini 3.1 Flash Preview</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3-flash-preview"})}>Gemini 3 Flash Preview</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemini-3-flash"})}>Gemini 3 Flash</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemini-2.5-pro"})}>Gemini 2.5 Pro</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemini-2.5-flash"})}>Gemini 2.5 Flash</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemini-3.1-flash-lite-preview" })}>Gemini 3.1 Flash-Lite Preview</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemini-3.1-flash-preview" })}>Gemini 3.1 Flash Preview</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemini-3-flash-preview" })}>Gemini 3 Flash Preview</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemini-3-flash" })}>Gemini 3 Flash</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemini-2.5-pro" })}>Gemini 2.5 Pro</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemini-2.5-flash" })}>Gemini 2.5 Flash</option>
                             </optgroup>
                             <optgroup label="Google Gemma">
-                              <option value={JSON.stringify({provider: "gemini", model: "gemma-4-31b-it"})}>Gemma 4 31B</option>
-                              <option value={JSON.stringify({provider: "gemini", model: "gemma-4-26b-a4b-it"})}>Gemma 4 26B MoE</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemma-4-31b-it" })}>Gemma 4 31B</option>
+                              <option value={JSON.stringify({ provider: "gemini", model: "gemma-4-26b-a4b-it" })}>Gemma 4 26B MoE</option>
                             </optgroup>
                             <optgroup label="ByteDance Ark (Endpoint Aktif)">
-                              <option value={JSON.stringify({provider: "byteplus", model: "ep-20260505074455-nplpn"})}>DeepSeek-V3.2 (Active)</option>
-                              <option value={JSON.stringify({provider: "byteplus", model: "ep-20260505075908-hgqh7"})}>GLM-4.7 (Active)</option>
-                              <option value={JSON.stringify({provider: "byteplus", model: "ep-20260505075317-2sht5"})}>GPT-OSS-120B (Active)</option>
-                              <option value={JSON.stringify({provider: "byteplus", model: "custom"})}>-- Gunakan Endpoint ID Custom --</option>
+                              <option value={JSON.stringify({ provider: "byteplus", model: "ep-20260505074455-nplpn" })}>DeepSeek-V3.2 (Active)</option>
+                              <option value={JSON.stringify({ provider: "byteplus", model: "ep-20260505075908-hgqh7" })}>GLM-4.7 (Active)</option>
+                              <option value={JSON.stringify({ provider: "byteplus", model: "ep-20260505075317-2sht5" })}>GPT-OSS-120B (Active)</option>
+                              <option value={JSON.stringify({ provider: "byteplus", model: "custom" })}>-- Gunakan Endpoint ID Custom --</option>
+                            </optgroup>
+                            <optgroup label="OpenRouter">
+                              <option value={JSON.stringify({ provider: "openrouter", model: "deepseek/deepseek-r1" })}>DeepSeek R1 (Free)</option>
+                              <option value={JSON.stringify({ provider: "openrouter", model: "deepseek/deepseek-v4-flash" })}>DeepSeek V4 Flash (Free)</option>
+                              <option value={JSON.stringify({ provider: "openrouter", model: "anthropic/claude-3.5-sonnet" })}>Claude 3.5 Sonnet</option>
+                              <option value={JSON.stringify({ provider: "openrouter", model: "custom" })}>-- Gunakan Model ID Custom --</option>
                             </optgroup>
                           </select>
 
                           {selectedEngine.provider === "gemini" && selectedEngine.model.startsWith("gemini-2") && (
                             <label className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                              <input 
+                              <input
                                 type="checkbox"
                                 checked={useLiveSearch}
                                 onChange={(e) => setUseLiveSearch(e.target.checked)}
@@ -531,16 +543,16 @@ export default function AdminReportBahan() {
                             </label>
                           )}
 
-                          {selectedEngine.provider === "byteplus" && selectedEngine.model === "custom" && (
-                            <input 
+                          {(selectedEngine.provider === "byteplus" || selectedEngine.provider === "openrouter") && selectedEngine.model === "custom" && (
+                            <input
                               type="text"
-                              placeholder="Masukkan Endpoint ID (ep-...)"
+                              placeholder={selectedEngine.provider === "byteplus" ? "Masukkan Endpoint ID (ep-...)" : "Masukkan Model ID (e.g. meta-llama/...)"}
                               value={customEndpoint}
                               onChange={(e) => setCustomEndpoint(e.target.value)}
                               className="px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-900 dark:bg-slate-900 border border-indigo-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
                             />
                           )}
-                          <button 
+                          <button
                             onClick={handleDeepResearch}
                             disabled={isResearching}
                             className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -572,8 +584,8 @@ export default function AdminReportBahan() {
                           <tr>
                             {canManageKamus && (
                               <th className="p-4 w-12">
-                                <input 
-                                  type="checkbox" 
+                                <input
+                                  type="checkbox"
                                   checked={selectedIds.size > 0}
                                   onChange={toggleSelectAll}
                                   disabled={isResearching}
@@ -593,21 +605,20 @@ export default function AdminReportBahan() {
                             .map((report) => {
                               const isClaimedByMe = report.analyzedBy === adminName;
                               const isClaimedByOther = report.analyzedBy && report.analyzedBy !== adminName;
-                              
+
                               return (
-                                <motion.tr 
-                                  variants={itemVariants} 
-                                  key={report.id} 
-                                  className={`transition-colors group relative ${
-                                    selectedIds.has(report.id) ? "bg-indigo-50/40" : 
-                                    isClaimedByMe ? "bg-emerald-50 border-l-4 border-l-emerald-500" :
-                                    isClaimedByOther ? "bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
-                                  }`}
+                                <motion.tr
+                                  variants={itemVariants}
+                                  key={report.id}
+                                  className={`transition-colors group relative ${selectedIds.has(report.id) ? "bg-indigo-50/40" :
+                                      isClaimedByMe ? "bg-emerald-50 border-l-4 border-l-emerald-500" :
+                                        isClaimedByOther ? "bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
+                                    }`}
                                 >
                                   {canManageKamus && (
                                     <td className="p-4">
-                                      <input 
-                                        type="checkbox" 
+                                      <input
+                                        type="checkbox"
                                         checked={selectedIds.has(report.id)}
                                         onChange={() => toggleSelectId(report.id)}
                                         disabled={isResearching || Boolean(report.analyzedBy && report.analyzedBy !== adminName) || (!selectedIds.has(report.id) && selectedIds.size >= 50)}
@@ -622,7 +633,7 @@ export default function AdminReportBahan() {
                                       </span>
                                       {report.analyzedBy && (
                                         <span className={`text-[10px] font-black mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md w-fit shadow-sm border ${isClaimedByMe ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-slate-200 text-slate-600 border-slate-300"}`}>
-                                          <span className={`w-1.5 h-1.5 rounded-full ${isClaimedByMe ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`}></span> 
+                                          <span className={`w-1.5 h-1.5 rounded-full ${isClaimedByMe ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`}></span>
                                           {isClaimedByMe ? "Sedang Anda Cek" : `Di Cek: ${report.analyzedBy}`}
                                         </span>
                                       )}
@@ -634,17 +645,16 @@ export default function AdminReportBahan() {
                                   <td className="p-4 text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium text-xs">{new Date(report.createdAt).toLocaleDateString('id-ID')}</td>
                                   <td className="p-4 text-right">
                                     <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
-                                      
+
                                       {/* CLAIM BUTTON */}
                                       {!isViewer && (
-                                        <button 
+                                        <button
                                           onClick={() => handleToggleClaim(report.id, "unknown", report.analyzedBy)}
                                           disabled={Boolean(report.analyzedBy && report.analyzedBy !== adminName)}
-                                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
-                                            isClaimedByMe 
-                                              ? "bg-emerald-600 text-white border-emerald-700 shadow-sm hover:bg-emerald-700" 
+                                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${isClaimedByMe
+                                              ? "bg-emerald-600 text-white border-emerald-700 shadow-sm hover:bg-emerald-700"
                                               : "bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm"
-                                          } disabled:opacity-30`}
+                                            } disabled:opacity-30`}
                                           title={isClaimedByMe ? "Selesai Pengecekan" : "Tandai Sedang Anda Cek"}
                                         >
                                           {isClaimedByMe ? "✓ Selesai" : "⏳ Cek Bahan"}
@@ -680,7 +690,7 @@ export default function AdminReportBahan() {
               {activeTab === "USER" && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                   <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-6 font-medium">Bahan terdaftar yang dilaporkan memiliki ketidaksesuaian fungsi atau manfaat oleh pengguna.</p>
-                  
+
                   {Object.keys(groupedMismatch).length === 0 ? (
                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 dark:border-slate-800">
                       <span className="text-4xl block mb-4 opacity-50">🎉</span>
@@ -702,7 +712,7 @@ export default function AdminReportBahan() {
                             .filter(([ingredientName, reports]) => {
                               const sq = searchQuery.toLowerCase();
                               if (ingredientName.toLowerCase().includes(sq)) return true;
-                              
+
                               // Check if search matches any alias of this ingredient
                               const ingredient = ingredients.find(i => i.name.toLowerCase() === ingredientName.toLowerCase());
                               if (ingredient && ingredient.aliases && ingredient.aliases.toLowerCase().includes(sq)) return true;
@@ -710,21 +720,21 @@ export default function AdminReportBahan() {
                               return reports.some(r => r.reason.toLowerCase().includes(sq));
                             })
                             .map(([ingredientName, reports]) => (
-                            <motion.tr variants={itemVariants} key={ingredientName} className="hover:bg-rose-50/30 transition-colors group">
-                              <td className="p-4 font-black text-rose-700 capitalize">{ingredientName}</td>
-                              <td className="p-4 text-center">
-                                <span className="inline-block bg-rose-100 text-rose-800 px-3 py-1 rounded-full font-black text-xs border border-rose-200 shadow-sm">{reports.length} Keluhan</span>
-                              </td>
-                              <td className="p-4 text-right">
-                                <button 
-                                  onClick={() => setSelectedIngredient(ingredientName)} 
-                                  className="bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ml-auto"
-                                >
-                                  <span>🔍</span> Tinjau Keluhan
-                                </button>
-                              </td>
-                            </motion.tr>
-                          ))}
+                              <motion.tr variants={itemVariants} key={ingredientName} className="hover:bg-rose-50/30 transition-colors group">
+                                <td className="p-4 font-black text-rose-700 capitalize">{ingredientName}</td>
+                                <td className="p-4 text-center">
+                                  <span className="inline-block bg-rose-100 text-rose-800 px-3 py-1 rounded-full font-black text-xs border border-rose-200 shadow-sm">{reports.length} Keluhan</span>
+                                </td>
+                                <td className="p-4 text-right">
+                                  <button
+                                    onClick={() => setSelectedIngredient(ingredientName)}
+                                    className="bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ml-auto"
+                                  >
+                                    <span>🔍</span> Tinjau Keluhan
+                                  </button>
+                                </td>
+                              </motion.tr>
+                            ))}
                         </motion.tbody>
                       </table>
                     </div>
