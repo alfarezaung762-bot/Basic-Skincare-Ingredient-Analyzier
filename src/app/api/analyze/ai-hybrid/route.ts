@@ -57,6 +57,11 @@ interface AiHybridResult {
     generalAdvice: string[];
   };
   aiUnknownAnalysis: string;
+  toxicClarifications?: {
+    ingredient: string;
+    clarification: string;
+    isTypoSuspected: boolean;
+  }[];
 }
 
 // Default fallback model list
@@ -131,6 +136,7 @@ function validateAdjustments(
     }
 
     // 2. Filter neutralizerIngredients dari bahan dasar yang dilarang (BUG-2)
+    adj.neutralizerIngredients = adj.neutralizerIngredients || [];
     adj.neutralizerIngredients = adj.neutralizerIngredients.filter(n =>
       !INVALID_NEUTRALIZERS.includes(n.toLowerCase())
     );
@@ -143,6 +149,14 @@ function validateAdjustments(
         // Remove from the array instead of rejecting the whole adjustment
         adj.neutralizerIngredients = adj.neutralizerIngredients.filter(n => n !== neutralizer);
       }
+    }
+
+    // 4. [PENUTUPAN CELAH / LOOPHOLE FIX]
+    // Jika array penetral kosong setelah disaring (misal AI mengirim [], atau hanya "Water"), BUANG ADJUSTMENT INI.
+    // OPSI A DITERAPKAN: Tidak ada bypass untuk Facewash. Engine sudah menghitung dilution secara mekanis.
+    if (adj.neutralizerIngredients.length === 0) {
+      console.warn(`[AI-Hybrid] ❌ BUANG adjustment: Tidak ada neutralizer valid tersisa untuk trigger "${adj.triggerIngredient}"`);
+      return false;
     }
 
     // 4. Clamp pointsRestored: maks 50
@@ -366,23 +380,20 @@ ATURAN 2 — BATASAN PENYESUAIAN PENALTI & KONTEKS KOSONG:
 - Untuk bahan dengan aiContext KOSONG: Anda boleh menganalisis berdasarkan pengetahuan umum Anda (khususnya untuk mencari neutralizer/buffering), tetapi Anda WAJIB menyebutkan bahwa bahan ini 'belum dianalisis mendalam secara internal' dalam reasoning.
 
 ATURAN 3 — PERTIMBANGAN URUTAN BAHAN (BERDASARKAN REGULASI):
-Menurut EU Regulation 1223/2009 Annex VI dan FDA:
-- Bahan skincare WAJIB dicantumkan berurutan dari konsentrasi TERTINGGI ke TERENDAH HANYA untuk bahan dengan konsentrasi ≥1%.
-- Bahan dengan konsentrasi <1% BOLEH dicantumkan dalam urutan BEBAS di bagian akhir.
-- Pewarna, pengawet, dan pewangi biasanya selalu di bawah 1%.
-PANDUAN POSISI UNTUK ANALISIS:
-- Posisi 1-5: Konsentrasi signifikan/dominan (solvent, base, primary actives).
-- Posisi 6-15: Konsentrasi menengah (secondary actives, emulsifiers).
-- Posisi 16+: Kemungkinan besar konsentrasi rendah (<1%) dan urutannya mungkin acak.
-KAMU DILARANG menyebutkan angka persentase spesifik (seperti ">5%", "3%", atau "<1%").
-Gunakan frasa deskriptif seperti: "konsentrasi signifikan", "konsentrasi menengah", atau "kemungkinan konsentrasi rendah (berada di posisi akhir formulasi)".
+Menurut EU Regulation 1223/2009 Annex VI dan FDA, bahan wajib diurutkan dari konsentrasi tertinggi ke terendah, KECUALI bahan <1% yang boleh diacak di akhir.
+PANDUAN POSISI (EVALUASI RELATIF & GARIS BATAS 1%):
+- 1/3 Awal (Top 30% daftar): Konsentrasi Signifikan/Dominan (Solvent, Base, Primary Actives). Efek bahan sangat kuat.
+- 1/3 Tengah (Middle 30%): Konsentrasi Menengah.
+- 1/3 Akhir (Bottom 30%): Kemungkinan konsentrasi rendah.
+GARIS BATAS 1% MUTLAK (THE 1% LINE):
+Pewarna (CI...), Pengawet (Phenoxyethanol, Parabens), Pengental (Carbomer, Xanthan Gum), dan Pewangi (Fragrance/Parfum) HAMPIR PASTI berada di konsentrasi ≤1% secara global. Posisi mereka (dan SEMUA BAHAN setelahnya) adalah penanda mutlak konsentrasi rendah, meskipun daftarnya sangat pendek (misal hanya 5 bahan).
+KAMU DILARANG menyebutkan angka persentase spesifik (seperti ">5%", "3%"). Gunakan narasi deskriptif seperti "berada di posisi atas/dominan" atau "sebagai pelengkap di akhir daftar".
 
-ATURAN 4 — BAHASA OUTPUT & TONE PESAN:
-Gunakan bahasa Indonesia yang mudah dipahami orang awam. DILARANG menyebutkan angka skor atau persentase.
-TONE CAMPURAN:
-- Untuk peringatan CRITICAL/berat: gunakan nada TEGAS dan langsung. Contoh: "STOP pemakaian jika muncul kemerahan." atau "HINDARI produk ini."
-- Untuk peringatan WARNING/sedang: gunakan nada LEMBUT dan membimbing. Contoh: "Disarankan membatasi pemakaian..." atau "Coba lakukan patch test terlebih dahulu..."
-- Untuk SUCCESS: gunakan nada positif. Contoh: "Aman dipakai rutin."
+ATURAN 4 — BAHASA OUTPUT & NADA KONSULTASI (TONE):
+Gunakan bahasa Indonesia baku yang edukatif, berempati, dan objektif. DILARANG menakut-nakuti (fear-mongering) atau menjanjikan kesembuhan instan.
+- Peringatan CRITICAL (Merah): Jangan sekadar melarang. Jelaskan risiko spesifiknya lalu beri solusi. (Contoh: "Bahan ini berisiko merusak skin barrier kulit kering Anda. Sebaiknya hindari, atau pastikan Anda melapisi wajah dengan pelembap yang sangat tebal sebelumnya.")
+- Peringatan WARNING (Kuning): Gunakan nada membimbing. (Contoh: "Produk ini cukup aktif. Mulailah dengan penggunaan 2x seminggu di malam hari agar kulit dapat beradaptasi.")
+- SUCCESS (Hijau): Beri apresiasi rasional. (Contoh: "Formulasi ini sangat bersahabat untuk menjaga skin barrier Anda. Aman untuk rutinitas harian.")
 
 ATURAN 5 — FOKUS FORMULASI:
 Pilih fokus utama dari HANYA 6 kategori ini:
@@ -411,28 +422,32 @@ ${productType === "SUNSCREEN" ? `SUNSCREEN (Produk leave-on + terpapar sinar UV)
 - KOMEDO: Efek PENUH. Sarankan "pilih formula non-comedogenic jika kulit berminyak. Bersihkan dengan double cleansing di malam hari."
 - BATASAN PENGGUNAAN (Blacklist Kulit): TIDAK ADA keringanan. Jika bahan berbahaya untuk kulit tertentu, sarankan "GANTI produk sunscreen". Ingatkan pentingnya perlindungan UV tapi bukan dengan produk yang merusak kulit.` : ""}
 
-ATURAN 7 — NEUTRALIZER HARUS RELEVAN (SANGAT PENTING):
-neutralizerIngredients HARUS berisi bahan yang SECARA ILMIAH menetralkan efek trigger.
-- Untuk komedogenik: neutralizer = bahan eksfoliator ringan, oil-control, atau anti-komedogenik aktif (Squalane, Niacinamide, Salicylic Acid).
-- Untuk harsh/irritant: neutralizer = bahan soothing/buffer (Centella, Ceramide, Aloe Vera, Panthenol).
-- DILARANG KERAS memasukkan pelarut (Aqua/Water), pH adjuster (Citric Acid), pengental (Carbomer, Xanthan Gum, Polyacrylamide), atau pengawet (Phenoxyethanol) sebagai neutralizer. Jika tidak ada penetral ilmiah di formulasi, jangan kurangi penaltinya!
+ATURAN 7 — HUKUM SINERGI ANTAGONIS (SYARAT MUTLAK NETRALISASI):
+Kamu HANYA boleh menetralkan penalti (mengisi neutralizerIngredients) jika ada BUKTI FISIK sinergi antagonis di dalam formulasi. Gunakan panduan presisi ini:
+A. PENAWAR KOMEDOGENIK (Penyumbat Pori):
+   - HANYA bisa dinetralkan oleh agen keratolitik (memecah keratin) seperti Salicylic Acid (BHA), Glycolic Acid (AHA), LHA, atau PHA.
+   - HANYA bisa dinetralkan oleh agen sebum-regulator terbukti seperti Niacinamide (>2%), Zinc PCA, atau Retinoid.
+   - DILARANG menetralkan komedo menggunakan bahan pelembap (Ceramide/Hyaluronic Acid) karena pelembap TIDAK melarutkan sumbatan pori.
+
+B. PENAWAR IRITASI ASAM/HARSH (Kerusakan Barrier):
+   - HANYA bisa dinetralkan oleh agen penyokong lipid barrier (Ceramide NP/AP/EOP, Cholesterol, Fatty Acids).
+   - HANYA bisa dinetralkan oleh agen anti-inflamasi seluler tingkat tinggi (Madecassoside, Asiaticoside, Panthenol, Bisabolol, Allantoin).
+   - DILARANG menetralkan iritasi eksfoliator kuat (seperti Glycolic Acid 10%) hanya dengan pelarut dasar atau humektan biasa (Glycerin).
+
+C. BAHAN TERLARANG SEBAGAI PENETRAL:
+   - Pelarut (Aqua/Water/Air), pH Adjuster (Citric Acid/Sodium Hydroxide), Pengental (Carbomer/Xanthan Gum), dan Pengawet (Phenoxyethanol/Parabens) ADALAH BAHAN DASAR. Mereka TIDAK PERNAH bisa menjadi neutralizer.
 
 ATURAN 8 — STRUKTUR REASONING WAJIB (SANGAT PENTING):
-Setiap field "reasoning" dalam penaltyAdjustments HARUS mengikuti alur sebab-akibat-aksi secara NATURAL (tanpa tag eksplisit):
+Setiap field "reasoning" dalam penaltyAdjustments HARUS mengikuti alur logis berikut (bahasa awam, tanpa tag eksplisit):
+1. FAKTA KLINIS: Sebutkan bahan pemicu dan kenapa sistem memberi penalti (misal: "Isopropyl Myristate adalah minyak pekat yang berisiko menyumbat pori kulit berminyak Anda.")
+2. HUKUM FISIKA/KIMIA: Jelaskan HUKUM PENETRALAN berdasarkan Aturan 7 atau Aturan 6 (Tipe Produk). (misal: "Namun, karena ini adalah sabun cuci muka (kontak singkat 60 detik) DAN mengandung Salicylic Acid yang melarutkan minyak...")
+3. KESIMPULAN KONKRET: Berikan lampu hijau atau kuning. (misal: "...maka risiko komedo berhasil ditekan. Aman dipakai rutin untuk cuci muka harian.")
+JIKA TIDAK ADA PENETRAL: Jangan buat adjustment sama sekali (hapus dari JSON).
 
-1. Mulai dengan MASALAH: Sebutkan bahan pemicu dan efek negatifnya secara singkat.
-2. Lanjut dengan PENYEIMBANG: Jelaskan kenapa bisa ternetralisir — sebutkan bahan neutralizer, tipe produk (bilas/leave-on), dan posisi urutan bahan jika relevan.
-3. Akhiri dengan KESIMPULAN + SARAN PEMAKAIAN KONKRET. Pilih salah satu:
-   - Jika ternetralisir penuh: "Aman dipakai rutin."
-   - Jika ternetralisir sebagian: "Disarankan lakukan patch test terlebih dahulu." + saran frekuensi
-   - Jika eksfoliasi kuat: Sertakan frekuensi pemakaian spesifik (misal "gunakan 1x sehari di malam hari" atau "batasi 2-3x seminggu")
-   - Jika tetap berbahaya: "Hindari produk ini jika kulit [tipe kulit tertentu]."
-
-CONTOH REASONING YANG BAIK:
-"Lauric Acid memiliki potensi komedogenik yang cukup tinggi. Namun karena ini adalah produk bilas (facewash), durasi kontak dengan kulit sangat singkat (sekitar 60 detik), sehingga risiko penyumbatan pori berkurang drastis. Ditambah kehadiran Sodium Cocoyl Glycinate yang membantu membersihkan residu. Aman dipakai rutin untuk pembersihan harian."
-
-CONTOH REASONING YANG BURUK (JANGAN LAKUKAN INI):
-"Keberadaan bahan penenang yang intens dalam formulasi ini menetralkan risiko iritasi." (Tidak jelas bahan apa yang jadi masalah, tidak ada saran aksi untuk pengguna)
+ATURAN 9 — KLARIFIKASI TOKSIK & ANOMALI LABEL (KHUSUS BAHAN TOXIC):
+Bahan dengan penalti TOXIC (-100) TIDAK BISA dinetralkan atau dikembalikan poinnya (skor otomatis 0 demi keselamatan).
+NAMUN, jika Anda mencurigai bahan TOXIC tersebut sebenarnya adalah KESALAHAN KETIK (Typo) dari pabrik di kemasan (misal: ada kata "Acrylamide" yang berdiri sendiri, namun di sebelahnya/di dekatnya ada kata "Copolymer", yang seharusnya adalah "Polyacrylamide"), Anda WAJIB memberikan klarifikasi yang menenangkan pengguna.
+Masukkan klarifikasi tersebut ke dalam array "toxicClarifications". Jangan ubah "penaltyAdjustments" untuk bahan TOXIC ini.
 
 === DATA PROFIL PENGGUNA ===
 - Tipe Kulit: ${profile.skinType}
@@ -492,6 +507,13 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
     ],
     "generalAdvice": ["saran umum berdasarkan profil"]
   },
+  "toxicClarifications": [
+    {
+      "ingredient": "Nama Bahan TOXIC",
+      "clarification": "Penjelasan bahwa ini mungkin typo (misal Acrylamide yang seharusnya Polyacrylamide). Edukasi secara halus tanpa merendahkan brand. Akhiri dengan saran: Mohon konfirmasi ke pihak brand.",
+      "isTypoSuspected": true
+    }
+  ],
   "aiUnknownAnalysis": "analisis bahan asing atau 'Semua bahan terverifikasi'"
 }
 `;
@@ -676,6 +698,23 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
       engineResult.matchScore = finalMatchScore;
       engineResult.matchLabel = getMatchLabel(finalMatchScore);
       engineResult.matchFlags = finalMatchFlags;
+      
+      // Inject Toxic Clarifications to the Safety Flags Message
+      if (aiResult.toxicClarifications && aiResult.toxicClarifications.length > 0) {
+        finalSafetyFlags = finalSafetyFlags.map(flag => {
+          if (flag.pointsDeducted === 100 && flag.type === "CRITICAL") {
+            const clarif = aiResult.toxicClarifications?.find(c => flag.culprits?.includes(c.ingredient));
+            if (clarif) {
+              return { 
+                ...flag, 
+                message: `[Klarifikasi AI] ${clarif.clarification} (Sistem tetap mengunci peringatan ini demi keamanan mutlak).` 
+              };
+            }
+          }
+          return flag;
+        });
+      }
+
       engineResult.safetyScore = finalSafetyScore;
       engineResult.safetyLabel = getSafetyLabel(finalSafetyScore);
       engineResult.safetyFlags = finalSafetyFlags;

@@ -83,7 +83,7 @@ async function researchIngredient(ingredientName: string, provider: string = "ge
       dataTemplate: "Nama (INCI), Sifat Kimia, Level Kekuatan, Fungsi Khusus, Sinonim / Alias, Manfaat Singkat (Untuk Pengguna), Analisis Mendalam (Khusus Mesin AI), Komedogenik (0-5), Aman Bumil, Aman Sensitif, Fokus Perawatan, Dilarang Keras Untuk",
       prioritizedSources: "EWG, Paula's Choice, INCIDecoder, CIR (Cosmetic Ingredient Review), PubMed",
       allowExternalSources: false,
-      systemPrompt: "Kamu adalah ahli dermatologi, kosmesi, dan kimia farmasi internasional dengan pengalaman 20+ tahun.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}",
+      systemPrompt: "Kamu adalah ahli dermatologi, kosmetik, dan kimia farmasi internasional dengan pengalaman 20+ tahun.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}",
       aihybridPromptingredient: "",
       aihybridModelPriority: null,
       aihybridUseExternalSources: false,
@@ -240,7 +240,15 @@ PENGECUALIAN SANGAT PENTING:
 Jika suatu parameter memiliki label [BOLEH CARI DI SUMBER LUAR JIKA TIDAK ADA], kau DILARANG memicu Kill Switch untuk parameter tersebut. Kau diwajibkan untuk menggunakan pengetahuan umum medismu atau mencari dari sumber luar yang valid (Jurnal Dermatologi Sinta 1 / Scopus Q1) untuk mengisi datanya, dan TETAP lanjutkan pembuatan JSON analisis!
 `;
 
-  const finalSystemPrompt = aiConfig.systemPrompt.replace("{{ATURAN_SISTEM}}", aturanSistem);
+  let finalSystemPrompt = aiConfig.systemPrompt.replace("{{ATURAN_SISTEM}}", aturanSistem);
+
+  // [PENGAMAN LAPIS AKHIR / FAIL-SAFE]
+  // Jika setelah di-replace finalSystemPrompt tidak mengandung string aturanSistem, 
+  // berarti tag {{ATURAN_SISTEM}} tidak ditemukan di konfigurasi prompt.
+  if (!finalSystemPrompt.includes(aturanSistem)) {
+    finalSystemPrompt += "\n\n[SISTEM OTOMATIS: ATURAN WAJIB (FAIL-SAFE)]\n" + aturanSistem;
+    console.warn("[Deep Research] WARNING: Tag {{ATURAN_SISTEM}} tidak ditemukan di konfigurasi prompt. Aturan sistem ditambahkan paksa via Fail-Safe.");
+  }
 
   const prompt = `${finalSystemPrompt}
 
@@ -255,7 +263,7 @@ Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
   "isKeyActive": true,
   "benefits": "manfaat singkat",
-  "aiContext": "analisis mendalam MINIMAL 800 KATA dengan struktur: [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]",
+  "aiContext": "analisis mendalam MINIMAL 800 KATA dengan struktur: [IDENTITAS] [MEKANISME KERJA] [pH, REGULASI & KONSENTRASI AMAN (Wash-off vs Leave-on)] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]",
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
@@ -405,10 +413,10 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
 
       // Validasi: aiContext harus >= 400 kata
       wordCount = (parsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
-      if (wordCount < 750) {
+      if (wordCount < 800) {
         console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
 
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 800 KATA untuk field aiContext dengan struktur [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]. Tuliskan analisis yang sangat detail dan komprehensif.`;
+        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 800 KATA untuk field aiContext dengan struktur [IDENTITAS] [MEKANISME KERJA] [pH, REGULASI & KONSENTRASI AMAN (Wash-off vs Leave-on)] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]. Tuliskan analisis yang sangat detail dan komprehensif.`;
 
         let retryParsed: any = null;
         if (provider === "gemini") {

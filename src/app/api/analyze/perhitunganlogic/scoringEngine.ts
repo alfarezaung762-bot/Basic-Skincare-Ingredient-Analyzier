@@ -248,9 +248,10 @@ export function runScoringEngine(
     // Toxic / Hamil / Alergi (Safety Score Penalties)
     if (ing.type === "TOXIC") {
       safetyScore = 0;
-      safetyFlags.push({ type: "CRITICAL", message: `Berbahaya: Mengandung bahan terlarang/toksik!`, pointsDeducted: 100, culprits: [ing.name] });
+      const reason = ing.blacklistReason ? ` (Catatan: ${ing.blacklistReason})` : "";
+      safetyFlags.push({ type: "CRITICAL", message: `Berbahaya: Mengandung bahan terlarang/toxic!${reason} Periksa Mandiri bahan tersebut atau laporkan jika ada kesalahan analisis.`, pointsDeducted: 100, culprits: [ing.name] });
     }
-    if (profile.isPregnantOrNursing && !ing.safeForPregnancy) {
+    else if (profile.isPregnantOrNursing && !ing.safeForPregnancy) {
       safetyScore -= 100;
       safetyFlags.push({ type: "CRITICAL", message: `Risiko Janin: Tidak direkomendasikan untuk ibu hamil/menyusui.`, pointsDeducted: 100, culprits: [ing.name] });
     }
@@ -260,7 +261,7 @@ export function runScoringEngine(
     }
 
     // Blacklist Klinis Mutlak (Safety Score Penalty)
-    if (ing.blacklistedSkinTypes && ing.blacklistedSkinTypes.toLowerCase().includes(userBaseSkinType)) {
+    if (ing.type !== "TOXIC" && ing.blacklistedSkinTypes && ing.blacklistedSkinTypes.toLowerCase().includes(userBaseSkinType)) {
       const penalty = ing.blacklistPenalty ?? 50;
       safetyScore -= penalty;
       const sensitiveText = (isSensitive && !ing.safeForSensitive) ? ' dan sensitif' : '';

@@ -627,8 +627,8 @@ export default function AdminReportBahan() {
                                   variants={itemVariants}
                                   key={report.id}
                                   className={`transition-colors group relative ${selectedIds.has(report.id) ? "bg-indigo-50/40" :
-                                      isClaimedByMe ? "bg-emerald-50 border-l-4 border-l-emerald-500" :
-                                        isClaimedByOther ? "bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
+                                    isClaimedByMe ? "bg-emerald-50 border-l-4 border-l-emerald-500" :
+                                      isClaimedByOther ? "bg-slate-100 dark:bg-slate-800 dark:bg-slate-800/50 grayscale-[0.5]" : "hover:bg-amber-50/30"
                                     }`}
                                 >
                                   {canManageKamus && (
@@ -668,8 +668,8 @@ export default function AdminReportBahan() {
                                           onClick={() => handleToggleClaim(report.id, "unknown", report.analyzedBy)}
                                           disabled={Boolean(report.analyzedBy && report.analyzedBy !== adminName)}
                                           className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${isClaimedByMe
-                                              ? "bg-emerald-600 text-white border-emerald-700 shadow-sm hover:bg-emerald-700"
-                                              : "bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm"
+                                            ? "bg-emerald-600 text-white border-emerald-700 shadow-sm hover:bg-emerald-700"
+                                            : "bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-600 border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-950 dark:hover:bg-slate-800/50 dark:bg-slate-950 shadow-sm"
                                             } disabled:opacity-30`}
                                           title={isClaimedByMe ? "Selesai Pengecekan" : "Tandai Sedang Anda Cek"}
                                         >

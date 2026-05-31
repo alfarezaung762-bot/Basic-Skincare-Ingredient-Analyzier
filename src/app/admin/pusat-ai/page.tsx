@@ -7,6 +7,23 @@ import { motion, Reorder } from "framer-motion";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 
+const DEFAULT_SYSTEM_PROMPT = `Kamu adalah Senior Raw Material Chemist dan Principal Skincare Formulator. Keahlian mutlakmu adalah biokimia kosmetik tingkat seluler (molekul, pH, penetrasi stratum corneum, dan profil interaksi senyawa). Kamu TIDAK merespons layaknya asisten virtual atau beauty blogger, melainkan murni sebagai ilmuwan laboratorium yang berpegang teguh pada Evidence-Based Medicine (EBM) dan literatur dermatologi terverifikasi.
+
+Data JSON yang kamu hasilkan BUKAN sekadar teks bacaan, melainkan PARAMETER MATEMATIS yang akan dieksekusi langsung oleh "Scoring Engine" TypeScript kami. 
+Pahami implikasi logikamu sebelum menghasilkan data:
+- Salah menentukan "type" (misal: melabeli AHA/BHA sebagai BASIC alih-alih HARSH) akan membutakan engine dan merusak kalkulasi "Toxicity & Irritation Load" pengguna.
+- Salah memberi nilai "comedogenicRating" ≥ 3 pada bahan yang sebenarnya aman akan memicu "Match Penalty" palsu bagi kulit rentan jerawat.
+- Memberi "functionalCategory" UMUM pada bahan yang terbukti PELEMBAP_OKLUSIF akan membahayakan pengguna, karena engine gagal memblokir bahan pekat tersebut dari profil kulit berjerawat parah.
+Tugasmu adalah membedah bahan secara brutal, objektif, dan membongkar klaim "marketing pabrik" yang tidak berdasar sains klinis.
+
+ATURAN SISTEM SAAT INI:
+{{ATURAN_SISTEM}}
+
+[PROTOKOL KODE MERAH: ANTI-HALUSINASI & KEAMANAN SISTEM]
+1. ZERO HALLUCINATION: Jika data klinis suatu bahan spesifik (terutama ekstrak tanaman eksotis) tidak ditemukan di jurnal referensi, JANGAN pernah mengarang manfaat. Tetapkan "type" sebagai BASIC, "functionalCategory" sebagai UMUM
+2. VALIDASI TOKSIKOLOGI KETAT: Parameter "safeForPregnancy", "safeForSensitive", dan "blacklistedSkinTypes" memicu penalti skor keselamatan secara mutlak (-50 hingga -100 poin). Jangan mem-blacklist tipe kulit hanya berdasarkan asumsi; gunakan murni referensi medis nyata.
+3. KEPATUHAN JSON MURNI: Output-mu HARUS berupa satu objek JSON mentah yang siap di-parse oleh sistem. DILARANG KERAS menyertakan tag markdown (seperti \`\`\`json), prolog, epilog, penjelasan, atau komentar anya di luar kurung kurawal { }.`;
+
 export default function PusatAIPage() {
   const router = useRouter();
 
@@ -32,7 +49,8 @@ export default function PusatAIPage() {
     analisisMendalam: { sumber: "PubMed, JCAD", izinkanLuar: false },
     manfaatSingkat: { sumber: "Paula's Choice Ingredient Dictionary", izinkanLuar: true }
   });
-  const [systemPrompt, setSystemPrompt] = useState("");
+  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  const [promptMode, setPromptMode] = useState<'default' | 'custom'>('default');
 
   // AI Hybrid Tab 2 State
   const [activeTab, setActiveTab] = useState<"research" | "hybrid">("research");
@@ -120,7 +138,15 @@ export default function PusatAIPage() {
         } catch (e) {
           // Fallback if older text format
         }
-        setSystemPrompt(data.systemPrompt || "");
+        
+        const fetchedPrompt = data.systemPrompt || "";
+        if (fetchedPrompt.trim() !== "" && fetchedPrompt.trim() !== DEFAULT_SYSTEM_PROMPT.trim()) {
+          setPromptMode('custom');
+          setSystemPrompt(fetchedPrompt);
+        } else {
+          setPromptMode('default');
+          setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+        }
 
         // Load AI Hybrid config
         if (data.aihybridPromptingredient) setHybridPrompt(data.aihybridPromptingredient);
@@ -315,16 +341,56 @@ export default function PusatAIPage() {
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                 System Prompt (Aturan Super Ketat)
               </label>
-              <div className="mb-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg">
-                <p className="text-xs text-amber-800 dark:text-amber-400 font-medium">
-                  💡 <strong>Info:</strong> Gunakan tag <code className="bg-amber-100 dark:bg-amber-900/50 px-1 py-0.5 rounded text-amber-900 dark:text-amber-200">{"{{ATURAN_SISTEM}}"}</code> di dalam prompt. Backend akan otomatis menggantinya dengan parameter dari <code className="bg-amber-100 dark:bg-amber-900/50 px-1 py-0.5 rounded text-amber-900 dark:text-amber-200">scoringEngine.ts</code> saat request ke AI.
-                </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <label className="flex items-center gap-2 cursor-pointer p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <input 
+                    type="radio" 
+                    name="promptMode" 
+                    checked={promptMode === 'default'} 
+                    onChange={() => {
+                      setPromptMode('default');
+                      setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+                    }} 
+                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500" 
+                  />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Gunakan Bawaan Sistem (Aman)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <input 
+                    type="radio" 
+                    name="promptMode" 
+                    checked={promptMode === 'custom'} 
+                    onChange={() => setPromptMode('custom')} 
+                    className="w-4 h-4 text-amber-600 focus:ring-amber-500" 
+                  />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Modifikasi Manual (Expert)</span>
+                </label>
               </div>
-              <textarea
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none transition-all h-64 custom-scrollbar font-mono text-sm"
-              />
+
+              {promptMode === 'custom' ? (
+                <>
+                  <div className="mb-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+                    <p className="text-xs text-amber-800 dark:text-amber-400 font-medium">
+                      ⚠️ <strong>Peringatan:</strong> Pastikan Anda tetap menaruh tag <code className="bg-amber-100 dark:bg-amber-900/50 px-1 py-0.5 rounded text-amber-900 dark:text-amber-200">{"{{ATURAN_SISTEM}}"}</code> di dalam prompt agar logika engine tetap berjalan.
+                    </p>
+                  </div>
+                  <textarea
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none transition-all h-64 custom-scrollbar font-mono text-sm"
+                  />
+                </>
+              ) : (
+                <div className="relative">
+                  <textarea
+                    value={systemPrompt}
+                    readOnly
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 outline-none h-64 custom-scrollbar font-mono text-sm cursor-not-allowed"
+                  />
+                  <div className="absolute inset-0 z-10 pointer-events-auto" title="Ubah mode ke Modifikasi Manual untuk mengedit"></div>
+                </div>
+              )}
             </div>
           </div>
 
