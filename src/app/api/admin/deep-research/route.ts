@@ -41,31 +41,6 @@ const GEMMA_MODELS = [
 
 const isGemmaModel = (model: string) => model.startsWith("gemma-");
 
-// ========================================================
-// JSON SCHEMA UNTUK STRUCTURED OUTPUT
-// ========================================================
-const INGREDIENT_SCHEMA = {
-  type: "object" as const,
-  properties: {
-    name: { type: "string" as const, description: "Nama INCI resmi standar PCPC (International Nomenclature of Cosmetic Ingredients). Contoh: 'Aqua' bukan 'Air'." },
-    aliases: { type: "array" as const, items: { type: "string" as const }, description: "Daftar sinonim sebagai JSON Array of Strings. Contoh: ['Water', 'Air', 'Purified Water'] untuk 'Aqua'. HANYA nama kimia/dagang murni, TANPA deskripsi." },
-    type: { type: "string" as const, enum: ["BASIC", "BUFFER", "HARSH", "TOXIC"], description: "Sifat kimia: BASIC=standar/umum, BUFFER=penenang/calming, HARSH=keras/asam kuat, TOXIC=berbahaya" },
-    strengthLevel: { type: "number" as const, description: "Level kekuatan 1-3. 1=rendah/lembut, 2=menengah, 3=sangat kuat. Hanya relevan untuk HARSH dan BUFFER." },
-    functionalCategory: { type: "string" as const, enum: ["UMUM", "SURFAKTAN", "UV_FILTER", "PELEMBAP_HUMEKTAN", "PELEMBAP_EMOLIEN", "PELEMBAP_OKLUSIF"], description: "Fungsi khusus bahan dalam formulasi skincare" },
-    isKeyActive: { type: "boolean" as const, description: "Apakah bahan ini termasuk bahan aktif utama (key active ingredient)?" },
-    benefits: { type: "string" as const, description: "Manfaat singkat maksimal 30 kata, bahasa mudah dipahami orang awam" },
-    aiContext: { type: "string" as const, description: "Analisis mendalam MINIMAL 500 kata. Jelaskan: mekanisme kerja kimia, pH optimal, konsentrasi efektif, pantangan campuran, data klinis/jurnal, efek samping, sejarah penggunaan dermatologi, dan rekomendasi formulasi. WAJIB lebih dari 500 kata." },
-    comedogenicRating: { type: "number" as const, description: "Tingkat komedogenik bahan pada skala 0-5. 0=tidak komedogenik, 5=sangat komedogenik" },
-    safeForPregnancy: { type: "boolean" as const, description: "Apakah aman untuk ibu hamil dan menyusui berdasarkan pedoman dermatologi?" },
-    safeForSensitive: { type: "boolean" as const, description: "Apakah aman untuk kulit sensitif?" },
-    targetFocus: { type: "string" as const, description: "Fokus perawatan yang relevan, dipisahkan koma. Pilih dari: Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum, Anti-Aging & Garis Halus, Memperbaiki Skin Barrier & Hidrasi, Menenangkan Kemerahan (Soothing), Eksfoliasi & Tekstur Pori-pori. Boleh kosong jika tidak relevan." },
-    blacklistedSkinTypes: { type: "string" as const, description: "Tipe kulit yang dilarang keras memakai bahan ini. Pilih dari: Normal,Kering,Berminyak,Kombinasi dipisahkan koma. Kosongkan jika aman untuk semua." },
-    blacklistReason: { type: "string" as const, description: "Alasan medis mengapa dilarang untuk tipe kulit tersebut, maksimal 30 kata. Kosongkan jika tidak ada blacklist." },
-    warnings: { type: "string" as const, description: "Peringatan penggunaan umum (konsentrasi, interaksi, dll)" },
-  },
-  required: ["name", "aliases", "type", "strengthLevel", "functionalCategory", "isKeyActive", "benefits", "aiContext", "comedogenicRating", "safeForPregnancy", "safeForSensitive"],
-};
-
 // Helper untuk mengekstrak JSON dari teks markdown
 const extractJson = (text: string) => {
   const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -76,11 +51,11 @@ const extractJson = (text: string) => {
       // Lanjut ke pencarian manual jika parse regex gagal
     }
   }
-  
+
   // Pencarian manual dari '{' ke '}'
   const firstBrace = text.indexOf('{');
   const lastBrace = text.lastIndexOf('}');
-  
+
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     const jsonStr = text.substring(firstBrace, lastBrace + 1);
     try {
@@ -89,7 +64,7 @@ const extractJson = (text: string) => {
       // Lanjut ke parse text mentah jika masih gagal
     }
   }
-  
+
   return JSON.parse(text);
 };
 
@@ -99,7 +74,7 @@ const extractJson = (text: string) => {
 async function researchIngredient(ingredientName: string, provider: string = "gemini", modelName: string = "gemini-2.5-pro", useLiveSearch: boolean = false, useReasoning: boolean = false): Promise<{ success: boolean; data?: any; error?: string; modelUsed?: string; isHallucination?: boolean; triedModels?: string[], usedExternalSource?: boolean }> {
   const currentDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const currentYear = new Date().getFullYear();
-  
+
   // Ambil Config AI dari DB
   let aiConfig = await prisma.aIPromptConfig.findUnique({ where: { id: 'singleton_ai_config' } });
   if (!aiConfig) {
@@ -121,7 +96,7 @@ async function researchIngredient(ingredientName: string, provider: string = "ge
   let sourcesList = "";
   try {
     const parsedSources = JSON.parse(aiConfig.prioritizedSources);
-    
+
     const formatSource = (item: any) => {
       if (!item) return "Tidak dibatasi";
       const sumber = item.sumber || "Tidak dibatasi";
@@ -179,8 +154,71 @@ JIKA BUFFER (Evaluasi Daya Sokong Inflamasi):
 
 [FOKUS PERAWATAN / targetFocus]
 HANYA pilih dari nilai persis berikut (boleh dikombinasi dengan koma):
-"Mencerahkan & Bekas Jerawat", "Merawat Jerawat & Sebum", "Anti-Aging & Garis Halus", "Memperbaiki Skin Barrier & Hidrasi", "Menenangkan Kemerahan (Soothing)", "Eksfoliasi & Tekstur Pori-pori".
-Sifatnya OPSIONAL: Jika bahan ini hanya umum/pelarut, atau sama sekali tidak menyasar fokus perawatan spesifik di atas, KOSONGKAN SAJA (""). Jangan pernah mengada-ada.
+
+"Mencerahkan & Bekas Jerawat":
+  Bahan yang TERBUKTI menghambat tirosinase, mempercepat turnover sel, atau memudarkan hiperpigmentasi pasca-inflamasi (PIH).
+  Contoh bahan: Arbutin, Tranexamic Acid, Vitamin C (L-Ascorbic Acid), Kojic Acid, Licorice Root Extract (Glabridin).
+
+"Merawat Jerawat & Sebum":
+  Bahan yang TERBUKTI antibakteri terhadap C.acnes, mengurangi produksi sebum, atau membersihkan pori tersumbat.
+  Contoh bahan: Salicylic Acid, Benzoyl Peroxide, Niacinamide, Zinc PCA, Tea Tree Oil, Sulfur.
+
+"Anti-Aging & Garis Halus":
+  Bahan yang TERBUKTI merangsang sintesis kolagen, mengurangi kerutan, atau melindungi dari kerusakan oksidatif/photoaging.
+  Contoh bahan: Retinol, Peptides (Matrixyl, Argireline), Adenosine, Bakuchiol, Resveratrol, Vitamin E (Tocopherol).
+
+"Memperbaiki Skin Barrier & Hidrasi":
+  Bahan yang memperkuat lapisan lipid kulit, mengisi celah antar korneosit, atau mengikat air secara efektif.
+  Contoh bahan: Ceramide NP/AP/EOP, Cholesterol, Hyaluronic Acid, Squalane, Fatty Acids (Linoleic Acid), Urea.
+
+"Menenangkan Kemerahan (Soothing)":
+  Bahan yang TERBUKTI anti-inflamasi, meredam eritema, atau mengurangi TEWL (Trans-Epidermal Water Loss).
+  Contoh bahan: Centella Asiatica (Madecassoside, Asiaticoside), Panthenol, Bisabolol, Allantoin, Colloidal Oatmeal.
+
+"Eksfoliasi & Tekstur Pori-pori":
+  Bahan yang melarutkan ikatan antar sel mati (desmosomes) secara kimia atau secara fisik mengangkat sel tanduk.
+  Contoh bahan: Glycolic Acid, Lactic Acid, PHA (Gluconolactone), Enzim Papain, BHA (Salicylic Acid), Azelaic Acid.
+
+ATURAN: Jika bahan memiliki efek terapeutik yang TERBUKTI secara ilmiah untuk salah satu fokus di atas, WAJIB ISI targetFocus — jangan kosongkan hanya karena bahan tidak "terkenal". KOSONGKAN HANYA jika bahan murni pelarut, pengawet, pengemulsi, atau pengental tanpa efek terapeutik langsung (contoh kosong: Aqua, Phenoxyethanol, Carbomer, Xanthan Gum).
+
+[TINGKAT KOMEDOGENIK / comedogenicRating] (SKALA 0-5)
+Berikan rating secara presisi berdasarkan literatur dermatologi terverifikasi.
+- 0 = TIDAK KOMEDOGENIK: Tidak menyumbat pori, larut air/non-oklusif. (Contoh: Niacinamide, Glycerin, Hyaluronic Acid, Panthenol).
+- 1 = SANGAT RENDAH: Aman untuk 99% tipe kulit. (Contoh: Squalane, Dimethicone, Ceramide).
+- 2 = RINGAN: Bisa memicu komedo HANYA pada kulit sangat acne-prone. (Contoh: Cetyl Alcohol, Hexylene Glycol).
+- 3 = SEDANG: Umum memicu komedo dan penumpukan sebum pada kulit berminyak. (Contoh: Stearic Acid, Avocado Oil, Soybean Oil).
+- 4 = TINGGI: Sangat oklusif, memicu breakout pada mayoritas kulit. (Contoh: Coconut Oil, Cocoa Butter, Cetearyl Ceteareth-20).
+- 5 = SANGAT KOMEDOGENIK: Hampir pasti memicu jerawat parah. (Contoh: Isopropyl Myristate, Isopropyl Palmitate, Wheat Germ Oil).
+
+ATURAN WAJIB KOMEDOGENIK: 
+Jika bahan memiliki rating 3, 4, atau 5, kau WAJIB memberikan catatan di dalam "aiContext" (pada bagian [PENETRASI & DURASI] atau [EFEK SAMPING]) bahwa potensi menyumbat pori ini BISA TURUN DRASTIS jika bahan hanya digunakan pada konsentrasi sangat rendah (sebagai pelarut/pengemulsi) atau digunakan dalam produk bilas (Facewash).
+
+[KEAMANAN KEHAMILAN / safeForPregnancy]
+- false HANYA jika masuk FDA Pregnancy Category X/D, atau ACOG/dermatologi secara eksplisit melarang. (Contoh false: Retinoid, Hydroquinone, Salicylic Acid >2%, Formaldehyde).
+- true jika tidak ada bukti klinis risiko atau studi menunjukkan aman.
+
+[ATURAN BLACKLIST / blacklistedSkinTypes]
+Blacklist memiliki DAMPAK SANGAT BERAT bagi pengguna. HANYA blacklist jika ada BUKTI KLINIS KUAT bahwa bahan ini BERBAHAYA (bukan hanya "kurang ideal") untuk tipe kulit tersebut.
+
+Contoh LAYAK blacklist per tipe kulit:
+- Kulit Kering: SLS/SLES (strip lipid barrier secara agresif, memperparah kekeringan dan TEWL), Alkohol Denat konsentrasi tinggi (menguapkan kelembapan alami).
+- Kulit Berminyak: Petrolatum/Mineral Oil konsentrasi tinggi (terlalu oklusif, memerangkap sebum berlebih dan memicu komedo), Lanolin murni (sangat berat untuk kulit yang sudah produksi minyak tinggi).
+- Kulit Kombinasi: Bahan yang terlalu ekstrem di satu sisi — SLS (terlalu harsh di zona kering) ATAU Petrolatum tebal (terlalu berat di zona T).
+- Kulit Normal: SANGAT JARANG di-blacklist. Hanya bahan TOXIC atau iritan kuat universal (Formaldehyde, Mercury compounds).
+
+Contoh TIDAK LAYAK blacklist:
+- Glycerin untuk kulit Berminyak (Glycerin adalah humektan ringan, AMAN untuk semua).
+- Niacinamide untuk kulit Sensitif (justru memperbaiki barrier pada konsentrasi ≤5%).
+- Hyaluronic Acid untuk kulit Berminyak (humektan non-oklusif, tidak menambah minyak).
+
+[DEFINISI KULIT SENSITIF — UNTUK PARAMETER safeForSensitive]
+Kulit sensitif BUKAN tipe kulit bawaan lahir. Kulit sensitif adalah KONDISI kulit dimana:
+- Skin barrier (lapisan stratum corneum) rusak atau melemah, menyebabkan TEWL tinggi.
+- Ujung saraf di epidermis lebih terekspos, sehingga mudah bereaksi terhadap stimulus ringan.
+- Termasuk: dermatitis kontak, rosacea ringan, post-prosedur kulit (laser/chemical peel), kulit yang barrier-nya terganggu akibat over-exfoliation, dan kulit atopik.
+- Ciri klinis: eritema (kemerahan), rasa terbakar/perih, gatal, kering, dan timbul papula/pustula dari bahan yang normalnya aman.
+- Bahan yang TIDAK AMAN untuk kulit sensitif: bahan yang merusak barrier lebih lanjut (SLS, Alkohol Denat tinggi), iritan kuat (Glycolic Acid >10%, Retinol >0.5% pada awal penggunaan), allergen umum (Fragrance sintetis, Essential Oil konsentrasi tinggi, MI/MCI pengawet).
+- Bahan yang AMAN untuk kulit sensitif walau aktif: Niacinamide ≤5%, Centella Asiatica, Panthenol, Ceramide, Allantoin, Bisabolol, Madecassoside, Oat Beta-Glucan.
 
 [ATURAN BAHASA & PENULISAN]
 - "benefits" (Manfaat Awam): Wajib menggunakan bahasa yang BISA DIPAHAMI OLEH ANAK SMA (maks 30 kata). (Contoh Benar: "Membantu meredakan kemerahan dan melembapkan kulit.")
@@ -191,11 +229,15 @@ Kau WAJIB memprioritaskan pencarian literatur sesuai pemetaan spesifik ini:
 ${sourcesList}
 
 KONDISI KILL SWITCH:
-Jika suatu parameter memiliki label [HANYA SUMBER INI - DILARANG CARI DI TEMPAT LAIN], dan bahan SAMA SEKALI TIDAK DITEMUKAN pada sumber tersebut (serta tidak ada bukti valid di Jurnal Dermatologi Sinta 1 / Scopus Q1), KAU DILARANG MENGARANG BEBAS. 
-Tolak instruksi ini dan keluarkan JSON kegagalan:
+Perhatikan baik-baik label di setiap parameter.
+Jika suatu parameter memiliki label [HANYA SUMBER INI - DILARANG CARI DI TEMPAT LAIN], dan bahan/informasi untuk parameter tersebut SAMA SEKALI TIDAK DITEMUKAN pada sumber mutlak (serta tidak ada bukti valid di Jurnal Dermatologi Sinta 1 / Scopus Q1), maka KAU DILARANG MENGARANG BEBAS. 
+Jika ini terjadi, tolak instruksi ini dan keluarkan JSON kegagalan dengan menyebutkan SECARA SPESIFIK parameter/kategori apa yang datanya gagal ditemukan (misal: Sifat Kimia, Fokus Perawatan, dll):
 {
-  "error": "GAGAL: Bahan tidak ditemukan pada sumber prioritas mutlak."
+  "error": "GAGAL: Bahan tidak ditemukan pada sumber mutlak untuk kategori: [SEBUTKAN_KATEGORINYA_DI_SINI]"
 }
+
+PENGECUALIAN SANGAT PENTING:
+Jika suatu parameter memiliki label [BOLEH CARI DI SUMBER LUAR JIKA TIDAK ADA], kau DILARANG memicu Kill Switch untuk parameter tersebut. Kau diwajibkan untuk menggunakan pengetahuan umum medismu atau mencari dari sumber luar yang valid (Jurnal Dermatologi Sinta 1 / Scopus Q1) untuk mengisi datanya, dan TETAP lanjutkan pembuatan JSON analisis!
 `;
 
   const finalSystemPrompt = aiConfig.systemPrompt.replace("{{ATURAN_SISTEM}}", aturanSistem);
@@ -213,7 +255,7 @@ Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
   "isKeyActive": true,
   "benefits": "manfaat singkat",
-  "aiContext": "analisis mendalam MINIMAL 500 KATA...",
+  "aiContext": "analisis mendalam MINIMAL 800 KATA dengan struktur: [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]",
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
@@ -229,14 +271,14 @@ ATURAN KETAT:
 1. "name": WAJIB menggunakan standar INCI resmi. JANGAN gunakan nama pasaran.
 2. "aliases": WAJIB JSON Array of Strings murni.
 3. Pastikan data tidak melanggar ATURAN SISTEM.
-4. Jika sumber prioritas diisi dan data tidak ditemukan di sana ATAU di jurnal bereputasi tinggi, "confidenceLevel" WAJIB LOW atau kembalikan { "error": "..." }.
+4. PENTING (CONFIDENCE LEVEL): Jika suatu sumber prioritas diisi TETAPI memiliki label [BOLEH CARI DI SUMBER LUAR JIKA TIDAK ADA], kau BISA tetap memberikan "confidenceLevel": "HIGH" jika kau merasa yakin datanya benar walau dari sumber luar. Namun, jika labelnya [HANYA SUMBER INI] dan datanya tidak ditemukan, kau harus mengikuti prosedur Kill Switch di atas (mengembalikan error). Jika bahan benar-benar fiktif, berikan "confidenceLevel": "LOW".
 5. JIKA field "blacklistedSkinTypes" memiliki nilai (bukan kosong), maka Anda WAJIB MENGISI field "blacklistReason" dengan alasan klinis yang didukung data medis, NAMUN harus ditulis ulang menggunakan bahasa yang mudah dipahami oleh orang awam. DILARANG KERAS MENGOSONGKAN "blacklistReason" JIKA ADA BLACKLIST!
 
 Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang menggunakan format markdown \`\`\`json.`;
 
   // Bangun daftar model yang akan dicoba
   const modelsToTry: string[] = [modelName];
-  
+
   if (provider === "gemini") {
     if (isGemmaModel(modelName)) {
       // GEMMA: standalone, NO fallback — hanya coba model yang dipilih
@@ -255,10 +297,10 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
     const currentModel = modelsToTry[mi];
     const isFallback = mi > 0;
     triedModels.push(currentModel);
-    
+
     try {
       console.log(`[Deep Research] ${isFallback ? '🔄 Fallback ke' : 'Menggunakan provider:'} ${provider}, model: ${currentModel} untuk "${ingredientName}"...`);
-      
+
       let parsed: any = null;
       let wordCount = 0;
 
@@ -266,7 +308,7 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
         const generationConfig: any = {
           temperature: 0.2,
         };
-        
+
         // Gemma models API does not support application/json responseMimeType natively
         if (!isGemmaModel(currentModel)) {
           generationConfig.responseMimeType = "application/json";
@@ -363,10 +405,10 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
 
       // Validasi: aiContext harus >= 400 kata
       wordCount = (parsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
-      if (wordCount < 400) {
+      if (wordCount < 750) {
         console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
 
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 500 KATA untuk field aiContext. Tuliskan analisis yang sangat detail dan komprehensif.`;
+        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 800 KATA untuk field aiContext dengan struktur [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]. Tuliskan analisis yang sangat detail dan komprehensif.`;
 
         let retryParsed: any = null;
         if (provider === "gemini") {
@@ -441,20 +483,20 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
         }
 
         const retryWordCount = (retryParsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
-        console.log(`[Deep Research] ${retryWordCount >= 400 ? '✅' : '⚠️'} Retry: ${retryWordCount} kata (model: ${currentModel})`);
+        console.log(`[Deep Research] ${retryWordCount >= 600 ? '✅' : '⚠️'} Retry: ${retryWordCount} kata (model: ${currentModel})`);
         return { success: true, data: retryParsed, modelUsed: currentModel, triedModels };
       }
 
       console.log(`[Deep Research] ✅ Berhasil: "${ingredientName}" (${wordCount} kata, model: ${currentModel})`);
-      
+
       let usedExternalSource = false;
       const sourcesUsed = (parsed.sumber_yang_digunakan || "").toLowerCase();
       if (aiConfig.prioritizedSources && aiConfig.prioritizedSources.trim() !== "") {
         const pSources = aiConfig.prioritizedSources.toLowerCase().split(",").map((s: string) => s.trim());
         const hasPriority = pSources.some((ps: string) => sourcesUsed.includes(ps));
         if (!hasPriority && sourcesUsed !== "") {
-           usedExternalSource = true;
-           console.log(`[Deep Research] ⚠️ Menggunakan sumber luar: ${sourcesUsed}`);
+          usedExternalSource = true;
+          console.log(`[Deep Research] ⚠️ Menggunakan sumber luar: ${sourcesUsed}`);
         }
       }
 
@@ -463,7 +505,7 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
     } catch (err: any) {
       const errorMsg = err.response?.data?.error?.message || err.message;
       console.warn(`[Deep Research] ❌ Model ${currentModel} gagal untuk "${ingredientName}": ${errorMsg}`);
-      
+
       // Non-retryable errors — langsung return
       if (provider === "byteplus" && (err.status === 404 || errorMsg.includes("404"))) {
         return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model.", triedModels };
@@ -618,7 +660,7 @@ export async function POST(req: Request) {
 
               // Cek finalName
               const nameConflict = freshMap.get(normalizeString(finalName));
-              
+
               // Cek setiap alias dari AI
               const aiAliases: string[] = Array.isArray(data.aliases)
                 ? data.aliases.map((a: string) => a.trim()).filter((a: string) => a.length > 0)
@@ -639,25 +681,25 @@ export async function POST(req: Request) {
                 // AUTO-ADD ALIAS: Tambahkan nama yang dicari sebagai alias baru ke bahan existing
                 const searchedName = ingredientName.toLowerCase().trim();
                 const existingEntry = freshMap.get(normalizeString(nameConflict.inciName));
-                
+
                 if (existingEntry && normalizeString(searchedName) !== normalizeString(nameConflict.inciName)) {
                   // Cek apakah alias belum ada
-                  const currentAliasesList = existingEntry.currentAliases 
-                    ? splitAliases(existingEntry.currentAliases) 
+                  const currentAliasesList = existingEntry.currentAliases
+                    ? splitAliases(existingEntry.currentAliases)
                     : [];
                   const alreadyHasAlias = currentAliasesList.includes(normalizeString(searchedName));
-                  
+
                   if (!alreadyHasAlias) {
                     // Tambahkan alias baru
-                    const newAliasString = existingEntry.currentAliases 
-                      ? `${existingEntry.currentAliases}; ${searchedName}` 
+                    const newAliasString = existingEntry.currentAliases
+                      ? `${existingEntry.currentAliases}; ${searchedName}`
                       : searchedName;
-                    
+
                     await prisma.ingredientDictionary.update({
                       where: { id: existingEntry.id },
                       data: { aliases: newAliasString },
                     });
-                    
+
                     sendEvent({
                       type: "alias_update",
                       name: ingredientName,
@@ -745,8 +787,8 @@ export async function POST(req: Request) {
 
               // Normalisasi semua field string/array
               // Gunakan alias yang sudah difilter dari konflik, join dengan titik koma
-              const aliasesString = cleanAliases.length > 0 
-                ? cleanAliases.join("; ").toLowerCase() 
+              const aliasesString = cleanAliases.length > 0
+                ? cleanAliases.join("; ").toLowerCase()
                 : null;
               const benefitsStr = toStr(data.benefits) || "";
 
