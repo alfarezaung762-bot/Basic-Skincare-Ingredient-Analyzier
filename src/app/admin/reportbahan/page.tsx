@@ -200,7 +200,7 @@ export default function AdminReportBahan() {
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
-      else if (next.size < 50) next.add(id);
+      else if (next.size < 200) next.add(id);
       return next;
     });
   };
@@ -218,7 +218,7 @@ export default function AdminReportBahan() {
       !(r.analyzedBy && r.analyzedBy !== adminName)
     );
 
-    const ids = selectable.slice(0, 50).map(r => r.id);
+    const ids = selectable.slice(0, 200).map(r => r.id);
     setSelectedIds(new Set(ids));
   };
 
@@ -488,11 +488,11 @@ export default function AdminReportBahan() {
                           disabled={isResearching}
                           className="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-100 dark:text-slate-100 px-3 py-1.5 bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 dark:border-slate-800 rounded-lg transition-all active:scale-95 disabled:opacity-50"
                         >
-                          {selectedIds.size > 0 ? "Bersihkan Pilihan" : `Pilih Semua (max 50)`}
+                          {selectedIds.size > 0 ? "Bersihkan Pilihan" : `Pilih Semua (max 200)`}
                         </button>
                         {selectedIds.size > 0 && (
                           <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
-                            {selectedIds.size}/{Math.min(unknownReports.length, 50)} dipilih
+                            {selectedIds.size}/{Math.min(unknownReports.length, 200)} dipilih
                           </span>
                         )}
                       </div>
@@ -637,7 +637,7 @@ export default function AdminReportBahan() {
                                         type="checkbox"
                                         checked={selectedIds.has(report.id)}
                                         onChange={() => toggleSelectId(report.id)}
-                                        disabled={isResearching || Boolean(report.analyzedBy && report.analyzedBy !== adminName) || (!selectedIds.has(report.id) && selectedIds.size >= 50)}
+                                        disabled={isResearching || Boolean(report.analyzedBy && report.analyzedBy !== adminName) || (!selectedIds.has(report.id) && selectedIds.size >= 200)}
                                         className="w-4 h-4 rounded accent-indigo-600 cursor-pointer disabled:opacity-50"
                                       />
                                     </td>

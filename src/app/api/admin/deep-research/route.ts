@@ -271,7 +271,7 @@ Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
   "blacklistedSkinTypes": "Normal, Kering, Berminyak, Kombinasi (kosongkan jika aman)",
   "blacklistReason": "Alasan klinis (namun dirangkum agar mudah dipahami awam) mengapa bahan ini di-blacklist. WAJIB DIISI jika ada tipe kulit yang di-blacklist!",
   "warnings": "peringatan penggunaan",
-  "sumber_yang_digunakan": "Sebutkan sumber aktual darimana data ini didapat",
+  "sumber_yang_digunakan": "Jelaskan SECARA RINCI sumber mana yang dipakai untuk tiap kategori! (Contoh: 'Sifat Kimia: CIR. Komedogenik: INCIDecoder. Bumil: ACOG.')",
   "confidenceLevel": "HIGH atau MEDIUM atau LOW"
 }
 
@@ -553,8 +553,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Daftar bahan kosong." }, { status: 400 });
     }
 
-    if (names.length > 50) {
-      return NextResponse.json({ message: "Maksimal 50 bahan per sesi." }, { status: 400 });
+    if (names.length > 200) {
+      return NextResponse.json({ message: "Maksimal 200 bahan per sesi." }, { status: 400 });
     }
 
     // ========================================================
@@ -929,7 +929,8 @@ export async function POST(req: Request) {
                 model: research.modelUsed,
                 triedModels: research.triedModels,
                 usedExternalSource: research.usedExternalSource,
-                reason: correctionMsg
+                reason: correctionMsg,
+                sumberYangDigunakan: research.data?.sumber_yang_digunakan
               });
 
             } catch (dbError: any) {

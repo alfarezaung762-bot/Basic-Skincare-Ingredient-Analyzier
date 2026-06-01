@@ -122,6 +122,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                   conflictType: event.conflictType,
                   triedModels: event.triedModels,
                   usedExternalSource: event.usedExternalSource,
+                  sumberYangDigunakan: event.sumberYangDigunakan,
                 }]);
               }
             } else if (event.type === "complete") {
@@ -264,6 +265,20 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
                       }`}>
                         {log.error}
                       </div>
+                    )}
+                    {/* Accordion untuk sumber_yang_digunakan */}
+                    {log.sumberYangDigunakan && (
+                      <details className="mt-2 ml-6 group">
+                        <summary className="text-[10px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer list-none flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-200 w-fit">
+                          <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          Lihat Sumber Referensi
+                        </summary>
+                        <div className="mt-2 p-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-medium text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">
+                          {log.sumberYangDigunakan}
+                        </div>
+                      </details>
                     )}
                   </div>
                 ))}
