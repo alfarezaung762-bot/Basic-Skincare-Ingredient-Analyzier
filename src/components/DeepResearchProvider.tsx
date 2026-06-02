@@ -16,7 +16,7 @@ interface DeepResearchContextType {
   researchSummary: any;
   showResearchModal: boolean;
   setShowResearchModal: (show: boolean) => void;
-  startResearch: (names: string[], adminName: string, adminRole: string, engine: ResearchEngine, useLiveSearch: boolean) => Promise<void>;
+  startResearch: (names: string[], adminName: string, adminRole: string, engine: ResearchEngine, useLiveSearch: boolean, forceUpdate?: boolean) => Promise<void>;
   cancelResearch: () => void;
 }
 
@@ -39,7 +39,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
     // Keep modal open to show partial results
   };
 
-  const startResearch = async (names: string[], adminName: string, adminRole: string, engine: ResearchEngine, useLiveSearch: boolean = false) => {
+  const startResearch = async (names: string[], adminName: string, adminRole: string, engine: ResearchEngine, useLiveSearch: boolean = false, forceUpdate: boolean = false) => {
     if (isResearching) return;
 
     setIsResearching(true);
@@ -55,7 +55,7 @@ export function DeepResearchProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/admin/deep-research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model, useLiveSearch, useReasoning: engine.useReasoning }),
+        body: JSON.stringify({ names, adminName, adminRole, provider: engine.provider, model: engine.model, useLiveSearch, useReasoning: engine.useReasoning, forceUpdate }),
         signal: controller.signal,
       });
 

@@ -263,7 +263,7 @@ Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
   "isKeyActive": true,
   "benefits": "manfaat singkat",
-  "aiContext": "analisis mendalam MINIMAL 800 KATA dengan struktur: [IDENTITAS] [MEKANISME KERJA] [pH, REGULASI & KONSENTRASI AMAN (Wash-off vs Leave-on)] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]",
+  "aiContext": "analisis mendalam MINIMAL 1000 KATA. WAJIB LETAKKAN INFO KRITIS DI AWAL dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI] [PENETRASI & DURASI]",
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
@@ -411,12 +411,12 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
         return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH. Bahan kemungkinan fiktif atau kurang data riset medis.`, modelUsed: currentModel, isHallucination: true, triedModels };
       }
 
-      // Validasi: aiContext harus >= 400 kata
+      // Validasi: aiContext harus >= 800 kata (target 1000)
       wordCount = (parsed.aiContext || "").split(/\s+/).filter((w: string) => w.length > 0).length;
       if (wordCount < 800) {
         console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
 
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 800 KATA untuk field aiContext dengan struktur [IDENTITAS] [MEKANISME KERJA] [pH, REGULASI & KONSENTRASI AMAN (Wash-off vs Leave-on)] [INTERAKSI] [PENETRASI & DURASI] [EFEK SAMPING] [KEHAMILAN] [BUKTI KLINIS]. Tuliskan analisis yang sangat detail dan komprehensif.`;
+        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 1000 KATA untuk field aiContext dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI] [PENETRASI & DURASI]. Tuliskan analisis yang sangat detail dan komprehensif.`;
 
         let retryParsed: any = null;
         if (provider === "gemini") {
@@ -547,7 +547,7 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { names, adminName, adminRole, provider, model, useLiveSearch, useReasoning } = body;
+    const { names, adminName, adminRole, provider, model, useLiveSearch, useReasoning, forceUpdate } = body;
 
     if (!names || !Array.isArray(names) || names.length === 0) {
       return NextResponse.json({ message: "Daftar bahan kosong." }, { status: 400 });
@@ -578,9 +578,9 @@ export async function POST(req: Request) {
     allExistingNames = Array.from(new Set(allExistingNames));
 
     // Filter bahan yang sudah ada
-    const filteredNames = names.filter((n: string) => !existingNameMap.has(normalizeString(n)));
+    const filteredNames = forceUpdate ? names : names.filter((n: string) => !existingNameMap.has(normalizeString(n)));
     // Build detailed skip info
-    const skippedDetails = names
+    const skippedDetails = (forceUpdate ? [] : names)
       .filter((n: string) => existingNameMap.has(normalizeString(n)))
       .map((n: string) => {
         const info = existingNameMap.get(normalizeString(n))!;
@@ -847,26 +847,38 @@ export async function POST(req: Request) {
                 isKeyActive = data.isKeyActive.toLowerCase() === "true";
               }
 
-              await prisma.ingredientDictionary.create({
-                data: {
-                  name: finalName,
-                  aliases: aliasesString,
-                  type: ingredientType as any,
-                  functionalCategory: funcCategory as any,
-                  strengthLevel: strengthLevel,
-                  isKeyActive: isKeyActive,
-                  benefits: benefitsStr,
-                  aiContext: aiContextStr,
-                  warnings: warningsStr,
-                  comedogenicRating: Math.min(5, Math.max(0, Number(data.comedogenicRating) || 0)),
-                  safeForPregnancy: data.safeForPregnancy === false ? false : Boolean(data.safeForPregnancy),
-                  safeForSensitive: data.safeForSensitive === false ? false : Boolean(data.safeForSensitive),
-                  targetFocus: targetFocusStr,
-                  blacklistedSkinTypes: blacklistStr,
-                  blacklistReason: blacklistReasonStr,
-                  isVerified: false, // Selalu false, admin harus review
-                },
-              });
+              const dataToSave = {
+                name: finalName,
+                aliases: aliasesString,
+                type: ingredientType as any,
+                functionalCategory: funcCategory as any,
+                strengthLevel: strengthLevel,
+                isKeyActive: isKeyActive,
+                benefits: benefitsStr,
+                aiContext: aiContextStr,
+                warnings: warningsStr,
+                comedogenicRating: Math.min(5, Math.max(0, Number(data.comedogenicRating) || 0)),
+                safeForPregnancy: data.safeForPregnancy === false ? false : Boolean(data.safeForPregnancy),
+                safeForSensitive: data.safeForSensitive === false ? false : Boolean(data.safeForSensitive),
+                targetFocus: targetFocusStr,
+                blacklistedSkinTypes: blacklistStr,
+                blacklistReason: blacklistReasonStr,
+                isVerified: false, // Selalu false, admin harus review
+              };
+
+              if (forceUpdate) {
+                const existing = await prisma.ingredientDictionary.findUnique({ where: { name: finalName } });
+                if (existing) {
+                  await prisma.ingredientDictionary.update({
+                    where: { id: existing.id },
+                    data: dataToSave,
+                  });
+                } else {
+                  await prisma.ingredientDictionary.create({ data: dataToSave });
+                }
+              } else {
+                await prisma.ingredientDictionary.create({ data: dataToSave });
+              }
 
               // ========================================================
               // AUTO-CLEANUP: Hapus laporan yang cocok (nama + alias + nama asli pencarian)

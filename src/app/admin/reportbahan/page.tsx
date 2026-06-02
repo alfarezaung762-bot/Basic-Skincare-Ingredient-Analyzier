@@ -53,6 +53,7 @@ export default function AdminReportBahan() {
   const [customEndpoint, setCustomEndpoint] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [useLiveSearch, setUseLiveSearch] = useState(false);
+  const [autoReportUnknowns, setAutoReportUnknowns] = useState(true);
 
   // ========================================================
   // 1. PENGAMANAN HALAMAN (ROUTE GUARD) & POLLING DATA
@@ -106,14 +107,17 @@ export default function AdminReportBahan() {
     if (isInitial) setIsLoading(true);
 
     try {
-      const [reportsRes, ingredientsRes] = await Promise.all([
+      const [reportsRes, ingredientsRes, aiConfigRes] = await Promise.all([
         fetch("/api/admin/reportbahan"),
-        fetch("/api/ingredients")
+        fetch("/api/ingredients"),
+        fetch("/api/admin/deep-research/ai-config")
       ]);
 
-      if (reportsRes.ok && ingredientsRes.ok) {
+      if (reportsRes.ok && ingredientsRes.ok && aiConfigRes.ok) {
         const data = await reportsRes.json();
         const ingredientsData = await ingredientsRes.json();
+        const aiConfigData = await aiConfigRes.json();
+        setAutoReportUnknowns(aiConfigData.autoReportUnknowns ?? true);
 
         // Bangun kamus nama dan alias yang sudah ada (normalisasi)
         const normalizeString = (str: string) => str ? str.toLowerCase().replace(/[\s\-_]+/g, "") : "";
@@ -178,6 +182,22 @@ export default function AdminReportBahan() {
       setSelectedIngredient(null);
     } catch (error) {
       alert("Terjadi kesalahan saat menghapus laporan pengguna.");
+    }
+  };
+
+  const handleToggleAutoReport = async () => {
+    if (isViewer) return;
+    const newValue = !autoReportUnknowns;
+    setAutoReportUnknowns(newValue);
+    try {
+      await fetch("/api/admin/deep-research/ai-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ autoReportUnknowns: newValue })
+      });
+    } catch (e) {
+      console.error("Gagal update auto report:", e);
+      setAutoReportUnknowns(!newValue);
     }
   };
 
@@ -353,10 +373,23 @@ export default function AdminReportBahan() {
 
                 {canManageKamus && (
                   <button
+                    onClick={() => {
+                      startResearch([selectedIngredient], adminName, adminRole, selectedEngine, useLiveSearch, true);
+                      setSelectedIngredient(null);
+                    }}
+                    disabled={isResearching}
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl border border-transparent transition-colors shadow-sm active:scale-95 disabled:opacity-50"
+                  >
+                    🔬 Riset Ulang (Force Update)
+                  </button>
+                )}
+
+                {canManageKamus && (
+                  <button
                     onClick={() => handleQuickEdit(selectedIngredient)}
                     className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-transparent transition-colors shadow-sm active:scale-95"
                   >
-                    ✍️ Cari & Edit Bahan
+                    ✍️ Cari & Edit
                   </button>
                 )}
 
@@ -428,6 +461,20 @@ export default function AdminReportBahan() {
 
         {/* Konten Utama */}
         <div className="bg-white dark:bg-slate-900 min-h-[500px] p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          
+          {/* AUTO-REPORT TOGGLE */}
+          {!isViewer && (
+            <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800 flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-100">Otomatis Catat Bahan Asing</h4>
+                <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mt-1">Jika diaktifkan, AI akan otomatis memasukkan bahan yang tidak dikenali ke tab "Laporan Sistem" selama proses analisis pengguna.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer ml-4 shrink-0">
+                <input type="checkbox" className="sr-only peer" checked={autoReportUnknowns} onChange={handleToggleAutoReport} />
+                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+          )}
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div className="flex gap-4">

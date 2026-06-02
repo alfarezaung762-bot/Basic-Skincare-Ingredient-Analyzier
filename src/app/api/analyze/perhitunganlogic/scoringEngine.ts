@@ -95,12 +95,13 @@ function isFuzzyMatch(input: string, target: string): boolean {
   }
 
   // 2. Cek Substring (Includes) dengan Word Boundary
-  // Mencegah kata generik pendek (seperti 'water') meng-hijack bahan yang tidak relevan
+  // Mencegah kata generik pendek (seperti 'water' atau 'sodium') meng-hijack bahan yang tidak relevan
   if (input.length >= 6) {
     // Escape karakter regex dari input
     const escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`\\b${escapedInput}\\b`, 'i');
-    if (regex.test(target)) return true;
+    // Ensure the input is at least 60% of the target's length to prevent generic words hijacking long ingredients
+    if (regex.test(target) && input.length >= target.length * 0.6) return true;
   }
 
   return false;

@@ -305,6 +305,7 @@ model AIPromptConfig {
   aihybridModelPriority     String?  @db.Text               // JSON array urutan model fallback
   aihybridUseExternalSources Boolean @default(false)         // Toggle: AI hanya pakai DB atau boleh cari luar
   aihybridReferenceSources  String?  @db.Text               // Sumber referensi formulasi (editable admin)
+  autoReportUnknowns        Boolean  @default(true)         // Toggle auto report bahan asing
 
   updatedAt            DateTime @updatedAt
 }

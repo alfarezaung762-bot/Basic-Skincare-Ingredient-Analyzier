@@ -330,9 +330,9 @@ export async function POST(req: Request) {
       let line = `- [${positionInfo}] ${ing.name} (Tipe: ${ing.type}, Fungsi: ${ing.functionalCategory}, Komedogenik: ${ing.comedogenicRating}/5, Key Active: ${ing.isKeyActive})`;
       line += `\n  Benefits: ${ing.benefits}`;
       if (aiCtx) {
-        // Kirim ringkasan aiContext (maks 300 kata per bahan agar tidak overload prompt)
+        // Kirim ringkasan aiContext (maks 1000 kata per bahan agar tidak overload prompt)
         const aiCtxWords = aiCtx.split(/\s+/);
-        const truncated = aiCtxWords.length > 300 ? aiCtxWords.slice(0, 300).join(' ') + '...' : aiCtx;
+        const truncated = aiCtxWords.length > 1000 ? aiCtxWords.slice(0, 1000).join(' ') + '...' : aiCtx;
         line += `\n  Analisis Mendalam: ${truncated}`;
       }
       return line;
@@ -770,6 +770,21 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
       await prisma.analysisHistory.deleteMany({
         where: { id: { in: idsToDelete } }
       });
+    }
+
+    // FITUR-3: Auto-Report Unknown Ingredients
+    if (aiConfig?.autoReportUnknowns && engineResult.unknownIngredients.length > 0) {
+      for (const name of engineResult.unknownIngredients) {
+        try {
+          await prisma.unknownIngredient.upsert({
+            where: { name: name.toLowerCase().trim() },
+            update: { reportCount: { increment: 1 }, isReviewed: false },
+            create: { name: name.toLowerCase().trim(), reportCount: 1 },
+          });
+        } catch (e) {
+          console.warn(`[Auto-Report] Gagal melaporkan bahan asing: ${name}`, e);
+        }
+      }
     }
 
     return NextResponse.json({

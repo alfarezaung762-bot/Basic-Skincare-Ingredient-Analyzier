@@ -13,6 +13,7 @@ ATURAN SISTEM SAAT INI:
 PENTING:
 1. Pastikan data se-akurat dan se-up-to-date mungkin.
 2. Jawab HANYA menggunakan struktur JSON yang diminta.`,
+  autoReportUnknowns: true,
 };
 
 export async function GET(request: Request) {
@@ -49,7 +50,8 @@ export async function POST(request: Request) {
     const { 
       dataTemplate, prioritizedSources, allowExternalSources, systemPrompt,
       // AI Hybrid fields
-      aihybridPromptingredient, aihybridModelPriority, aihybridUseExternalSources, aihybridReferenceSources
+      aihybridPromptingredient, aihybridModelPriority, aihybridUseExternalSources, aihybridReferenceSources,
+      autoReportUnknowns
     } = body;
 
     const updateData: any = {};
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
     if (aihybridModelPriority !== undefined) updateData.aihybridModelPriority = aihybridModelPriority;
     if (aihybridUseExternalSources !== undefined) updateData.aihybridUseExternalSources = aihybridUseExternalSources;
     if (aihybridReferenceSources !== undefined) updateData.aihybridReferenceSources = aihybridReferenceSources;
+    if (autoReportUnknowns !== undefined) updateData.autoReportUnknowns = autoReportUnknowns;
 
     const config = await prisma.aIPromptConfig.upsert({
       where: { id: CONFIG_ID },
@@ -76,6 +79,7 @@ export async function POST(request: Request) {
         aihybridModelPriority: aihybridModelPriority || null,
         aihybridUseExternalSources: aihybridUseExternalSources ?? false,
         aihybridReferenceSources: aihybridReferenceSources || null,
+        autoReportUnknowns: autoReportUnknowns ?? DEFAULT_CONFIG.autoReportUnknowns,
       },
     });
 
