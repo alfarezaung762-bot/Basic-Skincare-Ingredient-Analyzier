@@ -83,11 +83,12 @@ async function researchIngredient(ingredientName: string, provider: string = "ge
       dataTemplate: "Nama (INCI), Sifat Kimia, Level Kekuatan, Fungsi Khusus, Sinonim / Alias, Manfaat Singkat (Untuk Pengguna), Analisis Mendalam (Khusus Mesin AI), Komedogenik (0-5), Aman Bumil, Aman Sensitif, Fokus Perawatan, Dilarang Keras Untuk",
       prioritizedSources: "EWG, Paula's Choice, INCIDecoder, CIR (Cosmetic Ingredient Review), PubMed",
       allowExternalSources: false,
-      systemPrompt: "Kamu adalah ahli dermatologi, kosmetik, dan kimia farmasi internasional dengan pengalaman 20+ tahun.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}",
+      systemPrompt: "Kamu adalah Senior Raw Material Chemist dan Principal Skincare Formulator. Keahlian mutlakmu adalah biokimia kosmetik tingkat seluler (molekul, pH, penetrasi stratum corneum, dan profil interaksi senyawa). Kamu TIDAK merespons layaknya asisten virtual atau beauty blogger, melainkan murni sebagai ilmuwan laboratorium yang berpegang teguh pada Evidence-Based Medicine (EBM) dan literatur dermatologi terverifikasi serta memiliki pengalaman lebih dari 25 tahun.\n\nData JSON yang kamu hasilkan BUKAN sekadar teks bacaan, melainkan PARAMETER MATEMATIS yang akan dieksekusi langsung oleh Scoring Engine TypeScript kami.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}\n\n[PROTOKOL KODE MERAH: ANTI-HALUSINASI & KEAMANAN SISTEM]\n1. ZERO HALLUCINATION: Jika data klinis tidak ditemukan, tetapkan type sebagai BASIC, functionalCategory sebagai UMUM.\n2. VALIDASI TOKSIKOLOGI KETAT: Parameter safeForPregnancy, safeForSensitive, dan blacklistedSkinTypes memicu penalti skor keselamatan secara mutlak. Gunakan murni referensi medis nyata.\n3. KEPATUHAN JSON MURNI: Output HARUS berupa satu objek JSON mentah.",
       aihybridPromptingredient: "",
       aihybridModelPriority: null,
       aihybridUseExternalSources: false,
       aihybridReferenceSources: null,
+      autoReportUnknowns: true,
       updatedAt: new Date()
     };
   }
@@ -221,8 +222,25 @@ Kulit sensitif BUKAN tipe kulit bawaan lahir. Kulit sensitif adalah KONDISI kuli
 - Bahan yang AMAN untuk kulit sensitif walau aktif: Niacinamide ≤5%, Centella Asiatica, Panthenol, Ceramide, Allantoin, Bisabolol, Madecassoside, Oat Beta-Glucan.
 
 [ATURAN BAHASA & PENULISAN]
-- "benefits" (Manfaat Awam): Wajib menggunakan bahasa yang BISA DIPAHAMI OLEH ANAK SMA (maks 30 kata). (Contoh Benar: "Membantu meredakan kemerahan dan melembapkan kulit.")
+- \"benefits\" (Manfaat Awam): Wajib menggunakan bahasa yang BISA DIPAHAMI OLEH ANAK SMA (maks 30 kata). (Contoh Benar: "Membantu meredakan kemerahan dan melembapkan kulit.")
 - "blacklistReason": Logis dan membumi (Contoh: "Bahan ini menyerap minyak alami terlalu kuat, sehingga dapat menghambat kemampuan kulit kering dalam memperbaiki dirinya sendiri.")
+
+[ATURAN KHUSUS aiContext — SECTION WAJIB]
+
+Section [AMBANG KONSENTRASI & DOSE-RESPONSE] — WAJIB ADA di aiContext:
+Bagian ini KRITIS untuk sistem scoring AI Hybrid. Isi WAJIB mencakup:
+1. AMBANG TERAPEUTIK: Pada konsentrasi berapa bahan ini mulai memberikan efek positif? (misal: "Niacinamide efektif mulai 2%, optimal di 5%")
+2. AMBANG IRITASI: Pada konsentrasi berapa bahan ini mulai menimbulkan efek samping? (misal: "Glycolic Acid >10% berisiko iritasi pada kulit sensitif")
+3. RELEVANSI POSISI INCI: Jika bahan ini berada di posisi akhir daftar INCI (konsentrasi <1%), apakah efek negatifnya (komedogenik, iritan) masih relevan? (misal: "Coconut Oil di bawah 1% — risiko komedogenik turun drastis dari rating 4 menjadi tidak signifikan")
+4. WASH-OFF vs LEAVE-ON: Sebutkan konsentrasi aman untuk masing-masing tipe produk jika berbeda.
+Tujuan section ini: Memberi AI Hybrid data kuantitatif agar penalti bisa dievaluasi berdasarkan estimasi konsentrasi (posisi INCI), bukan hanya rating komedogenik mentah.
+
+Section [INTERAKSI TERVERIFIKASI] — WAJIB ADA di aiContext:
+Tuliskan interaksi bahan ini dengan bahan skincare lain dalam format terstruktur:
+- SINERGI: Bahan apa yang meningkatkan efektivitas bahan ini? Jelaskan mekanismenya. (misal: "SINERGI dengan Vitamin E — meningkatkan stabilitas antioksidan L-Ascorbic Acid 4x lipat (Burke 2019)")
+- ANTAGONIS: Bahan apa yang menghambat atau merusak efektivitas bahan ini? (misal: "ANTAGONIS dengan Benzoyl Peroxide — saling mengoksidasi pada pH yang sama, efektivitas kedua bahan turun >50%")
+- PENETRAL: Bahan apa yang mampu menetralisir efek negatif bahan ini? (misal: "PENETRAL untuk iritasi: Ceramide NP dan Panthenol terbukti mengurangi TEWL akibat SLS sebesar 40% (Rosso 2016)")
+Tujuan section ini: Memberi AI Hybrid data interaksi TERVERIFIKASI sehingga saat mengevaluasi penalti netralisasi, AI tidak menebak — melainkan berdasarkan data dari Deep Research.
 
 [ATURAN PENCARIAN SUMBER MUTLAK (KILL SWITCH!)]
 Kau WAJIB memprioritaskan pencarian literatur sesuai pemetaan spesifik ini:
@@ -263,7 +281,7 @@ Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
   "functionalCategory": "UMUM atau SURFAKTAN atau UV_FILTER atau PELEMBAP_HUMEKTAN atau PELEMBAP_EMOLIEN atau PELEMBAP_OKLUSIF",
   "isKeyActive": true,
   "benefits": "manfaat singkat",
-  "aiContext": "analisis mendalam MINIMAL 1000 KATA. WAJIB LETAKKAN INFO KRITIS DI AWAL dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI] [PENETRASI & DURASI]",
+  "aiContext": "analisis mendalam MINIMAL 1000 KATA. WAJIB LETAKKAN INFO KRITIS DI AWAL dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [AMBANG KONSENTRASI & DOSE-RESPONSE] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI TERVERIFIKASI] [PENETRASI & DURASI]",
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
@@ -416,7 +434,7 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
       if (wordCount < 800) {
         console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
 
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 1000 KATA untuk field aiContext dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI] [PENETRASI & DURASI]. Tuliskan analisis yang sangat detail dan komprehensif.`;
+        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 1000 KATA untuk field aiContext dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [AMBANG KONSENTRASI & DOSE-RESPONSE] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI TERVERIFIKASI] [PENETRASI & DURASI]. Tuliskan analisis yang sangat detail dan komprehensif.`;
 
         let retryParsed: any = null;
         if (provider === "gemini") {

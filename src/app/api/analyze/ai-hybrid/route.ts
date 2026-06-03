@@ -330,9 +330,9 @@ export async function POST(req: Request) {
       let line = `- [${positionInfo}] ${ing.name} (Tipe: ${ing.type}, Fungsi: ${ing.functionalCategory}, Komedogenik: ${ing.comedogenicRating}/5, Key Active: ${ing.isKeyActive})`;
       line += `\n  Benefits: ${ing.benefits}`;
       if (aiCtx) {
-        // Kirim ringkasan aiContext (maks 1000 kata per bahan agar tidak overload prompt)
+        // Kirim ringkasan aiContext (maks 2000 kata per bahan agar tidak overload prompt)
         const aiCtxWords = aiCtx.split(/\s+/);
-        const truncated = aiCtxWords.length > 1000 ? aiCtxWords.slice(0, 1000).join(' ') + '...' : aiCtx;
+        const truncated = aiCtxWords.length > 2000 ? aiCtxWords.slice(0, 2000).join(' ') + '...' : aiCtx;
         line += `\n  Analisis Mendalam: ${truncated}`;
       }
       return line;
@@ -363,6 +363,10 @@ export async function POST(req: Request) {
     // ========================
     // 6. BUILD SYSTEM PROMPT
     // ========================
+    // Hitung zona posisi INCI secara dinamis berdasarkan total bahan
+    const totalIngredientsCount = engineResult.detectedIngredients.length + engineResult.unknownIngredients.length;
+    const topThird = Math.max(1, Math.round(totalIngredientsCount / 3));
+    const midThird = Math.max(topThird + 1, Math.round(totalIngredientsCount * 2 / 3));
     const systemPrompt = `
 ${customPrompt || "Anda adalah seorang Konsultan Dermatologi Kosmetik kelas dunia dan Ahli Formulasi (Cosmetic Chemist)."}
 
@@ -381,13 +385,19 @@ ATURAN 2 — BATASAN PENYESUAIAN PENALTI & KONTEKS KOSONG:
 
 ATURAN 3 — PERTIMBANGAN URUTAN BAHAN (BERDASARKAN REGULASI):
 Menurut EU Regulation 1223/2009 Annex VI dan FDA, bahan wajib diurutkan dari konsentrasi tertinggi ke terendah, KECUALI bahan <1% yang boleh diacak di akhir.
-PANDUAN POSISI (EVALUASI RELATIF & GARIS BATAS 1%):
-- 1/3 Awal (Top 30% daftar): Konsentrasi Signifikan/Dominan (Solvent, Base, Primary Actives). Efek bahan sangat kuat.
-- 1/3 Tengah (Middle 30%): Konsentrasi Menengah.
-- 1/3 Akhir (Bottom 30%): Kemungkinan konsentrasi rendah.
+TOTAL BAHAN DALAM PRODUK INI: ${totalIngredientsCount} bahan.
+PANDUAN POSISI ADAPTIF (berdasarkan total ${totalIngredientsCount} bahan):
+- ZONA DOMINAN (Posisi #1 – #${topThird}): Konsentrasi tinggi (>5%). Bahan-bahan dasar/utama. Efek komedogenik, iritan, dan terapeutik PENUH.
+- ZONA MENENGAH (Posisi #${topThird + 1} – #${midThird}): Konsentrasi menengah (1-5%). Efek bahan signifikan tapi tidak dominan.
+- ZONA RENDAH (Posisi #${midThird + 1} – #${totalIngredientsCount}): Kemungkinan konsentrasi <1%. Efek negatif bahan (komedogenik, iritan) SANGAT BERKURANG di zona ini.
 GARIS BATAS 1% MUTLAK (THE 1% LINE):
 Pewarna (CI...), Pengawet (Phenoxyethanol, Parabens), Pengental (Carbomer, Xanthan Gum), dan Pewangi (Fragrance/Parfum) HAMPIR PASTI berada di konsentrasi ≤1% secara global. Posisi mereka (dan SEMUA BAHAN setelahnya) adalah penanda mutlak konsentrasi rendah, meskipun daftarnya sangat pendek (misal hanya 5 bahan).
-KAMU DILARANG menyebutkan angka persentase spesifik (seperti ">5%", "3%"). Gunakan narasi deskriptif seperti "berada di posisi atas/dominan" atau "sebagai pelengkap di akhir daftar".
+
+ATURAN 3B — EVALUASI PENALTI BERBASIS DOSE-RESPONSE (WAJIB):
+Jika bahan memiliki section [AMBANG KONSENTRASI & DOSE-RESPONSE] di Analisis Mendalam-nya, GUNAKAN data tersebut untuk mengevaluasi apakah penalti engine masih relevan berdasarkan estimasi konsentrasi dari posisi INCI.
+Contoh penerapan: "Coconut Oil (komedogenik 4/5) berada di posisi #${totalIngredientsCount > 15 ? '22' : '8'} dari ${totalIngredientsCount} bahan → estimasi konsentrasi rendah. Data dose-response menunjukkan risiko komedogenik tidak signifikan di bawah 1%. Penalti bisa dikurangi."
+Jika TIDAK ADA data dose-response untuk bahan tersebut, gunakan estimasi umum: bahan di Zona Rendah dengan komedogenik ≥3 TETAP mendapat peringatan namun dengan catatan bahwa "risiko berkurang signifikan karena konsentrasi rendah".
+KAMU DILARANG menyebutkan angka persentase spesifik ke pengguna (seperti ">5%", "3%"). Gunakan narasi deskriptif seperti "berada di posisi atas/dominan" atau "sebagai pelengkap di akhir daftar".
 
 ATURAN 4 — BAHASA OUTPUT & NADA KONSULTASI (TONE):
 Gunakan bahasa Indonesia baku yang edukatif, berempati, dan objektif. DILARANG menakut-nakuti (fear-mongering) atau menjanjikan kesembuhan instan.
