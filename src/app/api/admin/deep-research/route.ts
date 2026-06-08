@@ -41,18 +41,19 @@ const GEMMA_MODELS = [
 
 const isGemmaModel = (model: string) => model.startsWith("gemma-");
 
-// Helper untuk mengekstrak JSON dari teks markdown
+// Helper untuk mengekstrak JSON dari teks markdown (Robust — support Gemma mixed output)
 const extractJson = (text: string) => {
+  // Strategi 1: Cari ```json ... ``` markdown block
   const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (match) {
     try {
       return JSON.parse(match[1]);
     } catch (e) {
-      // Lanjut ke pencarian manual jika parse regex gagal
+      // Lanjut ke strategi berikutnya
     }
   }
 
-  // Pencarian manual dari '{' ke '}'
+  // Strategi 2: Pencarian manual dari '{' pertama ke '}' terakhir
   const firstBrace = text.indexOf('{');
   const lastBrace = text.lastIndexOf('}');
 
@@ -61,12 +62,64 @@ const extractJson = (text: string) => {
     try {
       return JSON.parse(jsonStr);
     } catch (e) {
-      // Lanjut ke parse text mentah jika masih gagal
+      // Strategi 3: Bersihkan trailing commas dan coba lagi
+      try {
+        const cleaned = jsonStr
+          .replace(/,\s*}/g, '}')   // trailing comma sebelum }
+          .replace(/,\s*]/g, ']')   // trailing comma sebelum ]
+          .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\r' || ch === '\t' ? ch : ''); // hapus control chars
+        return JSON.parse(cleaned);
+      } catch (e2) {
+        // Lanjut ke strategi berikutnya
+      }
     }
   }
 
-  return JSON.parse(text);
+  // Strategi 4: Cari JSON object secara iteratif (untuk kasus nested braces yang membingungkan)
+  if (firstBrace !== -1) {
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = firstBrace; i < text.length; i++) {
+      const ch = text[i];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          const candidate = text.substring(firstBrace, i + 1);
+          try {
+            return JSON.parse(candidate);
+          } catch (e) {
+            // Bersihkan dan coba lagi
+            try {
+              const cleaned = candidate.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+              return JSON.parse(cleaned);
+            } catch (e2) {
+              break; // Gagal, lanjut strategi terakhir
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Strategi 5: Coba parse teks mentah langsung (jika AI memang mengeluarkan JSON murni)
+  try {
+    return JSON.parse(text.trim());
+  } catch (e) {
+    throw new Error(`Gagal mengekstrak JSON dari respons AI. Respons dimulai dengan: "${text.substring(0, 80).replace(/\n/g, ' ')}..."`);
+  }
 };
+
+// ========================================================
+// OPENROUTER MULTI-KEY ROTATION (dari shared utility)
+// ========================================================
+import { openRouterWithKeyRotation } from "@/lib/openRouterKeyManager";
+
 
 // ========================================================
 // FUNGSI UTAMA: Riset satu bahan via berbagai AI (dengan fallback otomatis)
@@ -302,6 +355,27 @@ ATURAN KETAT:
 
 Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang menggunakan format markdown \`\`\`json.`;
 
+  // GEMMA-SPECIFIC: Tambahkan instruksi ekstra keras karena Gemma tidak mendukung responseMimeType
+  const gemmaJsonEnforcer = `
+
+[INSTRUKSI KRITIS KHUSUS MODEL GEMMA — WAJIB DIPATUHI]
+Kamu ADALAH mesin JSON generator. Kamu BUKAN chatbot.
+ATURAN MUTLAK:
+1. Output pertamamu HARUS dimulai dengan karakter { (kurung kurawal buka)
+2. Output terakhirmu HARUS diakhiri dengan karakter } (kurung kurawal tutup)
+3. DILARANG KERAS menulis teks apapun sebelum { atau sesudah }
+4. DILARANG KERAS menyertakan sapaan, pengantar, penjelasan, atau komentar
+5. DILARANG KERAS menggunakan format markdown seperti \`\`\`json
+6. Jika kamu melanggar aturan ini, SELURUH SISTEM AKAN CRASH
+
+CONTOH OUTPUT YANG BENAR (LANGSUNG MULAI DENGAN {):
+{"name": "sodium metabisulfite", "aliases": ["sodium pyrosulfite"], ...}
+
+CONTOH OUTPUT YANG SALAH (ADA TEKS SEBELUM {):
+Berikut analisis untuk bahan... {"name": ...}
+
+SEKALI LAGI: Langsung mulai dengan { tanpa teks apapun di depannya!`;
+
   // Bangun daftar model yang akan dicoba
   const modelsToTry: string[] = [modelName];
 
@@ -345,24 +419,19 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
           tools.push({ googleSearch: {} });
         }
 
+        // Untuk Gemma: tambahkan instruksi JSON ekstra keras ke prompt
+        const effectivePrompt = isGemmaModel(currentModel) ? prompt + gemmaJsonEnforcer : prompt;
+
         const model = genAI.getGenerativeModel({
           model: currentModel,
           generationConfig,
           tools: tools.length > 0 ? tools : undefined,
         });
 
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(effectivePrompt);
         const responseText = result.response.text();
         parsed = extractJson(responseText);
       } else if (provider === "openrouter") {
-        const client = new OpenAI({
-          apiKey: process.env.OPENROUTER_API_KEY || "",
-          baseURL: "https://openrouter.ai/api/v1",
-          defaultHeaders: {
-            "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-            "X-Title": "Skincare Analyzer",
-          }
-        });
         console.log(`[Deep Research] OpenRouter Request: Model=${currentModel}`);
 
         const payload: any = {
@@ -371,29 +440,8 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
           temperature: 0.2,
         };
 
-        if (useReasoning) {
-          payload.reasoning = { enabled: true };
-        }
-
-        try {
-          const response = await client.chat.completions.create(payload);
-          const responseText = response.choices[0].message.content || "{}";
-          parsed = extractJson(responseText);
-        } catch (error) {
-          if (useReasoning) {
-            console.log(`[Deep Research] OpenRouter reasoning failed for ${currentModel}. Retrying without reasoning...`);
-            const fallbackPayload: any = {
-              model: currentModel,
-              messages: [{ role: "user", content: prompt }],
-              temperature: 0.2,
-            };
-            const response = await client.chat.completions.create(fallbackPayload);
-            const responseText = response.choices[0].message.content || "{}";
-            parsed = extractJson(responseText);
-          } else {
-            throw error;
-          }
-        }
+        const { responseText } = await openRouterWithKeyRotation(payload, useReasoning, "[Deep Research]");
+        parsed = extractJson(responseText);
       } else {
         // OpenAI Compatible (BytePlus)
         let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
@@ -434,7 +482,9 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
       if (wordCount < 800) {
         console.warn(`[Deep Research] ⚠️ aiContext hanya ${wordCount} kata untuk "${ingredientName}" (model: ${currentModel}). Mencoba ulang...`);
 
-        const retryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 1000 KATA untuk field aiContext dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [AMBANG KONSENTRASI & DOSE-RESPONSE] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI TERVERIFIKASI] [PENETRASI & DURASI]. Tuliskan analisis yang sangat detail dan komprehensif.`;
+        const baseRetryPrompt = `${prompt}\n\nPERINGATAN KERAS: Respons sebelumnya hanya menghasilkan ${wordCount} kata untuk aiContext. Kali ini WAJIB menghasilkan MINIMAL 1000 KATA untuk field aiContext dengan struktur: [RISIKO KRITIS & KEHAMILAN] [EFEK SAMPING] [AMBANG KONSENTRASI & DOSE-RESPONSE] [BUKTI KLINIS] [IDENTITAS] [MEKANISME KERJA] [pH & KONSENTRASI AMAN] [INTERAKSI TERVERIFIKASI] [PENETRASI & DURASI]. Tuliskan analisis yang sangat detail dan komprehensif.`;
+        // Untuk Gemma: tambahkan instruksi JSON ekstra keras
+        const retryPrompt = isGemmaModel(currentModel) ? baseRetryPrompt + gemmaJsonEnforcer : baseRetryPrompt;
 
         let retryParsed: any = null;
         if (provider === "gemini") {
@@ -455,42 +505,14 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
           const retryResult = await model.generateContent(retryPrompt);
           retryParsed = extractJson(retryResult.response.text());
         } else if (provider === "openrouter") {
-          let client = new OpenAI({
-            apiKey: process.env.OPENROUTER_API_KEY || "",
-            baseURL: "https://openrouter.ai/api/v1",
-            defaultHeaders: {
-              "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-              "X-Title": "Skincare Analyzer",
-            }
-          });
-          // useReasoning is already passed as a parameter to researchIngredient
-          const payload: any = {
+          const retryPayload: any = {
             model: currentModel,
             messages: [{ role: "user", content: retryPrompt }],
             temperature: 0.2,
           };
 
-          if (useReasoning) {
-            payload.reasoning = { enabled: true };
-          }
-
-          try {
-            const response = await client.chat.completions.create(payload);
-            retryParsed = extractJson(response.choices[0].message.content || "{}");
-          } catch (error) {
-            if (useReasoning) {
-              console.log(`[Deep Research Fallback] OpenRouter reasoning failed for ${currentModel}. Retrying without reasoning...`);
-              const fallbackPayload: any = {
-                model: currentModel,
-                messages: [{ role: "user", content: retryPrompt }],
-                temperature: 0.2,
-              };
-              const response = await client.chat.completions.create(fallbackPayload);
-              retryParsed = extractJson(response.choices[0].message.content || "{}");
-            } else {
-              throw error;
-            }
-          }
+          const { responseText } = await openRouterWithKeyRotation(retryPayload, useReasoning, "[Deep Research Retry]");
+          retryParsed = extractJson(responseText);
         } else {
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
           if (byteplusUrl.includes("ark.byteplus.com")) {
@@ -534,13 +556,46 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
 
       // Non-retryable errors — langsung return
       if (provider === "byteplus" && (err.status === 404 || errorMsg.includes("404"))) {
-        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model.", triedModels };
+        return { success: false, error: "Model tidak ditemukan (404). Di BytePlus, Anda WAJIB menggunakan 'Endpoint ID' (format ep-...) bukan nama model.", modelUsed: currentModel, triedModels };
       }
       if (err.status === 402 || errorMsg.includes("402")) {
-        return { success: false, error: "Saldo API Habis (402). Silakan isi saldo di dashboard penyedia AI.", triedModels };
+        return { success: false, error: "Saldo API Habis (402). Silakan isi saldo di dashboard penyedia AI.", modelUsed: currentModel, triedModels };
       }
 
-      // Retryable errors — coba model fallback berikutnya (hanya untuk Gemini)
+      // GEMMA-SPECIFIC RETRY: Coba sekali lagi dengan prompt yang jauh lebih keras
+      if (isGemmaModel(currentModel) && !err._gemmaRetried && (errorMsg.includes("not valid JSON") || errorMsg.includes("Gagal mengekstrak JSON"))) {
+        console.log(`[Deep Research] 🔄 Gemma JSON retry untuk "${ingredientName}" — mencoba dengan prompt JSON super-strict...`);
+        try {
+          const gemmaRetryPrompt = `ANDA ADALAH MESIN JSON. OUTPUT HARUS DIMULAI DENGAN KARAKTER { DAN DIAKHIRI DENGAN }. TIDAK BOLEH ADA TEKS LAIN.
+
+Analisis bahan skincare "${ingredientName}" dan kembalikan HANYA JSON dengan field: name, aliases (array), type (BASIC/BUFFER/HARSH/TOXIC), strengthLevel (1-3), functionalCategory, isKeyActive, benefits, aiContext (min 500 kata), comedogenicRating (0-5), safeForPregnancy, safeForSensitive, targetFocus, blacklistedSkinTypes, blacklistReason, warnings, sumber_yang_digunakan, confidenceLevel.
+
+MULAI DENGAN { SEKARANG:`;
+          const generationConfig: any = { temperature: 0.1 };
+          const model = genAI.getGenerativeModel({ model: currentModel, generationConfig });
+          const retryResult = await model.generateContent(gemmaRetryPrompt);
+          const retryText = retryResult.response.text();
+          const retryParsed = extractJson(retryText);
+          
+          if (retryParsed && retryParsed.name) {
+            console.log(`[Deep Research] ✅ Gemma retry BERHASIL untuk "${ingredientName}"`);
+            // Validasi confidence & error sama seperti flow normal
+            if (retryParsed.error) {
+              return { success: false, error: retryParsed.error, modelUsed: currentModel, isHallucination: true, triedModels };
+            }
+            const confidence = String(retryParsed.confidenceLevel || "HIGH").toUpperCase();
+            if (confidence === "LOW") {
+              return { success: false, error: `Analisis bahan "${ingredientName}" dibatalkan — AI melaporkan tingkat kepercayaan RENDAH.`, modelUsed: currentModel, isHallucination: true, triedModels };
+            }
+            return { success: true, data: retryParsed, modelUsed: currentModel, triedModels };
+          }
+        } catch (retryErr: any) {
+          console.warn(`[Deep Research] ❌ Gemma retry juga gagal untuk "${ingredientName}": ${retryErr.message}`);
+          // Lanjut ke error handling normal
+        }
+      }
+
+      // Retryable errors — coba model fallback berikutnya (hanya untuk Gemini non-Gemma)
       if (provider === "gemini" && mi < modelsToTry.length - 1) {
         console.log(`[Deep Research] 🔄 Mencoba fallback model berikutnya: ${modelsToTry[mi + 1]}...`);
         await new Promise(r => setTimeout(r, 2000)); // 2 detik jeda sebelum fallback
@@ -550,9 +605,9 @@ Kembalikan HANYA JSON murni (mulai dengan { dan akhiri dengan }). Dilarang mengg
       // Semua model gagal
       const modelDisplayName = currentModel.includes("ep-") ? `BytePlus Endpoint (${currentModel})` : currentModel;
       if (isGemmaModel(modelName)) {
-        return { success: false, error: `Model Gemma (${modelDisplayName}) gagal menganalisis bahan ini: ${errorMsg}. Gemma tidak memiliki fallback — coba gunakan model Gemini.`, triedModels };
+        return { success: false, error: `Model Gemma (${modelDisplayName}) gagal menganalisis bahan ini: ${errorMsg}. Gemma tidak memiliki fallback — coba gunakan model Gemini.`, modelUsed: currentModel, triedModels };
       }
-      return { success: false, error: `Semua model Gemini gagal (${triedModels.join(' → ')}). Error terakhir: ${errorMsg}`, triedModels };
+      return { success: false, error: `Semua model Gemini gagal (${triedModels.join(' → ')}). Error terakhir: ${errorMsg}`, modelUsed: currentModel, triedModels };
     }
   }
 
@@ -983,7 +1038,7 @@ export async function POST(req: Request) {
             }
 
           } else {
-            results.push({ name: ingredientName, success: false, aliasCount: 0, error: research.error });
+            results.push({ name: ingredientName, success: false, aliasCount: 0, error: research.error, model: research.modelUsed });
             sendEvent({
               type: "progress",
               current: i + 1,
@@ -991,6 +1046,7 @@ export async function POST(req: Request) {
               name: ingredientName,
               status: "error",
               error: research.error,
+              model: research.modelUsed,
               triedModels: research.triedModels,
             });
           }

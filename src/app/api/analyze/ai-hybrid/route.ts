@@ -10,6 +10,10 @@ import { runScoringEngine, UserProfile, ProductInput, EngineResult, FlagDetail }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
+// OpenRouter Multi-Key Rotation (dari shared utility)
+import { openRouterWithKeyRotation } from "@/lib/openRouterKeyManager";
+
+
 // ========================
 // TYPES
 // ========================
@@ -101,19 +105,19 @@ const extractJson = (text: string) => {
   if (match) {
     try {
       return JSON.parse(match[1]);
-    } catch (e) {}
+    } catch (e) { }
   }
-  
+
   const firstBrace = text.indexOf('{');
   const lastBrace = text.lastIndexOf('}');
-  
+
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     const jsonStr = text.substring(firstBrace, lastBrace + 1);
     try {
       return JSON.parse(jsonStr);
-    } catch (e) {}
+    } catch (e) { }
   }
-  
+
   return JSON.parse(text);
 };
 
@@ -552,15 +556,6 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
           const result = await model.generateContent(systemPrompt);
           responseText = result.response.text();
         } else if (provider === "openrouter") {
-          const client = new OpenAI({
-            apiKey: process.env.OPENROUTER_API_KEY || "",
-            baseURL: "https://openrouter.ai/api/v1",
-            defaultHeaders: {
-              "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-              "X-Title": "Skincare Analyzer",
-            }
-          });
-
           // Check if reasoning is enabled for this model in the config
           const useReasoning = (modelConfig as any).useReasoning || false;
 
@@ -569,27 +564,9 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
             messages: [{ role: "user", content: systemPrompt }],
             temperature: 0.2
           };
-          if (useReasoning) {
-            payload.reasoning = { enabled: true };
-          }
 
-          try {
-            const response = await client.chat.completions.create(payload);
-            responseText = response.choices[0].message.content || "{}";
-          } catch (error) {
-            if (useReasoning) {
-              console.log(`[AI Hybrid] OpenRouter reasoning failed for ${currentModel}. Retrying without reasoning...`);
-              const fallbackPayload: any = {
-                model: currentModel,
-                messages: [{ role: "user", content: systemPrompt }],
-                temperature: 0.2
-              };
-              const response = await client.chat.completions.create(fallbackPayload);
-              responseText = response.choices[0].message.content || "{}";
-            } else {
-              throw error;
-            }
-          }
+          const { responseText: orText } = await openRouterWithKeyRotation(payload, useReasoning, "[AI-Hybrid]");
+          responseText = orText;
         } else {
           // OpenAI Compatible (BytePlus)
           let byteplusUrl = process.env.BYTEPLUS_BASE_URL || "https://ark.ap-southeast.bytepluses.com/api/v3";
@@ -708,16 +685,16 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
       engineResult.matchScore = finalMatchScore;
       engineResult.matchLabel = getMatchLabel(finalMatchScore);
       engineResult.matchFlags = finalMatchFlags;
-      
+
       // Inject Toxic Clarifications to the Safety Flags Message
       if (aiResult.toxicClarifications && aiResult.toxicClarifications.length > 0) {
         finalSafetyFlags = finalSafetyFlags.map(flag => {
           if (flag.pointsDeducted === 100 && flag.type === "CRITICAL") {
             const clarif = aiResult.toxicClarifications?.find(c => flag.culprits?.includes(c.ingredient));
             if (clarif) {
-              return { 
-                ...flag, 
-                message: `[Klarifikasi AI] ${clarif.clarification} (Sistem tetap mengunci peringatan ini demi keamanan mutlak).` 
+              return {
+                ...flag,
+                message: `[Klarifikasi AI] ${clarif.clarification} (Sistem tetap mengunci peringatan ini demi keamanan mutlak).`
               };
             }
           }
