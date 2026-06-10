@@ -309,7 +309,8 @@ export function runScoringEngine(
     // 1. Validasi Keamanan (Harsh & Buffer)
     if (activeRule.harsh.status === "DILARANG" && loadHarsh > 0) {
       safetyScore -= 40;
-      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi Kuat — Atur Frekuensi: Produk ini mengandung bahan aktif yang cukup kuat. Hindari atau batasi penggunaan produk ini 2–3 hari sekali.`, pointsDeducted: 40, culprits: harshCulprits });
+      const strengthText = loadHarsh >= 6 ? "Kuat" : loadHarsh >= 3 ? "Sedang" : "Ringan";
+      safetyFlags.push({ type: "CRITICAL", message: `Eksfoliasi ${strengthText} — Atur Frekuensi: Produk ini mengandung bahan aktif yang cukup kuat. Hindari atau batasi penggunaan produk ini 2–3 hari sekali.`, pointsDeducted: 40, culprits: harshCulprits });
     } else if (activeRule.harsh.status !== "DILARANG" && loadHarsh > activeRule.harsh.maxLoad) {
       const excess = loadHarsh - activeRule.harsh.maxLoad;
       const penalty = Math.min(40, excess * 5);
@@ -395,7 +396,6 @@ export function runScoringEngine(
 
   if (primaryProductFocus) {
     if (userFocusList.includes(primaryProductFocus)) {
-      matchScore += 10;
       matchFlags.push({ type: "SUCCESS", message: `Target Sempurna: Fokus utama produk ini selaras dengan tujuan perawatan Anda (${primaryProductFocus}).`, pointsDeducted: 0 });
     } else if (userFocusList.some(f => secondaryProductFocuses.includes(f))) {
       matchScore -= 10;
@@ -417,9 +417,22 @@ export function runScoringEngine(
     safetyFlags.push({ type: "WARNING", message: `Deteksi Buta: Terdapat ${unknown.length} bahan yang belum dikenali sistem. Pastikan kamu tidak alergi terhadap bahan-bahan tersebut.`, pointsDeducted: 0 });
   }
 
-  // G. KUNCI SKOR
-  matchScore = Math.max(0, Math.min(100, Math.round(matchScore)));
-  safetyScore = Math.max(0, Math.min(100, Math.round(safetyScore)));
+  // G. KUNCI SKOR DENGAN CAPPING DINAMIS
+  let matchCap = 100;
+  if (matchFlags.some(f => f.pointsDeducted > 0 && f.type === "CRITICAL")) {
+    matchCap = 90;
+  } else if (matchFlags.some(f => f.pointsDeducted > 0 && f.type === "WARNING")) {
+    matchCap = 95;
+  }
+  matchScore = Math.max(0, Math.min(matchCap, Math.round(matchScore)));
+
+  let safetyCap = 100;
+  if (safetyFlags.some(f => f.pointsDeducted > 0 && f.type === "CRITICAL")) {
+    safetyCap = 90;
+  } else if (safetyFlags.some(f => f.pointsDeducted > 0 && f.type === "WARNING")) {
+    safetyCap = 95;
+  }
+  safetyScore = Math.max(0, Math.min(safetyCap, Math.round(safetyScore)));
 
   return {
     matchScore,

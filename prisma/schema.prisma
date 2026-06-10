@@ -320,7 +320,9 @@ model AiHybridCache {
   id               String   @id @default(cuid())
   cacheKey         String   @unique  // Hash SHA-256 dari gabungan: systemPrompt + modelUsed
   ingredientsInput String   @db.Text // Memudahkan admin melihat komposisi yang dicari
+  productType      String?  // Tipe produk untuk ditampilkan di histori admin
   modelUsed        String   // Nama model AI yang digunakan (misal: gemini-2.5-flash)
   aiResponse       Json     // Data JSON utuh hasil analisis dari AI
+  systemPromptUsed String?  @db.Text // System prompt yang dikirim ke AI saat analisis
   createdAt        DateTime @default(now())
 }

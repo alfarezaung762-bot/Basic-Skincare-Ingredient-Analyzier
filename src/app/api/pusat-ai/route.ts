@@ -9,6 +9,45 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const countsOnly = searchParams.get("countsOnly") === "true";
+    const downloadPrompt = searchParams.get("downloadPrompt") === "true";
+    const id = searchParams.get("id");
+
+    if (id && downloadPrompt) {
+      const item = await prisma.aiHybridCache.findUnique({
+        where: { id }
+      });
+      if (!item) {
+        return NextResponse.json({ message: "Cache tidak ditemukan." }, { status: 404 });
+      }
+
+      let content = "";
+      if (item.systemPromptUsed) {
+        content = item.systemPromptUsed;
+      } else {
+        content = `==================================================\n`;
+        content += `PROMPT AI-HYBRID ANALYSIS (CACHE LAMA)\n`;
+        content += `==================================================\n`;
+        content += `Informasi: Entri cache ini dibuat sebelum fitur perekaman prompt diaktifkan.\n\n`;
+        content += `[DATA REKONSTRUKSI MINIMAL]\n`;
+        content += `- ID Cache: ${item.id}\n`;
+        content += `- Model AI: ${item.modelUsed}\n`;
+        content += `- Tanggal Analisis: ${item.createdAt}\n`;
+        content += `- Tipe Produk: ${item.productType || "-"}\n`;
+        content += `- Bahan Input: ${item.ingredientsInput}\n\n`;
+        content += `Respons AI (JSON):\n`;
+        content += JSON.stringify(item.aiResponse, null, 2);
+      }
+
+      const safeName = item.ingredientsInput.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30);
+      const filename = `prompt-aihybrid-${item.modelUsed}-${safeName}.txt`;
+
+      return new Response(content, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    }
 
     if (countsOnly) {
       // Kelompokkan cache berdasarkan model dan hitung jumlahnya

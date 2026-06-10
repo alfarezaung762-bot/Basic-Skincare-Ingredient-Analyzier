@@ -218,16 +218,14 @@ function validateAdjustments(
 function sanitizeReasoning(text: string): string {
   if (!text) return '';
   return text
-    // Hapus pola angka penalti seperti -15%, -15 poin, -15, 15 poin, 15 %, minus 15, dll
-    .replace(/\b-?\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
-    .replace(/\bpengurangan\s+-?\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
-    .replace(/\bpenalti\s+-?\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
-    .replace(/\bskor\b/gi, '')
-    .replace(/\bscore\b/gi, '')
-    .replace(/\bpoin\b/gi, '')
-    .replace(/\bpoint\b/gi, '')
-    .replace(/\bdeduct\w*\b/gi, '')
-    .replace(/\bpenal\w*\b/gi, '')
+    // 1. Hapus angka negatif mandiri atau dengan unit (misal: -15, -10%, -5 poin)
+    .replace(/-\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
+    // 2. Hapus angka positif yang didahului keyword penalti (misal: minus 15, pengurangan 10, penalti 5)
+    .replace(/\b(?:minus|pengurangan|penalti|skor|score)\s*\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
+    // 3. Hapus angka positif yang diikuti unit penalti (misal: 15 poin, 10 %, 5 score)
+    .replace(/\b\d{1,3}\s*(?:poin|point|skor|score)\b/gi, '')
+    // Hapus sisa-sisa kata kunci penalti mandiri
+    .replace(/\b(?:deduct\w*|penal\w*|pengurangan|penalti|skor|score)\b/gi, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -436,7 +434,30 @@ Gunakan bahasa Indonesia baku yang edukatif, berempati, dan objektif. DILARANG m
 
 ATURAN 5 — FOKUS FORMULASI:
 Pilih fokus utama dari HANYA 6 kategori ini:
-${FOCUS_CATEGORIES.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+
+1. "Mencerahkan & Bekas Jerawat":
+   Bahan yang TERBUKTI menghambat tirosinase, mempercepat turnover sel, atau memudarkan hiperpigmentasi pasca-inflamasi (PIH).
+   Contoh bahan: Arbutin, Tranexamic Acid, Vitamin C (L-Ascorbic Acid), Kojic Acid, Licorice Root Extract (Glabridin).
+
+2. "Merawat Jerawat & Sebum":
+   Bahan yang TERBUKTI antibakteri terhadap C.acnes, mengurangi produksi sebum, atau membersihkan pori tersumbat.
+   Contoh bahan: Salicylic Acid, Benzoyl Peroxide, Niacinamide, Zinc PCA, Tea Tree Oil, Sulfur.
+
+3. "Anti-Aging & Garis Halus":
+   Bahan yang TERBUKTI merangsang sintesis kolagen, mengurangi kerutan, atau melindungi dari kerusakan oksidatif/photoaging.
+   Contoh bahan: Retinol, Peptides (Matrixyl, Argireline), Adenosine, Bakuchiol, Resveratrol, Vitamin E (Tocopherol).
+
+4. "Memperbaiki Skin Barrier & Hidrasi":
+   Bahan yang memperkuat lapisan lipid kulit, mengisi celah antar korneosit, atau mengikat air secara efektif.
+   Contoh bahan: Ceramide NP/AP/EOP, Cholesterol, Hyaluronic Acid, Squalane, Fatty Acids (Linoleic Acid), Urea.
+
+5. "Menenangkan Kemerahan (Soothing)":
+   Bahan yang TERBUKTI anti-inflamasi, meredam eritema, atau mengurangi TEWL (Trans-Epidermal Water Loss).
+   Contoh bahan: Centella Asiatica (Madecassoside, Asiaticoside), Panthenol, Bisabolol, Allantoin, Colloidal Oatmeal.
+
+6. "Eksfoliasi & Tekstur Pori-pori":
+   Bahan yang melarutkan ikatan antar sel mati (desmosomes) secara kimia atau secara fisik mengangkat sel tanduk.
+   Contoh bahan: Glycolic Acid, Lactic Acid, PHA (Gluconolactone), Enzim Papain, BHA (Salicylic Acid), Azelaic Acid.
 
 ATURAN 6 — SARAN KONTEKSTUAL BERDASARKAN TIPE PRODUK (SANGAT PENTING):
 Tipe produk saat ini: ${productType}
@@ -479,7 +500,13 @@ C. BAHAN TERLARANG SEBAGAI PENETRAL:
 ATURAN 8 — REASONING EDUKATIF & TO THE POINT (SANGAT PENTING):
 Setiap penjelasan reasoning dalam penaltyAdjustments HARUS padat, edukatif, berbasis ilmiah, dan langsung ke intinya tanpa basa-basi (DILARANG menggunakan kata penenang yang tidak perlu seperti "jangan khawatir", "tidak perlu cemas", "maka dari itu", dll.):
 1. DIAGNOSIS PENALTI: Jelaskan secara singkat mengapa bahan tersebut memicu risiko bagi kondisi kulit pengguna (contoh: "Dimethicone/Vinyl Dimethicone Crosspolymer bersifat oklusif yang berpotensi memerangkap sebum pada kulit berjerawat aktif.").
-2. MEKANISME NETRALISASI (EDUKATIF): Jelaskan secara ilmiah mengapa risiko tersebut hilang atau berkurang secara drastis dalam formulasi ini (contoh: "Namun, produk ini adalah pembersih bilas (wash-off) dengan durasi kontak singkat (~60 detik) sehingga tidak sempat membentuk lapisan film oklusif. Ditambah lagi, keberadaan Niacinamide membantu menyeimbangkan sekresi sebum.").
+2. MEKANISME NETRALISASI (EDUKATIF): Jelaskan secara ilmiah mengapa risiko tersebut hilang atau berkurang secara drastis dalam formulasi ini ${
+  productType === "FACEWASH"
+    ? `(contoh: "Namun, produk ini adalah pembersih bilas (wash-off) dengan durasi kontak singkat (~60 detik) sehingga tidak sempat membentuk lapisan film oklusif. Ditambah lagi, keberadaan Niacinamide membantu menyeimbangkan sekresi sebum.")`
+    : productType === "MOISTURIZER"
+    ? `(contoh: "Namun, meskipun produk ini adalah pelembap leave-on yang menempel lama, potensi iritasi dari eksfoliator diminimalisir oleh kandungan Ceramide NP dan Panthenol yang memperkuat lipid barrier kulit.")`
+    : `(contoh: "Namun, meskipun produk ini adalah tabir surya leave-on, potensi iritasi diredam oleh kandungan Bisabolol dan Allantoin yang menenangkan kulit selama terpapar sinar matahari.")`
+}.
 3. REKOMENDASI KLINIS: Berikan kesimpulan konkret dan instruksi pemakaian yang to-the-point (contoh: "Risiko penyumbatan pori teratasi sepenuhnya. Aman digunakan sebagai sabun wajah harian.").
 JIKA TIDAK ADA PENETRAL: Jangan buat penyesuaian sama sekali (hapus dari array JSON).
 
@@ -487,6 +514,9 @@ ATURAN 9 — KLARIFIKASI TOKSIK & ANOMALI LABEL (KHUSUS BAHAN TOXIC):
 Bahan dengan penalti TOXIC (-100) TIDAK BISA dinetralkan atau dikembalikan poinnya (skor otomatis 0 demi keselamatan).
 NAMUN, jika Anda mencurigai bahan TOXIC tersebut sebenarnya adalah KESALAHAN KETIK (Typo) dari pabrik di kemasan (misal: ada kata "Acrylamide" yang berdiri sendiri, namun di sebelahnya/di dekatnya ada kata "Copolymer", yang seharusnya adalah "Polyacrylamide"), Anda WAJIB memberikan klarifikasi yang menenangkan pengguna.
 Masukkan klarifikasi tersebut ke dalam array "toxicClarifications". Jangan ubah "penaltyAdjustments" untuk bahan TOXIC ini.
+
+ATURAN 10 — LARANGAN PLACEHOLDER KOSONG (MUTLAK):
+Anda DILARANG keras membiarkan simbol angka kosong atau tak lengkap seperti "#", "/", atau "(%)". Tuliskan nomor urut INCI, denominator rating, atau persentase konsentrasi secara lengkap (seperti "#8", "3/5", atau "<1%") sesuai data yang valid dari database dan daftar bahan.
 
 === DATA PROFIL PENGGUNA ===
 - Tipe Kulit: ${profile.skinType}
@@ -648,8 +678,10 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
             data: {
               cacheKey,
               ingredientsInput: ingredients,
+              productType: productType || null,
               modelUsed: currentModel,
-              aiResponse: aiResult as any
+              aiResponse: aiResult as any,
+              systemPromptUsed: systemPrompt
             }
           });
           console.log(`[AI-Hybrid] 💾 Hasil analisis berhasil disimpan ke cache untuk model ${currentModel}`);
@@ -726,6 +758,23 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
       // Ganti flag yang ter-netralisir
       finalMatchFlags = replaceNeutralizedFlags(finalMatchFlags, validatedAdjustments, "MATCH");
       finalSafetyFlags = replaceNeutralizedFlags(finalSafetyFlags, validatedAdjustments, "SAFETY");
+
+      // Apply score capping pasca-penyesuaian AI
+      let finalMatchCap = 100;
+      if (finalMatchFlags.some(f => f.pointsDeducted > 0 && f.type === "CRITICAL")) {
+        finalMatchCap = 90;
+      } else if (finalMatchFlags.some(f => f.pointsDeducted > 0 && f.type === "WARNING")) {
+        finalMatchCap = 95;
+      }
+      finalMatchScore = Math.max(0, Math.min(finalMatchCap, Math.round(finalMatchScore)));
+
+      let finalSafetyCap = 100;
+      if (finalSafetyFlags.some(f => f.pointsDeducted > 0 && f.type === "CRITICAL")) {
+        finalSafetyCap = 90;
+      } else if (finalSafetyFlags.some(f => f.pointsDeducted > 0 && f.type === "WARNING")) {
+        finalSafetyCap = 95;
+      }
+      finalSafetyScore = Math.max(0, Math.min(finalSafetyCap, Math.round(finalSafetyScore)));
 
       // Rebuild match/safety labels
       const getMatchLabel = (s: number) => s === 100 ? "Sempurna" : s >= 90 ? "Sangat Cocok" : s >= 75 ? "Cocok" : s >= 50 ? "Kurang Optimal" : "Tidak Cocok";

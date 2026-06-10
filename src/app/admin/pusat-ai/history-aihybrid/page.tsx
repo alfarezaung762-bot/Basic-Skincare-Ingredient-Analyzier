@@ -11,6 +11,7 @@ interface CacheHistoryItem {
   id: string;
   cacheKey: string;
   ingredientsInput: string;
+  productType?: string | null;
   modelUsed: string;
   aiResponse: any;
   createdAt: string;
@@ -292,6 +293,7 @@ export default function AIHybridHistoryPage() {
                   <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     <th className="py-3 px-4">Tanggal Dibuat</th>
                     <th className="py-3 px-4">Model AI</th>
+                    <th className="py-3 px-4">Tipe Produk</th>
                     <th className="py-3 px-4">Bahan Komposisi</th>
                     <th className="py-3 px-4 text-center">Aksi</th>
                   </tr>
@@ -333,6 +335,25 @@ export default function AIHybridHistoryPage() {
                           </span>
                         </td>
 
+                        {/* Tipe Produk */}
+                        <td className="py-3.5 px-4">
+                          {item.productType ? (
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase ${
+                              item.productType === "FACEWASH"
+                                ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300"
+                                : item.productType === "MOISTURIZER"
+                                ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                            }`}>
+                              {item.productType === "FACEWASH" ? "💧 Face Wash" :
+                               item.productType === "MOISTURIZER" ? "✨ Moisturizer" :
+                               "🌞 Sunscreen"}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic font-medium">-</span>
+                          )}
+                        </td>
+
                         {/* Ingredients */}
                         <td className="py-3.5 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 max-w-md truncate">
                           {item.ingredientsInput}
@@ -340,6 +361,15 @@ export default function AIHybridHistoryPage() {
 
                         {/* Aksi */}
                         <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => window.open(`/api/pusat-ai?id=${item.id}&downloadPrompt=true`, '_blank')}
+                            className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:text-violet-700 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 mr-2"
+                            title="Unduh Prompt AI"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </button>
                           <button
                             onClick={() => {
                               setTargetIdToDelete(item.id);
@@ -409,7 +439,16 @@ export default function AIHybridHistoryPage() {
               </div>
 
               {/* Footer */}
-              <div className="bg-slate-50 dark:bg-slate-800/30 p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <div className="bg-slate-50 dark:bg-slate-800/30 p-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <button
+                  onClick={() => window.open(`/api/pusat-ai?id=${selectedItemDetail.id}&downloadPrompt=true`, '_blank')}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Unduh Prompt AI
+                </button>
                 <button
                   onClick={() => setSelectedItemDetail(null)}
                   className="px-5 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-colors"
