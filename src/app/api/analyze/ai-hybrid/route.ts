@@ -46,6 +46,13 @@ interface AiHybridResult {
     agreesWithEngine: boolean;
     reasoning: string;
   };
+  overallSummary?: {
+    recommendationStatus: "SANGAT_DIREKOMENDASIKAN" | "BOLEH_DICOBA" | "TIDAK_DIREKOMENDASIKAN";
+    suitabilitySummary: string;
+    matchScoreSummary: string;
+    safetyScoreSummary: string;
+    alternativeSkinType: string;
+  };
   penaltyAdjustments: PenaltyAdjustment[];
   synergyAnalysis: {
     pair: string;
@@ -547,7 +554,14 @@ ${focusTallyCtx}
 === FORMAT OUTPUT (JSON KETAT) ===
 Kembalikan HANYA JSON valid tanpa markdown code block:
 {
-  "overallVerdict": "Rangkuman 2-3 kalimat: apakah produk ini cocok untuk user, apa kelebihannya, dan apa yang perlu diwaspadai. Gunakan bahasa awam yang mudah dipahami. Contoh: 'Produk ini cocok untuk kulit berminyak sensitif Anda. Formulasi didominasi bahan pembersih lembut dengan perlindungan barrier yang baik. Perhatikan kandungan Citric Acid yang bisa mengiritasi jika digunakan berlebihan.'",
+  "overallVerdict": "Rangkuman singkat (2-3 kalimat): apakah produk ini cocok untuk user secara umum, kelebihan utama, dan apa yang perlu diwaspadai.",
+  "overallSummary": {
+    "recommendationStatus": "SANGAT_DIREKOMENDASIKAN | BOLEH_DICOBA | TIDAK_DIREKOMENDASIKAN",
+    "suitabilitySummary": "Penjelasan singkat (1-2 kalimat) apakah produk ini cocok untuk mengatasi masalah kulit target pengguna (primaryFocus) dan seberapa efektif formulasinya.",
+    "matchScoreSummary": "Analisis ringkas mengapa produk mendapatkan tingkat kecocokan kulit (Match Score) tersebut, sebutkan kontribusi bahan aktif atau pembatasnya.",
+    "safetyScoreSummary": "Analisis ringkas tentang keamanan formulasi (Safety Score), risiko alergi/iritasi, efek samping, dan bagaimana buffer/penetralisir meredam risiko tersebut.",
+    "alternativeSkinType": "Jenis kulit yang sebenarnya PALING cocok untuk formulasi ini (misal: 'Kulit Berminyak & Kombinasi', 'Kulit Kering', atau 'Semua Jenis Kulit kecuali Kulit Sensitif')"
+  },
   "formulationFocus": {
     "primary": "salah satu dari 6 kategori di atas",
     "secondary": ["kategori lain jika relevan"],

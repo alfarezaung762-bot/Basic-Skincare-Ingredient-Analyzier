@@ -293,7 +293,6 @@ export default function SingleAnalyzerHasil({
   userProfile: UserProfileSummary | null;
 }) {
   const hasWarning = result.engineResult.safetyScore < 70 || result.engineResult.matchScore < 40;
-  const [showAiConsultation, setShowAiConsultation] = useState(false);
 
   return (
     <div className="space-y-6">
