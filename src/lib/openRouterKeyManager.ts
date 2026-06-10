@@ -8,7 +8,7 @@
 import OpenAI from "openai";
 
 // Durasi cooldown berbeda tergantung jenis error
-const COOLDOWN_SHORT_MS = 2 * 60 * 1000;      // 2 menit — untuk 429 (server sibuk, coba lagi sebentar)
+const COOLDOWN_SHORT_MS = 30 * 1000;          // 30 detik — untuk 429 (server sibuk, coba lagi sebentar)
 const COOLDOWN_LONG_MS  = 3 * 60 * 60 * 1000;  // 3 jam   — untuk 402 (saldo habis, perlu top-up)
 
 type CooldownType = "short" | "long" | "none";
@@ -101,7 +101,7 @@ function setCooldown(keyIndex: number, reason: string, type: CooldownType) {
   });
 
   const durationLabel = type === "short"
-    ? `${COOLDOWN_SHORT_MS / 60000} menit`
+    ? `${COOLDOWN_SHORT_MS / 1000} detik`
     : `${COOLDOWN_LONG_MS / (60 * 60 * 1000)} jam`;
   console.log(`[OpenRouter] 🧊 Key #${keyIndex + 1} di-cooldown ${durationLabel}. Alasan: ${reason}`);
 }
@@ -124,6 +124,10 @@ function createClient(apiKey: string) {
  * Format waktu tersisa cooldown ke string yang mudah dibaca
  */
 function formatRemaining(ms: number): string {
+  if (ms < 60000) {
+    const seconds = Math.ceil(ms / 1000);
+    return `${seconds}s`;
+  }
   const minutes = Math.ceil(ms / 60000);
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);

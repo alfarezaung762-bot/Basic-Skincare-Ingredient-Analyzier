@@ -231,6 +231,7 @@ export default function SingleAnalyzer() {
                    products={recommendations} 
                    userPrimaryFocus={(userProfile as any)?.primaryFocus || userProfile?.skinType || ""} 
                    userIngredients={ingredients} 
+                   userSkinType={userProfile?.skinType || ""}
                    onAnalyzeThis={handleAnalyzeThis}
                  />
               </div>

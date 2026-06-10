@@ -60,6 +60,10 @@ export async function POST(req: Request) {
       },
     });
 
+    // Bersihkan seluruh cache AI-Hybrid karena kamus bahan berubah
+    await prisma.aiHybridCache.deleteMany({});
+    console.log("[Invalidasi Cache] Seluruh cache AI-Hybrid dikosongkan karena penambahan bahan baru.");
+
     return NextResponse.json(newIngredient, { status: 201 });
   } catch (error: any) {
     console.error("POST Ingredient Error Detail:", error);

@@ -30,6 +30,10 @@ export default function DownloadFilePage() {
     blacklistedSkinTypes: true,
   });
 
+  // Toggle untuk sertakan prompt Deep Research
+  const [includePrompt, setIncludePrompt] = useState(false);
+  const [includeResponseFormat, setIncludeResponseFormat] = useState(false);
+
   useEffect(() => {
     const profileString = sessionStorage.getItem("adminProfile");
     
@@ -57,6 +61,21 @@ export default function DownloadFilePage() {
     setColumns((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Hitung jumlah kolom aktif untuk tampilan mode prompt
+  const activeColumnCount = Object.values(columns).filter(Boolean).length;
+  const activeColumnNames = Object.entries(columns)
+    .filter(([, v]) => v)
+    .map(([k]) => {
+      const labelMap: Record<string, string> = {
+        aliases: "Sinonim", type: "Sifat Kimia", functionalCategory: "Fungsi Khusus",
+        isKeyActive: "Bahan Aktif", benefits: "Manfaat", aiContext: "Analisis AI",
+        comedogenicRating: "Komedogenik", safeForPregnancy: "Aman Bumil",
+        safeForSensitive: "Aman Sensitif", targetFocus: "Fokus Perawatan",
+        blacklistedSkinTypes: "Blacklist",
+      };
+      return labelMap[k] || k;
+    });
+
   const handleDownload = async () => {
     setIsLoading(true);
     setMessage({ type: "", text: "" });
@@ -68,7 +87,9 @@ export default function DownloadFilePage() {
         body: JSON.stringify({
           statusFilter: filter.statusFilter,
           typeFilter: filter.typeFilter,
-          columns
+          columns,
+          includePrompt,
+          includeResponseFormat: includePrompt && includeResponseFormat,
         }),
       });
 
@@ -82,7 +103,8 @@ export default function DownloadFilePage() {
       const date = new Date().toISOString().split('T')[0];
       const statusText = filter.statusFilter === 'ALL' ? 'semua' : filter.statusFilter === 'VERIFIED' ? 'ditinjau' : 'tertunda';
       const typeText = filter.typeFilter === 'ALL' ? '' : `-${filter.typeFilter.toLowerCase()}`;
-      const filename = `bahan-${statusText}${typeText}-${date}.txt`;
+      const promptText = includePrompt ? '-prompt' : '';
+      const filename = `bahan-${statusText}${typeText}${promptText}-${date}.txt`;
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -94,7 +116,7 @@ export default function DownloadFilePage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      setMessage({ type: "success", text: "File berhasil diunduh!" });
+      setMessage({ type: "success", text: `File berhasil diunduh! ${includePrompt ? '(Prompt Deep Research disertakan)' : ''}` });
 
       // Optional: Redirect back after 2 seconds
       setTimeout(() => {
@@ -120,7 +142,7 @@ export default function DownloadFilePage() {
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 font-medium">Download data bahan dalam format teks untuk Deep Research AI atau keperluan pencadangan.</p>
 
           {message.text && (
-            <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
+            <div className={`p-4 mb-6 rounded-xl text-sm font-bold border ${message.type === "success" ? "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-100 dark:border-green-800" : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800"}`}>
               {message.text}
             </div>
           )}
@@ -225,6 +247,89 @@ export default function DownloadFilePage() {
               </div>
             </div>
 
+            {/* BAGIAN 3: SERTAKAN PROMPT DEEP RESEARCH */}
+            <div className={`p-5 rounded-2xl border transition-all duration-300 ${includePrompt ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700' : 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700'}`}>
+              <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase mb-4">3. Validasi Manual via Gemini</h2>
+              
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={includePrompt} 
+                  onChange={(e) => setIncludePrompt(e.target.checked)} 
+                  className="w-6 h-6 accent-emerald-600 mt-0.5 shrink-0" 
+                />
+                <div className="space-y-1">
+                  <span className={`text-sm font-bold transition-colors ${includePrompt ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                    🧠 Sertakan Prompt Deep Research
+                  </span>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Menyertakan instruksi AI lengkap (aturan parameter, sumber referensi, kill switch) di awal file. 
+                    File bisa langsung di-copy-paste ke <strong>Google Gemini</strong> untuk validasi manual jika Deep Research internal gagal/error.
+                  </p>
+                </div>
+              </label>
+
+              {includePrompt && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }} 
+                  animate={{ opacity: 1, height: "auto" }} 
+                  transition={{ duration: 0.2 }}
+                  className="mt-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-emerald-200 dark:border-emerald-800 space-y-3"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                    <span>✅</span>
+                    <span>Prompt akan otomatis disesuaikan dengan kolom yang dipilih di Bagian 2</span>
+                  </div>
+
+                  <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                    <p className="font-bold text-slate-700 dark:text-slate-300">Mode prompt saat ini:</p>
+                    {activeColumnCount >= 10 ? (
+                      <p className="text-emerald-600 dark:text-emerald-400 font-bold">📋 LENGKAP — Semua {activeColumnCount} parameter akan disertakan</p>
+                    ) : (
+                      <div>
+                        <p className="text-amber-600 dark:text-amber-400 font-bold">🎯 KHUSUS — Hanya {activeColumnCount} parameter:</p>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {activeColumnNames.map((name, i) => (
+                            <span key={i} className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Toggle Format Jawaban */}
+                  <div className="pt-3 border-t border-emerald-100 dark:border-emerald-800/50">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={includeResponseFormat} 
+                        onChange={(e) => setIncludeResponseFormat(e.target.checked)} 
+                        className="w-5 h-5 accent-amber-600 mt-0.5 shrink-0" 
+                      />
+                      <div className="space-y-1">
+                        <span className={`text-sm font-bold transition-colors ${includeResponseFormat ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                          📝 Sertakan Format Jawaban Koreksi
+                        </span>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                          Menambahkan template format jawaban agar AI <strong>hanya melaporkan data yang SALAH</strong> (skip yang benar), 
+                          disertai nilai koreksi, alasan klinis, sumber referensi + link.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="pt-2 border-t border-emerald-100 dark:border-emerald-800/50">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-500 leading-relaxed">
+                      💡 <strong>Tips:</strong> Untuk validasi yang lebih fokus, uncheck kolom yang tidak perlu di Bagian 2. 
+                      Misal hanya centang "Komedogenik" → prompt yang dihasilkan hanya berisi aturan komedogenik + data komedogenik bahan.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
             <button 
               onClick={handleDownload}
               disabled={isLoading} 
@@ -236,7 +341,12 @@ export default function DownloadFilePage() {
                 <><span>📥</span> Generate & Download Teks</>
               )}
             </button>
-            <p className="text-xs text-center text-slate-400 mt-3">File output disesuaikan dengan skema prompt Deep Research AI.</p>
+            <p className="text-xs text-center text-slate-400 mt-3">
+              {includePrompt 
+                ? "File output berisi Prompt Deep Research + Data Bahan — siap copy-paste ke Gemini." 
+                : "File output disesuaikan dengan skema prompt Deep Research AI."
+              }
+            </p>
           </div>
         </motion.div>
       </div>

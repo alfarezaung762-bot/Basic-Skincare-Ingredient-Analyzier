@@ -1,6 +1,7 @@
 // src/app/api/analyze/ai-hybrid/route.ts
 // AI HYBRID ANALYZER — Konsultan Dermatologi Formulasi
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
@@ -123,6 +124,16 @@ const extractJson = (text: string) => {
 
 const INVALID_NEUTRALIZERS = ['aqua', 'water', 'air', 'polyacrylamide', 'carbomer', 'xanthan gum', 'phenoxyethanol', 'glycerin', 'butylene glycol'];
 
+function cleanString(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/[\u200b\u200c\u200d\ufeff]/g, "") // remove zero-width spaces
+    .replace(/\u00a0/g, " ")                  // normalize non-breaking spaces
+    .replace(/\s+/g, " ")                     // normalize spaces
+    .trim()
+    .toLowerCase();
+}
+
 function validateAdjustments(
   adjustments: PenaltyAdjustment[],
   engineResult: EngineResult,
@@ -132,9 +143,10 @@ function validateAdjustments(
   const seen = new Set<string>();
 
   return adjustments.filter(adj => {
+    const triggerClean = cleanString(adj.triggerIngredient);
+
     // 1. Cek triggerIngredient ADA di detectedIngredients
-    const triggerLower = adj.triggerIngredient.toLowerCase();
-    if (!detectedNamesLower.some(n => n.includes(triggerLower) || triggerLower.includes(n))) {
+    if (!detectedNamesLower.some(n => cleanString(n).includes(triggerClean) || triggerClean.includes(cleanString(n)))) {
       console.warn(`[AI-Hybrid] ❌ BUANG adjustment: triggerIngredient "${adj.triggerIngredient}" tidak ditemukan di formulasi`);
       return false;
     }
@@ -142,63 +154,80 @@ function validateAdjustments(
     // 2. Filter neutralizerIngredients dari bahan dasar yang dilarang (BUG-2)
     adj.neutralizerIngredients = adj.neutralizerIngredients || [];
     adj.neutralizerIngredients = adj.neutralizerIngredients.filter(n =>
-      !INVALID_NEUTRALIZERS.includes(n.toLowerCase())
+      !INVALID_NEUTRALIZERS.includes(cleanString(n))
     );
 
     // 3. Cek neutralizerIngredients ADA di formulasi
     for (const neutralizer of adj.neutralizerIngredients) {
-      const nLower = neutralizer.toLowerCase();
-      if (!detectedNamesLower.some(n => n.includes(nLower) || nLower.includes(n))) {
+      const nClean = cleanString(neutralizer);
+      if (!detectedNamesLower.some(n => cleanString(n).includes(nClean) || nClean.includes(cleanString(n)))) {
         console.warn(`[AI-Hybrid] ❌ BUANG neutralizer "${neutralizer}" tidak ditemukan di formulasi`);
-        // Remove from the array instead of rejecting the whole adjustment
         adj.neutralizerIngredients = adj.neutralizerIngredients.filter(n => n !== neutralizer);
       }
     }
 
     // 4. [PENUTUPAN CELAH / LOOPHOLE FIX]
-    // Jika array penetral kosong setelah disaring (misal AI mengirim [], atau hanya "Water"), BUANG ADJUSTMENT INI.
-    // OPSI A DITERAPKAN: Tidak ada bypass untuk Facewash. Engine sudah menghitung dilution secara mekanis.
     if (adj.neutralizerIngredients.length === 0) {
       console.warn(`[AI-Hybrid] ❌ BUANG adjustment: Tidak ada neutralizer valid tersisa untuk trigger "${adj.triggerIngredient}"`);
       return false;
     }
 
-    // 4. Clamp pointsRestored: maks 50
-    adj.pointsRestored = Math.min(50, Math.max(0, adj.pointsRestored));
+    // 5. VALIDASI SILANG TERHADAP GROUND TRUTH PENALTY FLAG (BUG-3)
+    const targetFlags = adj.targetScore === "MATCH" ? engineResult.matchFlags : engineResult.safetyFlags;
+    const matchingFlag = targetFlags.find(flag => {
+      if (flag.pointsDeducted <= 0) return false;
+      if (flag.culprits && flag.culprits.length > 0) {
+        return flag.culprits.some(c => {
+          const cClean = cleanString(c);
+          return cClean.includes(triggerClean) || triggerClean.includes(cClean);
+        });
+      }
+      return false;
+    });
 
-    // 5. adjustedPenalty tidak boleh LEBIH BESAR dari originalPenalty (AI hanya KURANGI)
-    if (Math.abs(adj.adjustedPenalty) > Math.abs(adj.originalPenalty)) {
-      console.warn(`[AI-Hybrid] ❌ BUANG adjustment: adjustedPenalty (${adj.adjustedPenalty}) > originalPenalty (${adj.originalPenalty})`);
+    if (!matchingFlag) {
+      console.warn(`[AI-Hybrid] ❌ BUANG adjustment: Trigger "${adj.triggerIngredient}" tidak memicu penalti klinis aktif di engine`);
       return false;
     }
 
-    // 6. adjustedPenalty tidak boleh POSITIF (tidak bisa jadi buff)
-    if (adj.adjustedPenalty > 0) {
-      adj.adjustedPenalty = 0; // Clamp ke netral
+    // Koreksi originalPenalty agar sesuai dengan ground truth flag
+    adj.originalPenalty = -matchingFlag.pointsDeducted;
+
+    // Clamp adjustedPenalty agar tidak melebihi penalti asli
+    if (adj.adjustedPenalty > 0) adj.adjustedPenalty = 0;
+    if (Math.abs(adj.adjustedPenalty) > matchingFlag.pointsDeducted) {
+      adj.adjustedPenalty = -matchingFlag.pointsDeducted;
     }
 
-    // 7. Tidak duplikat (1 trigger = 1 adjustment)
-    const key = `${adj.triggerIngredient.toLowerCase()}_${adj.targetScore}`;
+    // Recalculate pointsRestored berdasarkan adjustedPenalty riil
+    adj.pointsRestored = matchingFlag.pointsDeducted - Math.abs(adj.adjustedPenalty);
+    adj.pointsRestored = Math.min(50, Math.max(0, adj.pointsRestored));
+
+    // 6. Tidak duplikat (1 trigger = 1 adjustment)
+    const key = `${triggerClean}_${adj.targetScore}`;
     if (seen.has(key)) {
       console.warn(`[AI-Hybrid] ❌ BUANG adjustment duplikat: ${key}`);
       return false;
     }
     seen.add(key);
 
-    // 8. Recalculate pointsRestored
-    adj.pointsRestored = Math.abs(adj.originalPenalty) - Math.abs(adj.adjustedPenalty);
-    adj.pointsRestored = Math.min(50, Math.max(0, adj.pointsRestored));
-
     return true;
   });
 }
 
 function sanitizeReasoning(text: string): string {
-  // Strip angka skor/persen dari reasoning (Lapis 7)
+  if (!text) return '';
   return text
-    .replace(/\b\d{1,3}\s*%/g, '')
+    // Hapus pola angka penalti seperti -15%, -15 poin, -15, 15 poin, 15 %, minus 15, dll
+    .replace(/\b-?\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
+    .replace(/\bpengurangan\s+-?\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
+    .replace(/\bpenalti\s+-?\d{1,3}\s*(?:%|poin|point|skor|score)?\b/gi, '')
     .replace(/\bskor\b/gi, '')
     .replace(/\bscore\b/gi, '')
+    .replace(/\bpoin\b/gi, '')
+    .replace(/\bpoint\b/gi, '')
+    .replace(/\bdeduct\w*\b/gi, '')
+    .replace(/\bpenal\w*\b/gi, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -215,15 +244,15 @@ function replaceNeutralizedFlags(
     );
     if (isImmutable) return flag;
 
-    // Cari adjustment yang cocok
+    // Cari adjustment yang cocok menggunakan cleanString
     const adj = adjustments.find(a => {
       if (a.targetScore !== targetScore) return false;
-      // Match berdasarkan culprits
       if (flag.culprits && flag.culprits.length > 0) {
-        return flag.culprits.some(c =>
-          c.toLowerCase().includes(a.triggerIngredient.toLowerCase()) ||
-          a.triggerIngredient.toLowerCase().includes(c.toLowerCase())
-        );
+        return flag.culprits.some(c => {
+          const cClean = cleanString(c);
+          const aClean = cleanString(a.triggerIngredient);
+          return cClean.includes(aClean) || aClean.includes(cClean);
+        });
       }
       return false;
     });
@@ -235,17 +264,13 @@ function replaceNeutralizedFlags(
       const colonIndex = flag.message.indexOf(':');
       const originalPrefix = colonIndex > 0 ? flag.message.substring(0, colonIndex + 1) : '';
 
-      // BUG-2 Fix: Keep original culprits, only append valid neutralizers
-      const newCulprits = Array.from(new Set([
-        ...(flag.culprits || []),
-        ...adj.neutralizerIngredients
-      ]));
-
+      // Keep culprits (triggers) and neutralizers separate
       return {
         type: newType,
         message: `${originalPrefix} ${sanitizeReasoning(adj.reasoning)}`.trim(),
         pointsDeducted: Math.abs(adj.adjustedPenalty),
-        culprits: newCulprits
+        culprits: flag.culprits || [],
+        neutralizers: adj.neutralizerIngredients || []
       };
     }
 
@@ -451,12 +476,12 @@ B. PENAWAR IRITASI ASAM/HARSH (Kerusakan Barrier):
 C. BAHAN TERLARANG SEBAGAI PENETRAL:
    - Pelarut (Aqua/Water/Air), pH Adjuster (Citric Acid/Sodium Hydroxide), Pengental (Carbomer/Xanthan Gum), dan Pengawet (Phenoxyethanol/Parabens) ADALAH BAHAN DASAR. Mereka TIDAK PERNAH bisa menjadi neutralizer.
 
-ATURAN 8 — STRUKTUR REASONING WAJIB (SANGAT PENTING):
-Setiap field "reasoning" dalam penaltyAdjustments HARUS mengikuti alur logis berikut (bahasa awam, tanpa tag eksplisit):
-1. FAKTA KLINIS: Sebutkan bahan pemicu dan kenapa sistem memberi penalti (misal: "Isopropyl Myristate adalah minyak pekat yang berisiko menyumbat pori kulit berminyak Anda.")
-2. HUKUM FISIKA/KIMIA: Jelaskan HUKUM PENETRALAN berdasarkan Aturan 7 atau Aturan 6 (Tipe Produk). (misal: "Namun, karena ini adalah sabun cuci muka (kontak singkat 60 detik) DAN mengandung Salicylic Acid yang melarutkan minyak...")
-3. KESIMPULAN KONKRET: Berikan lampu hijau atau kuning. (misal: "...maka risiko komedo berhasil ditekan. Aman dipakai rutin untuk cuci muka harian.")
-JIKA TIDAK ADA PENETRAL: Jangan buat adjustment sama sekali (hapus dari JSON).
+ATURAN 8 — REASONING EDUKATIF & TO THE POINT (SANGAT PENTING):
+Setiap penjelasan reasoning dalam penaltyAdjustments HARUS padat, edukatif, berbasis ilmiah, dan langsung ke intinya tanpa basa-basi (DILARANG menggunakan kata penenang yang tidak perlu seperti "jangan khawatir", "tidak perlu cemas", "maka dari itu", dll.):
+1. DIAGNOSIS PENALTI: Jelaskan secara singkat mengapa bahan tersebut memicu risiko bagi kondisi kulit pengguna (contoh: "Dimethicone/Vinyl Dimethicone Crosspolymer bersifat oklusif yang berpotensi memerangkap sebum pada kulit berjerawat aktif.").
+2. MEKANISME NETRALISASI (EDUKATIF): Jelaskan secara ilmiah mengapa risiko tersebut hilang atau berkurang secara drastis dalam formulasi ini (contoh: "Namun, produk ini adalah pembersih bilas (wash-off) dengan durasi kontak singkat (~60 detik) sehingga tidak sempat membentuk lapisan film oklusif. Ditambah lagi, keberadaan Niacinamide membantu menyeimbangkan sekresi sebum.").
+3. REKOMENDASI KLINIS: Berikan kesimpulan konkret dan instruksi pemakaian yang to-the-point (contoh: "Risiko penyumbatan pori teratasi sepenuhnya. Aman digunakan sebagai sabun wajah harian.").
+JIKA TIDAK ADA PENETRAL: Jangan buat penyesuaian sama sekali (hapus dari array JSON).
 
 ATURAN 9 — KLARIFIKASI TOKSIK & ANOMALI LABEL (KHUSUS BAHAN TOXIC):
 Bahan dengan penalti TOXIC (-100) TIDAK BISA dinetralkan atau dikembalikan poinnya (skor otomatis 0 demi keselamatan).
@@ -533,16 +558,36 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
 `;
 
     // ========================
-    // 7. CALL AI (CASCADE PER-MODEL)
+    // 7. CALL AI (CASCADE PER-MODEL WITH CACHING)
     // ========================
     let aiResult: AiHybridResult | null = null;
     let usedModel = "";
 
     for (const modelConfig of modelList) {
+      const currentModel = modelConfig.model;
+      const provider = modelConfig.provider;
+
+      // Hitung SHA-256 cacheKey
+      const cacheKey = crypto.createHash("sha256").update(systemPrompt + currentModel).digest("hex");
+
+      // Cek apakah data sudah ada di cache
       try {
-        const currentModel = modelConfig.model;
-        const provider = modelConfig.provider;
-        console.log(`[AI-Hybrid] 🤖 Mencoba model: ${currentModel} (${provider})...`);
+        const cached = await prisma.aiHybridCache.findUnique({
+          where: { cacheKey }
+        });
+        if (cached) {
+          console.log(`[AI-Hybrid] ⚡ CACHE HIT: Menggunakan cache untuk model ${currentModel}`);
+          aiResult = cached.aiResponse as any;
+          usedModel = currentModel;
+          break; // Keluar dari loop cascade, proses selesai!
+        }
+      } catch (cacheErr) {
+        console.error("[AI-Hybrid] Gagal membaca cache:", cacheErr);
+      }
+
+      // Cache Miss: Jalankan API Model
+      try {
+        console.log(`[AI-Hybrid] 🤖 CACHE MISS: Mencoba model API: ${currentModel} (${provider})...`);
 
         let responseText = "";
 
@@ -595,10 +640,30 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
         }
 
         usedModel = currentModel;
-        console.log(`[AI-Hybrid] ✅ Berhasil dengan model: ${currentModel}`);
-        break;
+        console.log(`[AI-Hybrid] ✅ Berhasil memanggil API model: ${currentModel}`);
+
+        // Simpan hasil ke cache database secara aman
+        try {
+          await prisma.aiHybridCache.create({
+            data: {
+              cacheKey,
+              ingredientsInput: ingredients,
+              modelUsed: currentModel,
+              aiResponse: aiResult as any
+            }
+          });
+          console.log(`[AI-Hybrid] 💾 Hasil analisis berhasil disimpan ke cache untuk model ${currentModel}`);
+        } catch (saveCacheErr: any) {
+          if (saveCacheErr.code === "P2002") {
+            console.log(`[AI-Hybrid] Cache key sudah disimpan oleh request paralel lain.`);
+          } else {
+            console.warn(`[AI-Hybrid] Gagal menyimpan cache:`, saveCacheErr.message);
+          }
+        }
+
+        break; // Berhasil, keluar dari cascade!
       } catch (err: any) {
-        console.warn(`[AI-Hybrid] ⚠️ Model ${modelConfig.model} gagal: ${err.message}`);
+        console.warn(`[AI-Hybrid] ⚠️ Model ${modelConfig.model} gagal: ${err.message}. Lanjut model berikutnya...`);
         continue; // Pindah ke model berikutnya
       }
     }

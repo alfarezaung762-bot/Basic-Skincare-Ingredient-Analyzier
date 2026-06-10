@@ -25,7 +25,20 @@ export default function CreateProductPage() {
     isPinKreator: false,
     masalahKulitPin: "",
     catatanKreator: "",
+    tagKhusus: "",
   });
+
+  const [skinTypes, setSkinTypes] = useState({
+    "Berminyak": false,
+    "Kering": false,
+    "Kombinasi": false,
+    "Normal": false,
+    "Sensitif": false,
+  });
+
+  const handleSkinTypeChange = (st: keyof typeof skinTypes) => {
+    setSkinTypes(prev => ({ ...prev, [st]: !prev[st] }));
+  };
 
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
@@ -133,6 +146,11 @@ export default function CreateProductPage() {
       .map(([key]) => key)
       .join(", ");
 
+    const selectedSkinTypes = Object.entries(skinTypes)
+      .filter(([_, isChecked]) => isChecked)
+      .map(([key]) => key)
+      .join(",");
+
     if (!selectedFocuses) {
       setMessage({ type: "error", text: "Kegagalan: Anda harus memilih minimal satu Fokus Produk!" });
       setIsLoading(false);
@@ -158,6 +176,7 @@ export default function CreateProductPage() {
         ...formData,
         gambarUrl: finalImageUrl,
         fokusProduk: selectedFocuses,
+        targetSkinTypes: selectedSkinTypes || null,
       };
 
       const res = await fetch("/api/admin/products", {
@@ -377,6 +396,41 @@ export default function CreateProductPage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Target Jenis Kulit */}
+            <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <label className="text-xs font-bold text-slate-700 uppercase">Target Jenis Kulit (Opsional)</label>
+              <p className="text-[10px] text-slate-500 font-medium -mt-1">Pilih jenis kulit yang paling cocok menggunakan produk ini.</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {(Object.keys(skinTypes) as Array<keyof typeof skinTypes>).map((st) => (
+                  <label key={st} htmlFor={`skin-${st}`} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 cursor-pointer transition-colors">
+                    <input 
+                      id={`skin-${st}`}
+                      title={`Target kulit ${st}`}
+                      type="checkbox" 
+                      checked={skinTypes[st]} 
+                      onChange={() => handleSkinTypeChange(st)} 
+                      className="w-5 h-5 accent-teal-600" 
+                    />
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{st}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Tag Khusus */}
+            <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <label htmlFor="tagKhusus" className="text-xs font-bold text-slate-700 uppercase">Tag Khusus (Opsional)</label>
+              <p className="text-[10px] text-slate-500 font-medium -mt-1">Pisahkan dengan koma. Contoh: fragrance-free, alcohol-free, vegan</p>
+              <input 
+                id="tagKhusus"
+                type="text" 
+                placeholder="fragrance-free, alcohol-free, vegan" 
+                value={formData.tagKhusus} 
+                onChange={(e) => setFormData({...formData, tagKhusus: e.target.value})}
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-teal-600 transition-all" 
+              />
             </div>
 
             <div className="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-800 dark:border-slate-800">

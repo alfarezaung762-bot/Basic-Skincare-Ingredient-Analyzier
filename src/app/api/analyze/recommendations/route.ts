@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 function sanitize(text: string) {
   const parts = text.replace(/[0-9]+%?/g, '').split(/[,;\n](?![^()]*\))/g);
-  return parts.map(i => i.replace(/[\(\)\[\]\{\}\*]/g, '').trim().toLowerCase()).filter(i => i.length > 2);
+  return parts.map(i => i.replace(/[\(\)\[\]\{\}\*]/g, '').replace(/[\u200b\u200c\u200d\ufeff]/g, '').replace(/\u00a0/g, ' ').trim().toLowerCase()).filter(i => i.length > 2);
 }
 
 function levenshtein(a: string, b: string): number {
@@ -56,8 +56,9 @@ export async function POST(req: Request) {
     });
 
     const userListArray = Array.from(userStandardizedNames);
+    const userBahanCount = userListArray.length;
 
-    if (userListArray.length === 0) return NextResponse.json([], { status: 200 });
+    if (userBahanCount === 0) return NextResponse.json([], { status: 200 });
 
     const recommendations = catalogProducts.map((product) => {
       const productRawList = sanitize(product.komposisiAsli);
@@ -70,18 +71,38 @@ export async function POST(req: Request) {
         if (match) productStandardizedNames.add(match.name);
       });
 
+      const productBahanCount = productStandardizedNames.size;
+
+      // === SIMILARITY V2: dengan penalti bahan berlebih ===
       let matchCount = 0;
       userListArray.forEach(uName => {
         if (productStandardizedNames.has(uName)) matchCount++;
       });
 
-      const similarity = Math.round((matchCount / userListArray.length) * 100);
+      // Base similarity: berapa % bahan user yang tercakup di produk katalog
+      const baseSimilarity = (matchCount / userBahanCount) * 100;
 
+      // Penalti kelebihan bahan: setiap bahan ekstra di katalog yang TIDAK ada di user, -3%
+      const extraIngredients = Math.max(0, productBahanCount - matchCount);
+      const excessPenalty = extraIngredients * 3;
+
+      // Bonus jika jumlah bahan sangat mirip (±3 bahan)
+      const sizeDiff = Math.abs(productBahanCount - userBahanCount);
+      const sizeBonus = sizeDiff <= 3 ? 5 : 0;
+
+      // Final similarity score (clamped 0-100)
+      const similarity = Math.max(0, Math.min(100, Math.round(baseSimilarity - excessPenalty + sizeBonus)));
+
+      // Scoring engine untuk matchScore & safetyScore
       const analysis = runScoringEngine(userProfile, {
         productName: product.namaProduk,
         productType: product.tipeProduk as any,
         ingredientsRaw: product.komposisiAsli
       }, dictionary as any);
+
+      const avgRating = product.reviews.length > 0 
+        ? product.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / product.reviews.length 
+        : 0;
 
       return {
         ...product,
@@ -90,13 +111,13 @@ export async function POST(req: Request) {
         safetyScore: analysis.safetyScore,
         komposisiAsli: product.komposisiAsli,
         reviews: product.reviews,
-        rating: product.reviews.length > 0 ? product.reviews.reduce((acc: any, r: any) => acc + r.rating, 0) / product.reviews.length : 0
+        rating: avgRating,
       };
     });
 
-    // Filter kemiripan minimal 0% (semua muncul dulu untuk test)
+    // Filter: minimum similarity >= 5% (threshold rendah, UI akan tampilkan >= 50% saja tapi data tersedia untuk semua tab)
     const finalResult = recommendations
-      .filter(p => p.similarity >= 0) 
+      .filter(p => p.similarity >= 5 || p.isPinKreator) // VIP selalu tampil
       .sort((a, b) => {
         if (a.isPinKreator !== b.isPinKreator) return a.isPinKreator ? -1 : 1;
         return b.similarity - a.similarity;

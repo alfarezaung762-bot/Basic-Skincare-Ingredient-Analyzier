@@ -21,6 +21,8 @@ export async function POST(req: Request) {
       isPinKreator,
       masalahKulitPin,
       catatanKreator, // Menggantikan rating dan teksUlasan
+      targetSkinTypes,
+      tagKhusus,
     } = body;
 
     // Validasi sederhana agar data yang masuk tidak kosong
@@ -43,6 +45,8 @@ export async function POST(req: Request) {
         isPinKreator: isPinKreator || false,
         masalahKulitPin: masalahKulitPin || null,
         catatanKreator: catatanKreator || null,
+        targetSkinTypes: targetSkinTypes || null,
+        tagKhusus: tagKhusus || null,
       },
     });
 
@@ -65,7 +69,7 @@ export async function GET() {
     const products = await prisma.productCatalog.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    
+
     return NextResponse.json(products, { status: 200 });
   } catch (error: any) {
     console.error("GET Products Error:", error.message);
@@ -114,6 +118,8 @@ export async function PUT(req: Request) {
       isPinKreator,
       masalahKulitPin,
       catatanKreator,
+      targetSkinTypes,
+      tagKhusus,
     } = body;
 
     // Validasi sederhana agar sistem tahu produk mana yang harus diubah
@@ -137,6 +143,8 @@ export async function PUT(req: Request) {
         isPinKreator: isPinKreator || false,
         masalahKulitPin: masalahKulitPin || null,
         catatanKreator: catatanKreator || null,
+        targetSkinTypes: targetSkinTypes || null,
+        tagKhusus: tagKhusus || null,
       },
     });
 

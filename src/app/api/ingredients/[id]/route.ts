@@ -52,6 +52,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
+    await prisma.aiHybridCache.deleteMany({});
+    console.log("[Invalidasi Cache] Seluruh cache AI-Hybrid dikosongkan karena edit bahan.");
+
     return NextResponse.json(updatedIngredient, { status: 200 });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -73,6 +76,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: { isVerified: Boolean(isVerified) },
     });
 
+    await prisma.aiHybridCache.deleteMany({});
+    console.log("[Invalidasi Cache] Seluruh cache AI-Hybrid dikosongkan karena verifikasi bahan.");
+
     return NextResponse.json(updatedIngredient, { status: 200 });
   } catch (error) {
     return NextResponse.json({ message: "Gagal memverifikasi bahan" }, { status: 500 });
@@ -88,6 +94,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.ingredientDictionary.delete({
       where: { id: resolvedParams.id },
     });
+
+    await prisma.aiHybridCache.deleteMany({});
+    console.log("[Invalidasi Cache] Seluruh cache AI-Hybrid dikosongkan karena hapus bahan.");
     
     return NextResponse.json({ message: "Berhasil dihapus" }, { status: 200 });
   } catch (error) {

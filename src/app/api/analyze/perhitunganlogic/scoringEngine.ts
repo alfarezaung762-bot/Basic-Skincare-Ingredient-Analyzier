@@ -40,6 +40,7 @@ export type FlagDetail = {
   message: string;
   pointsDeducted: number;
   culprits?: string[];
+  neutralizers?: string[];
 };
 
 export type EngineResult = {
@@ -359,7 +360,7 @@ export function runScoringEngine(
     // 3. Pelembap Berat Dilarang
     if (activeRule.moistHeavy.status === "DILARANG" && countMoistHeavy > 0) {
       matchScore -= 25;
-      matchFlags.push({ type: "CRITICAL", message: `Tekstur Cream / Terlalu Pekat: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif.`, pointsDeducted: 25, culprits: heavyMoistCulprits });
+      matchFlags.push({ type: "CRITICAL", message: `tekstur SKINCARE terdeteksi cream/Heavy: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif. Gunakan tipis tipis jika ingin mencoba Skincare ini dan hindari penggunaanya di area berjerawat aktif.`, pointsDeducted: 25, culprits: heavyMoistCulprits });
     }
 
     // 4. Moisturizer Logic Khusus

@@ -17,6 +17,8 @@ interface Product {
   fokusProduk: string;
   isPinKreator: boolean;
   masalahKulitPin: string | null;
+  targetSkinTypes: string | null;
+  tagKhusus: string | null;
 }
 
 export default function AdminProductsDashboard() {
@@ -24,6 +26,7 @@ export default function AdminProductsDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState("ALL");
+  const [filterSkinType, setFilterSkinType] = useState("ALL");
   
   // STATE KEAMANAN
   const [isViewer, setIsViewer] = useState(false);
@@ -233,6 +236,18 @@ export default function AdminProductsDashboard() {
                   <option value="MOISTURIZER">Pelembap</option>
                   <option value="SUNSCREEN">Tabir Surya</option>
                 </select>
+                <select
+                  value={filterSkinType}
+                  onChange={(e) => setFilterSkinType(e.target.value)}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 px-4 py-2.5 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-600 transition-all"
+                >
+                  <option value="ALL">Semua Kulit</option>
+                  <option value="Berminyak">🎯 Berminyak</option>
+                  <option value="Kering">🎯 Kering</option>
+                  <option value="Kombinasi">🎯 Kombinasi</option>
+                  <option value="Normal">🎯 Normal</option>
+                  <option value="Sensitif">🎯 Sensitif</option>
+                </select>
                 <Link 
                   href="/admin/products/create" 
                   className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center gap-2 whitespace-nowrap"
@@ -266,6 +281,7 @@ export default function AdminProductsDashboard() {
                   <tr>
                     <th className="p-4 whitespace-nowrap">Detail Produk</th>
                     <th className="p-4 whitespace-nowrap">Tipe Produk</th>
+                    <th className="p-4 whitespace-nowrap">Target Kulit & Tag</th>
                     <th className="p-4 whitespace-nowrap">Tautan Afiliasi</th>
                     <th className="p-4 text-right whitespace-nowrap">Tindakan Admin</th>
                   </tr>
@@ -273,6 +289,7 @@ export default function AdminProductsDashboard() {
                 <motion.tbody variants={containerVariants} initial="hidden" animate="visible" className="divide-y divide-slate-100 dark:divide-slate-800">
                   {products
                     .filter(p => filterCategory === "ALL" || p.tipeProduk === filterCategory)
+                    .filter(p => filterSkinType === "ALL" || (p.targetSkinTypes && p.targetSkinTypes.includes(filterSkinType)))
                     .map((product) => (
                     <motion.tr variants={itemVariants} key={product.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors group">
                       <td className="p-4">
@@ -303,6 +320,30 @@ export default function AdminProductsDashboard() {
                         <span className="inline-block bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-md font-bold text-[10px] uppercase tracking-widest border border-slate-200 dark:border-slate-700">
                           {product.tipeProduk}
                         </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col gap-1.5">
+                          {product.targetSkinTypes ? (
+                            <div className="flex flex-wrap gap-1">
+                              {product.targetSkinTypes.split(",").map((st, i) => (
+                                <span key={i} className="text-[9px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/50 px-1.5 py-0.5 rounded">
+                                  {st.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[9px] text-slate-400 italic">Belum diatur</span>
+                          )}
+                          {product.tagKhusus && (
+                            <div className="flex flex-wrap gap-1">
+                              {product.tagKhusus.split(",").map((tag, i) => (
+                                <span key={i} className="text-[8px] font-bold text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/50 px-1.5 py-0.5 rounded capitalize">
+                                  {tag.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <a 

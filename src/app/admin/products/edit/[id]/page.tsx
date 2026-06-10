@@ -26,7 +26,20 @@ export default function EditProductPage() {
     isPinKreator: false,
     masalahKulitPin: "",
     catatanKreator: "",
+    tagKhusus: "",
   });
+
+  const [skinTypes, setSkinTypes] = useState({
+    "Berminyak": false,
+    "Kering": false,
+    "Kombinasi": false,
+    "Normal": false,
+    "Sensitif": false,
+  });
+
+  const handleSkinTypeChange = (st: keyof typeof skinTypes) => {
+    setSkinTypes(prev => ({ ...prev, [st]: !prev[st] }));
+  };
 
   const [initialData, setInitialData] = useState<any>(null);
 
@@ -89,7 +102,20 @@ export default function EditProductPage() {
                 isPinKreator: product.isPinKreator,
                 masalahKulitPin: product.masalahKulitPin || "",
                 catatanKreator: product.catatanKreator || "",
+                tagKhusus: product.tagKhusus || "",
               });
+
+              // Load targetSkinTypes
+              if (product.targetSkinTypes) {
+                const selectedSTs = product.targetSkinTypes.split(",").map((s: string) => s.trim());
+                setSkinTypes(prev => {
+                  const newST = { ...prev };
+                  selectedSTs.forEach((st: string) => {
+                    if (st in newST) newST[st as keyof typeof prev] = true;
+                  });
+                  return newST;
+                });
+              }
               
               if (product.gambarUrl) {
                 setUploadedImages(product.gambarUrl.split(",").filter((u: string) => u.trim() !== ""));
@@ -178,6 +204,11 @@ export default function EditProductPage() {
       .map(([key]) => key)
       .join(", ");
 
+    const selectedSkinTypes = Object.entries(skinTypes)
+      .filter(([_, isChecked]) => isChecked)
+      .map(([key]) => key)
+      .join(",");
+
     if (!selectedFocuses) {
       setMessage({ type: "error", text: "Kegagalan: Anda harus memilih minimal satu Fokus Produk." });
       setIsLoading(false);
@@ -204,6 +235,7 @@ export default function EditProductPage() {
         ...formData,
         gambarUrl: finalImageUrl, 
         fokusProduk: selectedFocuses,
+        targetSkinTypes: selectedSkinTypes || null,
       };
 
       const res = await fetch("/api/admin/products", {
@@ -457,6 +489,43 @@ export default function EditProductPage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Target Jenis Kulit */}
+            <div className={`space-y-3 pt-4 border-t border-slate-100 ${isViewer ? 'opacity-80 pointer-events-none' : ''}`}>
+              <label className="text-xs font-bold text-slate-700 uppercase">Target Jenis Kulit (Opsional)</label>
+              <p className="text-[10px] text-slate-500 font-medium -mt-1">Pilih jenis kulit yang paling cocok menggunakan produk ini.</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {(Object.keys(skinTypes) as Array<keyof typeof skinTypes>).map((st) => (
+                  <label key={st} htmlFor={`skin-${st}`} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors">
+                    <input 
+                      id={`skin-${st}`}
+                      title={`Target kulit ${st}`}
+                      type="checkbox" 
+                      disabled={isViewer}
+                      checked={skinTypes[st]} 
+                      onChange={() => handleSkinTypeChange(st)} 
+                      className="w-5 h-5 accent-teal-600 disabled:cursor-not-allowed" 
+                    />
+                    <span className="text-sm font-bold text-slate-800">{st}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Tag Khusus */}
+            <div className="space-y-2 pt-4 border-t border-slate-100">
+              <label htmlFor="tagKhusus" className="text-xs font-bold text-slate-700 uppercase">Tag Khusus (Opsional)</label>
+              <p className="text-[10px] text-slate-500 font-medium -mt-1">Pisahkan dengan koma. Contoh: fragrance-free, alcohol-free, vegan</p>
+              <input 
+                id="tagKhusus"
+                type="text" 
+                disabled={isViewer}
+                placeholder="fragrance-free, alcohol-free, vegan" 
+                value={formData.tagKhusus} 
+                onChange={(e) => setFormData({...formData, tagKhusus: e.target.value})}
+                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-teal-600 transition-all disabled:bg-slate-100 disabled:text-slate-500" 
+              />
             </div>
 
             {/* Pin Kreator */}

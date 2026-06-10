@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 // --- TIPE DATA EXPORT ---
 export interface IngredientDb {
@@ -21,6 +22,7 @@ export interface FlagDetail {
   message: string;
   pointsDeducted: number;
   culprits?: string[];
+  neutralizers?: string[];
 }
 
 export interface EngineResult {
@@ -46,6 +48,7 @@ export interface FullAnalysisResponse {
   analysis: AiAnalysis;
   historyId: string;
   aiHybridData?: {
+    overallVerdict?: string;
     formulationFocus?: {
       primary: string;
       secondary: string[];
@@ -70,7 +73,7 @@ export interface UserProfileSummary {
 }
 
 // --- KOMPONEN FLAG ITEM (DENGAN TRUNCATE 30 KATA) ---
-const FlagItem = ({ flag }: { flag: FlagDetail }) => {
+const FlagItem = ({ flag, parentScore }: { flag: FlagDetail; parentScore: number }) => {
   const [expanded, setExpanded] = useState(false);
 
   let style = "border-slate-300 bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600";
@@ -115,21 +118,43 @@ const FlagItem = ({ flag }: { flag: FlagDetail }) => {
             </button>
           )}
         </p>
-        {/* LENCANA BAHAN PEMICU (CULPRITS) */}
-        {flag.culprits && flag.culprits.length > 0 && (
+        {/* LENCANA BAHAN PEMICU (CULPRITS) & PENETRAL (NEUTRALIZERS) */}
+        {((flag.culprits && flag.culprits.length > 0) || (flag.neutralizers && flag.neutralizers.length > 0)) && (
           <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {flag.culprits.map((culprit, cIdx) => (
+            {/* Pemicu (Triggers) */}
+            {flag.culprits && flag.culprits.map((culprit, cIdx) => {
+              const isNeutralized = flag.type === "SUCCESS";
+              let triggerStyle = "";
+              if (isNeutralized) {
+                triggerStyle = "bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-800/40 dark:text-slate-500 dark:border-slate-700/50 line-through opacity-70";
+              } else if (flag.type === "CRITICAL") {
+                triggerStyle = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800/50";
+              } else {
+                triggerStyle = "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/50";
+              }
+              return (
+                <span
+                  key={`culprit-${cIdx}`}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold capitalize border shadow-sm transition-all ${triggerStyle}`}
+                >
+                  ⚠️ Pemicu: {culprit}
+                </span>
+              );
+            })}
+
+            {/* Penetral (Neutralizers) */}
+            {flag.neutralizers && flag.neutralizers.map((neutralizer, nIdx) => (
               <span
-                key={cIdx}
-                className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider animate-[pulse_4s_ease-in-out_infinite] ${badgeStyle}`}
+                key={`neutralizer-${nIdx}`}
+                className="px-2.5 py-1 rounded-md text-[10px] font-bold capitalize bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/50 shadow-sm transition-all duration-300"
               >
-                {culprit}
+                ✅ Penetral: {neutralizer}
               </span>
             ))}
           </div>
         )}
         {/* BADGE PENALTI SKOR */}
-        {flag.pointsDeducted > 0 && (
+        {flag.pointsDeducted > 0 && parentScore < 100 && flag.type !== "SUCCESS" && flag.type !== "INFO" && (
           <span className={`inline-block mt-2.5 px-2.5 py-0.5 rounded-md bg-white/60 dark:bg-slate-700/60 text-[9px] font-black uppercase tracking-wider shadow-sm border ${penaltyBadgeStyle}`}>
             Penalti Skor: -{flag.pointsDeducted} Poin
           </span>
@@ -140,7 +165,7 @@ const FlagItem = ({ flag }: { flag: FlagDetail }) => {
 };
 
 // --- FUNGSI RENDER FLAGS ---
-const RenderFlags = ({ flags }: { flags: FlagDetail[] }) => {
+const RenderFlags = ({ flags, score }: { flags: FlagDetail[]; score: number }) => {
   if (!flags || flags.length === 0) return (
     <div className="p-4 mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium text-center">
       Tidak ada catatan khusus. Produk ini lulus evaluasi klinis.
@@ -150,7 +175,7 @@ const RenderFlags = ({ flags }: { flags: FlagDetail[] }) => {
   return (
     <div className="space-y-3 mt-6 w-full animate-in fade-in-50 slide-in-from-top-2 duration-300">
       {flags.map((flag, idx) => (
-        <FlagItem key={idx} flag={flag} />
+        <FlagItem key={idx} flag={flag} parentScore={score} />
       ))}
     </div>
   );
@@ -247,6 +272,7 @@ export default function SingleAnalyzerHasil({
   userProfile: UserProfileSummary | null;
 }) {
   const hasWarning = result.engineResult.safetyScore < 70 || result.engineResult.matchScore < 40;
+  const [showAiConsultation, setShowAiConsultation] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -279,11 +305,11 @@ export default function SingleAnalyzerHasil({
               </div>
             </div>
             <HalfDonutChart score={result.engineResult.matchScore} label={result.engineResult.matchLabel} colorClass={result.engineResult.matchScore >= 75 ? 'text-emerald-500' : result.engineResult.matchScore >= 50 ? 'text-amber-500' : 'text-rose-500'} />
-            <RenderFlags flags={result.engineResult.matchFlags} />
+            <RenderFlags flags={result.engineResult.matchFlags} score={result.engineResult.matchScore} />
           </div>
           <div className="flex flex-col items-center pt-8 md:pt-0 md:pl-10">
             <div className="relative group flex items-center justify-center gap-1.5 mb-6 cursor-help" tabIndex={0}>
-              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tingkat Keamanan Produk</h3>
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tingkat Keamanan</h3>
               <span className="text-slate-400 dark:text-slate-500 text-xs">ⓘ</span>
               <div className="absolute bottom-full mb-2 w-56 p-3 bg-slate-800 text-white text-[10px] leading-relaxed font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible focus:opacity-100 focus:visible transition-all z-30 text-center shadow-xl border border-slate-700 pointer-events-none">
                 Menilai tingkat keamanan klinis produk. Memperhitungkan risiko alergi, iritasi, kerusakan barrier, dan bahan toksik. Skor rendah berarti produk berisiko medis jika digunakan.
@@ -291,7 +317,7 @@ export default function SingleAnalyzerHasil({
               </div>
             </div>
             <HalfDonutChart score={result.engineResult.safetyScore} label={result.engineResult.safetyLabel} colorClass={result.engineResult.safetyScore >= 80 ? 'text-emerald-500' : result.engineResult.safetyScore >= 60 ? 'text-amber-500' : 'text-rose-500'} />
-            <RenderFlags flags={result.engineResult.safetyFlags} />
+            <RenderFlags flags={result.engineResult.safetyFlags} score={result.engineResult.safetyScore} />
           </div>
         </div>
 
@@ -317,6 +343,127 @@ export default function SingleAnalyzerHasil({
           </div>
         )}
       </div>
+
+      {/* 5. KARTU KONSULTASI AI HYBRID (DROPDOWN — BUKA/TUTUP) */}
+      {result.aiHybridData && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+          className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm border border-indigo-200 dark:border-indigo-800/50 overflow-hidden animate-in fade-in duration-550"
+        >
+          {/* Header Dropdown */}
+          <button
+            onClick={() => setShowAiConsultation(!showAiConsultation)}
+            className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-md">
+                🧠
+              </div>
+              <div className="text-left">
+                <h3 className="text-base font-black text-slate-800 dark:text-slate-100">Rangkuman Analisis Produk</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Rangkuman penilaian produk oleh AI</p>
+              </div>
+            </div>
+            <span className="text-indigo-500 dark:text-indigo-400 text-lg font-bold shrink-0 ml-4">
+              {showAiConsultation ? '▲' : '▼'}
+            </span>
+          </button>
+
+          {/* Content (Collapsible) */}
+          {showAiConsultation && (
+            <div className="px-6 md:px-8 pb-6 md:pb-8 space-y-5 animate-in slide-in-from-top-2 duration-300 border-t border-indigo-100 dark:border-indigo-900/50 pt-6">
+
+              {/* VERDICT UTAMA */}
+              {result.aiHybridData.overallVerdict && (
+                <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800/50">
+                  <h4 className="text-sm font-black text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2">🏆 Verdict Utama</h4>
+                  <p className="text-sm font-medium text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                    {result.aiHybridData.overallVerdict}
+                  </p>
+                </div>
+              )}
+
+              {/* SARAN PEMAKAIAN */}
+              {result.aiHybridData.warningsAndAdvice?.generalAdvice && result.aiHybridData.warningsAndAdvice.generalAdvice.length > 0 && (
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-800/30">
+                  <h4 className="text-sm font-black text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">💊 Saran Pemakaian</h4>
+                  <ul className="space-y-1.5">
+                    {result.aiHybridData.warningsAndAdvice.generalAdvice.map((advice, idx) => (
+                      <li key={idx} className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-start gap-2">
+                        <span className="text-indigo-500 shrink-0">•</span>
+                        <span>{advice}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* SINERGI & PERINGATAN */}
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">🔗⚡ Sinergi & Peringatan Bahan</h4>
+
+                <div className="space-y-4">
+                  {/* Sinergi */}
+                  {result.aiHybridData.synergyAnalysis && result.aiHybridData.synergyAnalysis.length > 0 && (
+                    <div className="space-y-3">
+                      <h5 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Sinergi Positif</h5>
+                      {result.aiHybridData.synergyAnalysis.map((syn, idx) => (
+                        <div key={idx} className="flex items-start gap-2.5 text-sm bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                          <span className="text-emerald-500 shrink-0 mt-0.5">✅</span>
+                          <div>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{syn.pair}</span>
+                            <p className="text-slate-600 dark:text-slate-400 text-xs font-medium mt-0.5 leading-relaxed">{syn.effect}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Peringatan (Clashes) */}
+                  {result.aiHybridData.warningsAndAdvice?.clashes && result.aiHybridData.warningsAndAdvice.clashes.length > 0 && (
+                    <div className="space-y-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <h5 className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Perlu Perhatian</h5>
+                      {result.aiHybridData.warningsAndAdvice.clashes.map((clash, idx) => (
+                        <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                          <div className="flex items-start gap-2 mb-1.5">
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${clash.severity === 'HIGH' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
+                              clash.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-rose-300' :
+                                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                              }`}>
+                              {clash.severity === 'HIGH' ? '🔴' : clash.severity === 'MEDIUM' ? '🟡' : '🔵'}
+                            </span>
+                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{clash.pair}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1.5">{clash.risk}</p>
+                          <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-lg leading-relaxed">
+                            💡 {clash.contextualAdvice}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(!result.aiHybridData.synergyAnalysis?.length && !result.aiHybridData.warningsAndAdvice?.clashes?.length) && (
+                    <p className="text-xs text-slate-500 italic">Tidak ada sinergi spesifik atau peringatan interaksi bahan yang perlu dikhawatirkan.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* MODEL USED BADGE */}
+              {result.aiHybridData.modelUsed && (
+                <div className="flex items-center justify-end mt-2">
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
+                    🤖 Model: {result.aiHybridData.modelUsed}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 }

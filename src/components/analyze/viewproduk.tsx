@@ -212,6 +212,15 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                     <span key={idx} className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm">✨ {fokus}</span>
                   ))}
                 </div>
+                {/* Tag Khusus & Target Kulit */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {product.targetSkinTypes && product.targetSkinTypes.split(",").map((st: string) => st.trim()).filter(Boolean).map((st: string, i: number) => (
+                    <span key={`st-${i}`} className="text-[9px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-1 rounded-lg shadow-sm">🎯 {st}</span>
+                  ))}
+                  {product.tagKhusus && product.tagKhusus.split(",").map((tag: string) => tag.trim()).filter(Boolean).map((tag: string, i: number) => (
+                    <span key={`tag-${i}`} className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-1 rounded-lg shadow-sm capitalize">🏷️ {tag}</span>
+                  ))}
+                </div>
               </div>
 
               {product.isPinKreator && product.catatanKreator && (

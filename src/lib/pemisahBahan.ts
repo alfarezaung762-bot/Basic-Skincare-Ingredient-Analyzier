@@ -9,7 +9,10 @@
 export function ekstrakDaftarBahan(rawText: string): string[] {
   if (!rawText) return [];
 
-  let text = rawText;
+  // Hapus zero-width spaces (\u200b, \u200c, \u200d, \ufeff) dan normalisasi non-breaking spaces (\u00a0)
+  let text = rawText
+    .replace(/[\u200b\u200c\u200d\ufeff]/g, '')
+    .replace(/\u00a0/g, ' ');
 
   // 1. Ganti pemisah-pemisah tidak standar menjadi koma
   // Seperti kata hubung "dan", "and", "&", tanda "•", "-" (jika diapit spasi)

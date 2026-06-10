@@ -23,6 +23,7 @@ export interface FlagDetail {
   message: string;
   pointsDeducted: number;
   culprits?: string[];
+  neutralizers?: string[];
 }
 
 export interface EngineResult {
@@ -135,7 +136,6 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
   const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
   const [showComedogenicIngredients, setShowComedogenicIngredients] = useState(false);
   const [showAiUnknownAnalysis, setShowAiUnknownAnalysis] = useState(false);
-  const [showAiConsultation, setShowAiConsultation] = useState(false);
 
   // State untuk Pop-up Detail Bahan & Laporan (Klik)
   const [activeIngredient, setActiveIngredient] = useState<IngredientDb | null>(null);
@@ -519,128 +519,6 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           )}
         </motion.div>
       )}
-
-      {/* 5. KARTU KONSULTASI AI HYBRID (DROPDOWN — BUKA/TUTUP) */}
-      {result.aiHybridData && (
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-          className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm border border-indigo-200 dark:border-indigo-800/50 overflow-hidden"
-        >
-          {/* Header Dropdown */}
-          <button
-            onClick={() => setShowAiConsultation(!showAiConsultation)}
-            className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-md">
-                🧠
-              </div>
-              <div className="text-left">
-                <h3 className="text-base font-black text-slate-800 dark:text-slate-100">Rangkuman Analisis Produk</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Rangkuman penilaian produk oleh AI</p>
-              </div>
-            </div>
-            <span className="text-indigo-500 dark:text-indigo-400 text-lg font-bold shrink-0 ml-4">
-              {showAiConsultation ? '▲' : '▼'}
-            </span>
-          </button>
-
-          {/* Content (Collapsible) */}
-          {showAiConsultation && (
-            <div className="px-6 md:px-8 pb-6 md:pb-8 space-y-5 animate-in slide-in-from-top-2 duration-300 border-t border-indigo-100 dark:border-indigo-900/50 pt-6">
-
-              {/* VERDICT UTAMA */}
-              {result.aiHybridData.overallVerdict && (
-                <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800/50">
-                  <h4 className="text-sm font-black text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2">🏆 Verdict Utama</h4>
-                  <p className="text-sm font-medium text-indigo-900 dark:text-indigo-200 leading-relaxed">
-                    {result.aiHybridData.overallVerdict}
-                  </p>
-                </div>
-              )}
-
-              {/* SARAN PEMAKAIAN */}
-              {result.aiHybridData.warningsAndAdvice?.generalAdvice && result.aiHybridData.warningsAndAdvice.generalAdvice.length > 0 && (
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-200/50 dark:border-amber-800/30">
-                  <h4 className="text-sm font-black text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">💊 Saran Pemakaian</h4>
-                  <ul className="space-y-1.5">
-                    {result.aiHybridData.warningsAndAdvice.generalAdvice.map((advice, idx) => (
-                      <li key={idx} className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-start gap-2">
-                        <span className="text-indigo-500 shrink-0">•</span>
-                        <span>{advice}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* SINERGI & PERINGATAN */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50">
-                <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">🔗⚡ Sinergi & Peringatan Bahan</h4>
-
-                <div className="space-y-4">
-                  {/* Sinergi */}
-                  {result.aiHybridData.synergyAnalysis && result.aiHybridData.synergyAnalysis.length > 0 && (
-                    <div className="space-y-3">
-                      <h5 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Sinergi Positif</h5>
-                      {result.aiHybridData.synergyAnalysis.map((syn, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5 text-sm bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                          <span className="text-emerald-500 shrink-0 mt-0.5">✅</span>
-                          <div>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{syn.pair}</span>
-                            <p className="text-slate-600 dark:text-slate-400 text-xs font-medium mt-0.5 leading-relaxed">{syn.effect}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Peringatan (Clashes) */}
-                  {result.aiHybridData.warningsAndAdvice?.clashes && result.aiHybridData.warningsAndAdvice.clashes.length > 0 && (
-                    <div className="space-y-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                      <h5 className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Perlu Perhatian</h5>
-                      {result.aiHybridData.warningsAndAdvice.clashes.map((clash, idx) => (
-                        <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                          <div className="flex items-start gap-2 mb-1.5">
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${clash.severity === 'HIGH' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
-                              clash.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
-                                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                              }`}>
-                              {clash.severity === 'HIGH' ? '🔴' : clash.severity === 'MEDIUM' ? '🟡' : '🔵'}
-                            </span>
-                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{clash.pair}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1.5">{clash.risk}</p>
-                          <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-lg leading-relaxed">
-                            💡 {clash.contextualAdvice}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {(!result.aiHybridData.synergyAnalysis?.length && !result.aiHybridData.warningsAndAdvice?.clashes?.length) && (
-                    <p className="text-xs text-slate-500 italic">Tidak ada sinergi spesifik atau peringatan interaksi bahan yang perlu dikhawatirkan.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* MODEL USED BADGE */}
-              {result.aiHybridData.modelUsed && (
-                <div className="flex items-center justify-end mt-2">
-                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
-                    🤖 Model: {result.aiHybridData.modelUsed}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </motion.div>
-      )}
-
     </div>
   );
 }
