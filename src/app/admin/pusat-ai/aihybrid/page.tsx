@@ -154,6 +154,9 @@ export default function AIHybridConfigPage() {
                 <p>• Bahan tanpa aiContext + sumber luar OFF = AI dilarang menyesuaikan</p>
                 <p>• Output WAJIB bahasa Indonesia, DILARANG menyebutkan angka skor</p>
                 <p>• AI wajib mempertimbangkan urutan bahan (konsentrasi tinggi → rendah)</p>
+                <p>• AI wajib memvalidasi parameter database: Aman Bumil, Aman Sensitif, Blacklist & Alasan, serta Tingkat Komedogenik (0-5)</p>
+                <p>• Penurunan risiko oklusif/komedogenik berlaku untuk bahan konsentrasi rendah (Zona Rendah) atau produk bilas (wash-off)</p>
+                <p>• Laporan rekomendasi akhir wajib ditulis dalam 1 PARAGRAF UTUH tanpa list/newline, menyertakan klasifikasi, kecocokan, uji usap, dan outlook efektivitas, serta menuliskan nama INCI pemicu sensitivitas secara jelas agar menjadi tombol interaktif</p>
               </div>
             </div>
 

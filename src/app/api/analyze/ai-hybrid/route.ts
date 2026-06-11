@@ -39,7 +39,7 @@ interface PenaltyAdjustment {
 }
 
 interface AiHybridResult {
-  overallVerdict?: string;
+  rekomendasiAkhir?: string;
   formulationFocus: {
     primary: string;
     secondary: string[];
@@ -361,13 +361,20 @@ export async function POST(req: Request) {
       const aiCtx = (dbEntry as any)?.aiContext || "";
       const positionInfo = `Posisi urutan: #${idx + 1}`;
 
-      let line = `- [${positionInfo}] ${ing.name} (Tipe: ${ing.type}, Fungsi: ${ing.functionalCategory}, Komedogenik: ${ing.comedogenicRating}/5, Key Active: ${ing.isKeyActive})`;
-      line += `\n  Benefits: ${ing.benefits}`;
+      let line = `- [${positionInfo}] ${ing.name}:\n`;
+      line += `  * Tipe: ${ing.type}\n`;
+      line += `  * Fungsi: ${ing.functionalCategory}\n`;
+      line += `  * Komedogenik: ${ing.comedogenicRating}/5\n`;
+      line += `  * Bintang Utama: ${ing.isKeyActive ? 'Ya' : 'Tidak'}\n`;
+      line += `  * Aman Bumil: ${dbEntry?.safeForPregnancy ? 'Ya' : 'Tidak'}\n`;
+      line += `  * Aman Sensitif: ${dbEntry?.safeForSensitive ? 'Ya' : 'Tidak'}\n`;
+      line += `  * Blacklist Tipe Kulit: ${dbEntry?.blacklistedSkinTypes || 'Tidak ada'}${dbEntry?.blacklistReason ? ` (Alasan: ${dbEntry.blacklistReason})` : ''}\n`;
+      line += `  * Manfaat: ${ing.benefits}`;
       if (aiCtx) {
         // Kirim ringkasan aiContext (maks 2000 kata per bahan agar tidak overload prompt)
         const aiCtxWords = aiCtx.split(/\s+/);
         const truncated = aiCtxWords.length > 2000 ? aiCtxWords.slice(0, 2000).join(' ') + '...' : aiCtx;
-        line += `\n  Analisis Mendalam: ${truncated}`;
+        line += `\n  * Analisis Mendalam: ${truncated}`;
       }
       return line;
     }).join("\n\n");
@@ -551,16 +558,18 @@ ${safetyPenaltyCtx}
 === FOKUS FORMULASI DARI ENGINE ===
 ${focusTallyCtx}
 
+=== SKOR AWAL DARI ENGINE ===
+- Skor Kompatibilitas Awal: ${engineResult.matchScore}/100
+- Skor Keamanan Awal: ${engineResult.safetyScore}/100
+
 === FORMAT OUTPUT (JSON KETAT) ===
 Kembalikan HANYA JSON valid tanpa markdown code block:
 {
-  "overallVerdict": "Rangkuman singkat (2-3 kalimat): apakah produk ini cocok untuk user secara umum, kelebihan utama, dan apa yang perlu diwaspadai.",
+  "rekomendasiAkhir": "Tuliskan laporan rekomendasi akhir dalam SATU PARAGRAF UTUH yang sangat kaya informasi, padat, medis/ilmiah, bebas dari kata penenang tidak perlu, dan DILARANG keras menggunakan list, bullet points, atau pemisahan baris (newline). Paragraf tunggal ini harus memadatkan 4 komponen terstruktur berikut: 1) [KLASIFIKASI & PROFIL FORMULASI]: Analisis produk secara struktural (misal wash-off facewash dengan surfaktan anionik lembut, leave-on moisturizer, dll), sebutkan bahan aktif utama (Key Actives) beserta fungsinya. 2) [EVALUASI KECOCOKAN KULIT & ZONA INCI]: Evaluasi kecocokan dengan jenis kulit, keparahan kondisi, kehamilan, dan sensitivitas pengguna. Jelaskan relevansi posisi bahan di daftar INCI (dose-response) untuk menilai apakah risiko bahan komedogenik rating 3-5 atau iritan berkurang secara drastis jika posisinya di bagian akhir (Zona Rendah) atau pada produk bilas (wash-off). Deteksi jika ada bahan yang melanggar aturan Blacklist untuk jenis kulit pengguna. 3) [INSTRUKSI KLINIS & UJI USAP]: Instruksikan uji usap (patch test) minimal 3 hari berturut-turut di area rahang/belakang telinga dengan menyebutkan nama INCI pemicu sensitivitas (misal minyak atsiri, eksfoliator keras, alkohol denat) secara jelas sesuai ejaan INCI agar sistem bisa membungkusnya sebagai tombol interaktif. Jelaskan kondisi yang diharapkan: 'jika tidak ada gatal, kemerahan, bruntusan, atau rasa panas selama 3 hari...'. 4) [OUTLOOK EFEKTIVITAS & ESTIMASI HASIL]: Proyeksikan efektivitas produk terhadap fokus perawatan (primaryFocus) pengguna, berikan rekomendasi frekuensi penggunaan yang konkret (misal: 2x seminggu di malam hari), dan urutan penggunaannya dalam rutinitas.",
   "overallSummary": {
     "recommendationStatus": "SANGAT_DIREKOMENDASIKAN | BOLEH_DICOBA | TIDAK_DIREKOMENDASIKAN",
     "suitabilitySummary": "Penjelasan singkat (1-2 kalimat) apakah produk ini cocok untuk mengatasi masalah kulit target pengguna (primaryFocus) dan seberapa efektif formulasinya.",
-    "matchScoreSummary": "Analisis ringkas mengapa produk mendapatkan tingkat kecocokan kulit (Match Score) tersebut, sebutkan kontribusi bahan aktif atau pembatasnya.",
-    "safetyScoreSummary": "Analisis ringkas tentang keamanan formulasi (Safety Score), risiko alergi/iritasi, efek samping, dan bagaimana buffer/penetralisir meredam risiko tersebut.",
-    "alternativeSkinType": "Jenis kulit yang sebenarnya PALING cocok untuk formulasi ini (misal: 'Kulit Berminyak & Kombinasi', 'Kulit Kering', atau 'Semua Jenis Kulit kecuali Kulit Sensitif')"
+    "alternativeSkinType": "Pilihlah secara tepat SATU dari 7 opsi jenis kulit ini: 'berminyak', 'kering', 'kombinasi', 'normal', 'berminyak sensitif', 'kering sensitif', 'kombinasi sensitif'. Dilarang menulis di luar 7 opsi ini!"
   },
   "formulationFocus": {
     "primary": "salah satu dari 6 kategori di atas",
@@ -587,8 +596,7 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
   "warningsAndAdvice": {
     "clashes": [
       {"pair": "Bahan X + Bahan Y", "risk": "risiko", "severity": "LOW/MEDIUM/HIGH", "contextualAdvice": "saran berdasarkan tipe produk dan profil kulit"}
-    ],
-    "generalAdvice": ["saran umum berdasarkan profil"]
+    ]
   },
   "toxicClarifications": [
     {
@@ -796,9 +804,11 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
 
       // AI Hybrid data for frontend consultation card
       aiHybridData = {
+        rekomendasiAkhir: aiResult.rekomendasiAkhir || "",
+        overallSummary: aiResult.overallSummary || null,
         formulationFocus: aiResult.formulationFocus || null,
         synergyAnalysis: aiResult.synergyAnalysis || [],
-        warningsAndAdvice: aiResult.warningsAndAdvice || { clashes: [], generalAdvice: [] },
+        warningsAndAdvice: aiResult.warningsAndAdvice || { clashes: [] },
         aiUnknownAnalysis: aiResult.aiUnknownAnalysis || "",
         adjustmentsSummary: validatedAdjustments.map(a => ({
           trigger: a.triggerIngredient,
@@ -856,8 +866,7 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
           ? "⚠️ Ada bahan asing yang tidak bisa dianalisis AI saat ini."
           : "✅ Seluruh bahan terverifikasi."),
 
-      recommendations: aiResult?.warningsAndAdvice?.generalAdvice
-        || ["Lakukan patch test sebelum pemakaian rutin."]
+      recommendations: [aiResult?.rekomendasiAkhir || "Lakukan patch test selama 3 hari sebelum pemakaian rutin."]
     };
 
     // Simpan ke History

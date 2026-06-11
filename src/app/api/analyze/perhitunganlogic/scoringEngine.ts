@@ -360,8 +360,19 @@ export function runScoringEngine(
 
     // 3. Pelembap Berat Dilarang
     if (activeRule.moistHeavy.status === "DILARANG" && countMoistHeavy > 0) {
-      matchScore -= 25;
-      matchFlags.push({ type: "CRITICAL", message: `tekstur SKINCARE terdeteksi cream/Heavy: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif. Gunakan tipis tipis jika ingin mencoba Skincare ini dan hindari penggunaanya di area berjerawat aktif.`, pointsDeducted: 25, culprits: heavyMoistCulprits });
+      const moistHeavyPenalty = isWashOff ? 10 : 25;
+      const moistHeavyFlagType: FlagDetail["type"] = isWashOff ? "WARNING" : "CRITICAL";
+      const moistHeavyMessage = isWashOff
+        ? "Minyak Pelembap di Produk Bilas: Produk ini mengandung minyak pelembap yang bisa membantu menjaga kelembapan kulit saat dibilas. Bagi kulit berjerawat aktif, pastikan membilas wajah dengan air sampai benar-benar bersih agar tidak ada sisa minyak yang menyumbat pori."
+        : "tekstur SKINCARE terdeteksi cream/Heavy: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif. Gunakan tipis tipis jika ingin mencoba Skincare ini dan hindari penggunaanya di area berjerawat aktif.";
+
+      matchScore -= moistHeavyPenalty;
+      matchFlags.push({
+        type: moistHeavyFlagType,
+        message: moistHeavyMessage,
+        pointsDeducted: moistHeavyPenalty,
+        culprits: heavyMoistCulprits
+      });
     }
 
     // 4. Moisturizer Logic Khusus

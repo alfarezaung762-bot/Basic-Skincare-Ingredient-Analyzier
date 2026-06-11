@@ -615,6 +615,25 @@ export default function AdminReportBahan() {
                               className="px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-900 dark:bg-slate-900 border border-indigo-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
                             />
                           )}
+
+                          {selectedEngine.provider === "openrouter" && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch("/api/admin/openrouter/reset-cooldown", { method: "POST" });
+                                  if (res.ok) alert("✅ Semua cooldown OpenRouter API key berhasil di-reset!");
+                                  else alert("❌ Gagal mereset cooldown.");
+                                } catch (e) {
+                                  alert("❌ Terjadi kesalahan saat mereset cooldown.");
+                                }
+                              }}
+                              disabled={isResearching}
+                              className="px-3 py-2.5 text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-900/50 rounded-xl shadow-sm transition-colors active:scale-95 disabled:opacity-50"
+                              title="Reset Cooldown Semua Key"
+                            >
+                              🔄 Reset Key
+                            </button>
+                          )}
                           <button
                             onClick={handleDeepResearch}
                             disabled={isResearching}

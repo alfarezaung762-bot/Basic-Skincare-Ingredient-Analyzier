@@ -89,6 +89,14 @@ function isKeyCoolingDown(keyIndex: number): { cooling: boolean; reason: string;
 }
 
 /**
+ * Reset semua cooldown API key (Digunakan oleh admin secara manual)
+ */
+export function resetAllCooldowns() {
+  keyCooldowns.clear();
+  console.log("[OpenRouter] 🧊 Semua cooldown API key telah di-reset secara manual.");
+}
+
+/**
  * Set cooldown untuk key tertentu berdasarkan jenis error
  */
 function setCooldown(keyIndex: number, reason: string, type: CooldownType) {
