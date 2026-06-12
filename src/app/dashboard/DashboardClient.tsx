@@ -164,10 +164,10 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className={`glass-card rounded-3xl p-6 overflow-hidden sticky top-4 z-50 backdrop-blur-xl shadow-lg border border-slate-200/50 ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80'}`}
+            className={`glass-card rounded-3xl p-6 sticky top-4 z-50 backdrop-blur-xl shadow-lg border border-slate-200/50 ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80'}`}
           >
             {/* Gradient top accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400 rounded-t-3xl" />
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-4">
@@ -212,13 +212,24 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                     </svg>
                     <span className="relative z-10">Masuk</span>
                   </button>
-                ) : (
-                  /* Logged in: Poin & Tombol Pengaturan Dropdown */
+                                ) : (
+                  /* Logged in: Poin, Profil Kulit, Keluar & Tombol Pengaturan Dropdown */
                   <>
                     <div className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center gap-1.5 shadow-sm">
                       <span>🪙</span>
                       <span>{points !== null ? `${points} Kredit` : "..."}</span>
                     </div>
+
+                    <Link href="/profile" className="gradient-btn px-6 py-2 rounded-xl text-sm flex items-center btn-press">
+                      <span className="relative z-10">Profil Kulit</span>
+                    </Link>
+
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className={`px-4 py-2 font-medium rounded-xl transition-all text-sm btn-press border ${isDark ? "bg-slate-700/60 border-slate-600 text-slate-400 hover:bg-red-900/30 hover:text-red-400 hover:border-red-800" : "bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"}`}
+                    >
+                      Keluar
+                    </button>
 
                     <div className="relative settings-dropdown-container" ref={settingsContainerRef}>
                       <button
@@ -236,29 +247,28 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute right-0 mt-2 w-48 rounded-2xl shadow-xl border p-2 z-[60] flex flex-col gap-1 ${
+                            className={`absolute right-0 mt-2 w-52 rounded-2xl shadow-xl border p-2 z-[60] flex flex-col gap-1 ${
                               isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"
                             }`}
                           >
-                            <Link
-                              href="/history"
-                              onClick={() => setShowSettingsDropdown(false)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
-                              }`}
-                            >
-                              <span>🕒</span> Riwayat Analisis
-                            </Link>
-                            <Link
-                              href="/profile"
-                              onClick={() => setShowSettingsDropdown(false)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
-                              }`}
-                            >
-                              <span>👤</span> Profil Kulit
-                            </Link>
                             <button
+                              type="button"
+                              onClick={() => toggleTheme()}
+                              className={`flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span>{isDark ? "☀️" : "🌙"}</span>
+                                <span>Mode {isDark ? "Terang" : "Gelap"}</span>
+                              </span>
+                              <span className={`w-8 h-4 rounded-full p-0.5 transition-all ${isDark ? "bg-amber-500" : "bg-slate-300"}`}>
+                                <div className={`w-3 h-3 rounded-full bg-white transition-all transform ${isDark ? "translate-x-4" : "translate-x-0"}`} />
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => {
                                 setShowSettingsDropdown(false);
                                 setShowSubscriptionModal(true);
@@ -269,15 +279,16 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                             >
                               <span>💳</span> Paket Langganan
                             </button>
-                            <hr className={isDark ? "border-slate-700 my-1" : "border-slate-100 my-1"} />
-                            <button
-                              onClick={() => signOut({ callbackUrl: "/" })}
-                              className={`flex items-center gap-2 px-3 py-2 w-full text-left rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all ${
-                                isDark ? "hover:bg-rose-950/30" : ""
+
+                            <Link
+                              href="/history"
+                              onClick={() => setShowSettingsDropdown(false)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
                               }`}
                             >
-                              <span>🚪</span> Keluar
-                            </button>
+                              <span>🕒</span> Riwayat Analisis
+                            </Link>
                           </motion.div>
                         )}
                       </AnimatePresence>
