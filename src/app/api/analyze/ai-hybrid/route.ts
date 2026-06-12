@@ -300,11 +300,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Komposisi (ingredients) tidak boleh kosong." }, { status: 400 });
     }
 
-    // 1. Ambil profil user
-    const profile = await prisma.profile.findUnique({ where: { userId } });
+    // 1. Ambil user & profil kulit
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ message: "Pengguna tidak ditemukan." }, { status: 404 });
+    }
+
+    if ((user.points ?? 10) < 2) {
+      return NextResponse.json({ message: "Kredit poin Anda tidak cukup untuk Analisis AI Hybrid (butuh 2 poin)." }, { status: 403 });
+    }
+
+    const profile = user.profile;
     if (!profile) {
       return NextResponse.json({ message: "Harap isi profil kulit Anda terlebih dahulu." }, { status: 400 });
     }
+
+    // Kurangi 2 poin
+    await prisma.user.update({
+      where: { id: userId },
+      data: { points: (user.points ?? 10) - 2 }
+    });
 
     // 2. Ambil dictionary (termasuk aiContext untuk grounding)
     const dictionary = await prisma.ingredientDictionary.findMany();

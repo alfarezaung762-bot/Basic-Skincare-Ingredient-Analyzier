@@ -25,14 +25,22 @@ export default function SingleAnalyzer() {
   // Titik Referensi untuk animasi gulir otomatis (Auto-Scroll)
   const resultRef = useRef<HTMLDivElement>(null);
 
+  const [points, setPoints] = useState<number | null>(null);
+
   // Ambil profil pengguna saat pertama kali komponen dimuat
   // + Baca data dari sessionStorage jika datang dari halaman History
   useEffect(() => {
     fetch('/api/profile')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (data && data.skinType) setUserProfile(data);
-        else if (data && data.profile) setUserProfile(data.profile);
+        if (data) {
+          if (data.skinType) setUserProfile(data);
+          else if (data.profile) setUserProfile(data.profile);
+          
+          if (typeof data.points === "number") {
+            setPoints(data.points);
+          }
+        }
       })
       .catch(() => console.log("Gagal memuat profil"));
 
@@ -61,6 +69,13 @@ export default function SingleAnalyzer() {
     e.preventDefault();
     if (!ingredients.trim()) return;
 
+    // Cek kecukupan kredit poin lokal
+    const requiredPoints = analysisMode === "HYBRID" ? 2 : 1;
+    if (points !== null && points < requiredPoints) {
+      setError(`Kredit poin Anda tidak cukup. Anda membutuhkan minimal ${requiredPoints} kredit poin untuk analisis ${analysisMode === "HYBRID" ? "AI Hybrid" : "Sistem Cepat"}. Silakan isi ulang kredit Anda melalui Pengaturan.`);
+      return;
+    }
+
     setIsAnalyzing(true);
     setError("");
     setResult(null); 
@@ -82,6 +97,11 @@ export default function SingleAnalyzer() {
       
       const responseData = await response.json();
       setResult(responseData);
+
+      // Kurangi kredit poin di state lokal setelah sukses
+      if (points !== null) {
+        setPoints(points - requiredPoints);
+      }
 
       // 2. Jalankan Pencarian Rekomendasi Produk Mirip 🚀
       const resRec = await fetch("/api/analyze/recommendations", {
@@ -137,21 +157,30 @@ export default function SingleAnalyzer() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner w-fit">
-              <button 
-                type="button" 
-                onClick={() => setAnalysisMode("FAST")} 
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
-              >
-                ⚡ Sistem Cepat
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setAnalysisMode("HYBRID")} 
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
-              >
-                🤖 AI Hybrid
-              </button>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner w-fit">
+                <button 
+                  type="button" 
+                  onClick={() => setAnalysisMode("FAST")} 
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                  title="Biaya: 1 Kredit"
+                >
+                  ⚡ Sistem Cepat (1 Poin)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setAnalysisMode("HYBRID")} 
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                  title="Biaya: 2 Kredit"
+                >
+                  🤖 AI Hybrid (2 Poin)
+                </button>
+              </div>
+              {points !== null && (
+                <div className="text-[11px] font-bold text-slate-500">
+                  Saldo Anda: <span className="text-amber-600 font-extrabold">🪙 {points} Kredit</span>
+                </div>
+              )}
             </div>
           </div>
           

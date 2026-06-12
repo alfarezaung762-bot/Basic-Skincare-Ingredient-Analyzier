@@ -16,17 +16,59 @@ export async function GET() {
 
     const userId = (session.user as any).id;
 
-    // Cari profil pengguna di database
-    const profile = await prisma.profile.findUnique({
-      where: { userId: userId },
+    // Cari user di database dengan relasi profil
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
     });
 
-    if (!profile) {
-      return NextResponse.json({ message: "Profil belum ditemukan." }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ message: "Pengguna tidak ditemukan." }, { status: 404 });
     }
 
-    // Kirimkan data profil ke frontend
-    return NextResponse.json(profile, { status: 200 });
+    // --- LAZY DAILY REFRESH LOGIC ---
+    const now = new Date();
+    const lastRefresh = user.lastPointRefresh || now;
+
+    // Hitung perbedaan hari (24 jam)
+    const diffTime = now.getTime() - lastRefresh.getTime();
+    const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+
+    let updatedPoints = user.points ?? 10;
+    let shouldUpdateUser = false;
+    let updateData: any = {};
+
+    if (diffDays > 0) {
+      updatedPoints = (user.points ?? 10) + diffDays;
+      updateData.points = updatedPoints;
+      updateData.lastPointRefresh = now;
+      shouldUpdateUser = true;
+    }
+
+    // Pengaman jika points bernilai null di database (migrasi user lama)
+    if (user.points === null || user.points === undefined) {
+      updateData.points = 10;
+      shouldUpdateUser = true;
+    }
+    if (!user.lastPointRefresh) {
+      updateData.lastPointRefresh = now;
+      shouldUpdateUser = true;
+    }
+
+    if (shouldUpdateUser) {
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        include: { profile: true },
+      });
+    }
+
+    // Kirimkan format objek gabungan agar tetap kompatibel dengan pembacaan langsung `.skinType`
+    // maupun pembacaan properti `.profile`
+    return NextResponse.json({
+      profile: user.profile,
+      points: user.points ?? 10,
+    }, { status: 200 });
 
   } catch (error) {
     console.error("API GET Profile Error:", error);

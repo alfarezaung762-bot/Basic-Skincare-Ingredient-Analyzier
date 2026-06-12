@@ -49,6 +49,11 @@ model User {
   accounts      Account[]
   sessions      Session[]
   
+  // Saldo Poin & Refresh Harian
+  points           Int                @default(10)
+  lastPointRefresh DateTime           @default(now())
+  transactions     PointTransaction[]
+  
   // Relasi ke tabel spesifik aplikasi kita
   profile       Profile?
   histories     AnalysisHistory[]
@@ -326,3 +331,19 @@ model AiHybridCache {
   systemPromptUsed String?  @db.Text // System prompt yang dikirim ke AI saat analisis
   createdAt        DateTime @default(now())
 }
+
+// ==========================================
+// 9. POINT TRANSACTIONS SYSTEM
+// ==========================================
+
+model PointTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int      // Jumlah poin yang dibeli (100 atau 500)
+  price       Int      // Harga dalam rupiah (10000 atau 30000)
+  packageName String   // Nama paket: "PRO" atau "PRO_PLUS"
+  paymentType String   // "GOPAY", "DANA", atau "BANK_VA"
+  status      String   // "PENDING", "SUCCESS", "FAILED"
+  createdAt   DateTime @default(now())
+}

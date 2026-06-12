@@ -20,13 +20,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Komposisi (ingredients) tidak boleh kosong." }, { status: 400 });
     }
 
-    const profile = await prisma.profile.findUnique({
-      where: { userId: userId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
     });
+
+    if (!user) {
+      return NextResponse.json({ message: "Pengguna tidak ditemukan." }, { status: 404 });
+    }
+
+    if ((user.points ?? 10) < 1) {
+      return NextResponse.json({ message: "Kredit poin Anda tidak cukup untuk Analisis Sistem Cepat (butuh 1 poin)." }, { status: 403 });
+    }
+
+    const profile = user.profile;
 
     if (!profile) {
       return NextResponse.json({ message: "Harap isi profil kulit Anda terlebih dahulu di menu Profil." }, { status: 400 });
     }
+
+    // Kurangi 1 poin
+    await prisma.user.update({
+      where: { id: userId },
+      data: { points: (user.points ?? 10) - 1 }
+    });
 
     const dictionary = await prisma.ingredientDictionary.findMany();
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import SingleAnalyzer from "@/components/analyze/SingleAnalyzer";
 import CombineAnalyzer from "@/components/analyze/CombineAnalyzer";
 import LoginModal from "@/components/LoginModal";
+import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Banner {
@@ -34,6 +35,13 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
   const [isDark, setIsDark] = useState(false);
   const [stats, setStats] = useState({ ingredientCount: 0, productCount: 0 });
 
+  // === KREDIT POIN & PENGATURAN STATE ===
+  const [points, setPoints] = useState<number | null>(null);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  
+  const settingsContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchBanners();
     fetchStats();
@@ -48,7 +56,30 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
       setActiveView("single");
       sessionStorage.removeItem("autoOpenAnalyzer");
     }
-  }, []);
+    // Ambil saldo poin pengguna
+    if (!isGuest) {
+      fetchPoints();
+    }
+  }, [isGuest]);
+
+  // Click outside listener untuk settings dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        settingsContainerRef.current &&
+        !settingsContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowSettingsDropdown(false);
+      }
+    };
+
+    if (showSettingsDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSettingsDropdown]);
 
   const toggleTheme = () => {
     const newDark = !isDark;
@@ -59,6 +90,20 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
     } else {
       document.documentElement.removeAttribute("data-theme");
       localStorage.setItem("theme", "light");
+    }
+  };
+
+  const fetchPoints = async () => {
+    try {
+      const res = await fetch("/api/profile");
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.points === "number") {
+          setPoints(data.points);
+        }
+      }
+    } catch (err) {
+      console.error("Gagal mengambil saldo poin:", err);
     }
   };
 
@@ -168,20 +213,75 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                     <span className="relative z-10">Masuk</span>
                   </button>
                 ) : (
-                  /* Logged in: Riwayat, Profil, Logout */
+                  /* Logged in: Poin & Tombol Pengaturan Dropdown */
                   <>
-                    <Link href="/history" className={`px-4 py-2 font-medium rounded-xl transition-all text-sm flex items-center gap-2 btn-press border ${isDark ? "bg-slate-700/60 border-slate-600 text-slate-300 hover:bg-slate-600/80" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-teal-200"}`}>
-                      <span>🕒</span> Riwayat
-                    </Link>
-                    <Link href="/profile" className="gradient-btn px-6 py-2 rounded-xl text-sm flex items-center btn-press">
-                      <span className="relative z-10">Profil Kulit</span>
-                    </Link>
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className={`px-4 py-2 font-medium rounded-xl transition-all text-sm btn-press border ${isDark ? "bg-slate-700/60 border-slate-600 text-slate-400 hover:bg-red-900/30 hover:text-red-400 hover:border-red-800" : "bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"}`}
-                    >
-                      Keluar
-                    </button>
+                    <div className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center gap-1.5 shadow-sm">
+                      <span>🪙</span>
+                      <span>{points !== null ? `${points} Kredit` : "..."}</span>
+                    </div>
+
+                    <div className="relative settings-dropdown-container" ref={settingsContainerRef}>
+                      <button
+                        onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all border ${isDark ? "bg-slate-700/60 border-slate-600 hover:bg-slate-600/80 text-teal-400" : "bg-white border-slate-200 hover:bg-slate-50 text-teal-600"} btn-press`}
+                        title="Pengaturan"
+                      >
+                        ⚙️
+                      </button>
+
+                      <AnimatePresence>
+                        {showSettingsDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className={`absolute right-0 mt-2 w-48 rounded-2xl shadow-xl border p-2 z-[60] flex flex-col gap-1 ${
+                              isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"
+                            }`}
+                          >
+                            <Link
+                              href="/history"
+                              onClick={() => setShowSettingsDropdown(false)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
+                              }`}
+                            >
+                              <span>🕒</span> Riwayat Analisis
+                            </Link>
+                            <Link
+                              href="/profile"
+                              onClick={() => setShowSettingsDropdown(false)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
+                              }`}
+                            >
+                              <span>👤</span> Profil Kulit
+                            </Link>
+                            <button
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                setShowSubscriptionModal(true);
+                              }}
+                              className={`flex items-center gap-2 px-3 py-2 w-full text-left rounded-xl text-xs font-bold transition-all ${
+                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
+                              }`}
+                            >
+                              <span>💳</span> Paket Langganan
+                            </button>
+                            <hr className={isDark ? "border-slate-700 my-1" : "border-slate-100 my-1"} />
+                            <button
+                              onClick={() => signOut({ callbackUrl: "/" })}
+                              className={`flex items-center gap-2 px-3 py-2 w-full text-left rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all ${
+                                isDark ? "hover:bg-rose-950/30" : ""
+                              }`}
+                            >
+                              <span>🚪</span> Keluar
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </>
                 )}
               </div>
@@ -391,6 +491,15 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
 
       {/* Login Modal — ditampilkan saat guest klik aksi */}
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
+      {/* Subscription Modal — modal langganan & pembelian poin */}
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        currentPoints={points}
+        onPurchaseSuccess={(newPoints) => setPoints(newPoints)}
+        isDark={isDark}
+      />
     </>
   );
 }
