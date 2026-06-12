@@ -12,9 +12,10 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAnalyzeThis: (ingredients: string) => void;
   onReviewAdded?: (newReview: any) => void; // <-- TAMBAHAN: Fungsi pelapor ke kartu
+  showSimilarity?: boolean; // <-- TAMBAHAN: Kontrol visibilitas badge 100% mirip
 }
 
-export default function ProductDetailModal({ product, userIngredients, onClose, onAnalyzeThis, onReviewAdded }: ProductDetailModalProps) {
+export default function ProductDetailModal({ product, userIngredients, onClose, onAnalyzeThis, onReviewAdded, showSimilarity = false }: ProductDetailModalProps) {
   const { data: session } = useSession();
 
   const [rating, setRating] = useState(5);
@@ -160,14 +161,14 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-full font-black transition-all">✕</button>
-            <div>
-              <h2 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate max-w-[200px] sm:max-w-md">{product.namaProduk}</h2>
+          <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-full font-black transition-all shrink-0">✕</button>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate" title={product.namaProduk}>{product.namaProduk}</h2>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{product.tipeProduk}</p>
             </div>
           </div>
-          {product.similarity === 100 && (
+          {showSimilarity && product.similarity === 100 && (
             <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 border border-emerald-400 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-md shadow-emerald-500/25 text-white animate-pulse">
               <span className="text-xl">✨</span>
               <span className="text-xs font-black">Formulasi Identik (100%) dengan analisis bahanmu</span>
@@ -222,7 +223,7 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                     <span>🚫</span> Tautan Pembelian Tidak Tersedia
                   </button>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className={`grid gap-2 ${purchaseLinks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     {purchaseLinks.map((link: string, idx: number) => {
                       const store = getStoreLogo(link);
                       return (
@@ -231,12 +232,17 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                           href={link} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="w-full py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex items-center justify-center min-h-[50px]"
+                          className="w-full py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex items-center justify-center gap-3 min-h-[50px] px-4"
                         >
                           {store.iconImg ? (
                             <img src={store.iconImg} alt={store.name} className={`${store.logoHeight || 'h-7'} w-auto object-contain`} />
                           ) : (
                             <span className="text-lg">{store.icon}</span>
+                          )}
+                          {purchaseLinks.length === 1 && (
+                            <span className="text-xs font-black text-slate-700 dark:text-slate-200">
+                              Beli di {store.name.split(" ")[0]}
+                            </span>
                           )}
                         </a>
                       );
@@ -343,7 +349,7 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                       type="button" 
                       onClick={() => setRating(s)} 
                       className={`text-2xl transition-all hover:scale-110 active:scale-95 ${
-                        s <= rating ? "text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.3)]" : "text-amber-300"
+                        s <= rating ? "text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.3)]" : "text-slate-300 dark:text-slate-700"
                       }`}
                     >
                       {s <= rating ? "★" : "☆"}
@@ -399,9 +405,14 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
                         )}
                       </div>
                       <div className="flex-1 flex flex-col justify-start min-w-0">
-                        <div className="flex text-amber-400 text-sm mb-1.5 drop-shadow-sm">
+                        <div className="flex text-sm mb-1.5 drop-shadow-sm gap-0.5">
                           {[...Array(5)].map((_, star) => (
-                            <span key={star}>{star < rev.rating ? "★" : "☆"}</span>
+                            <span 
+                              key={star} 
+                              className={star < rev.rating ? "text-amber-400" : "text-slate-350 dark:text-slate-600"}
+                            >
+                              {star < rev.rating ? "★" : "☆"}
+                            </span>
                           ))}
                         </div>
                         <p className="text-xs text-slate-600 font-medium leading-relaxed break-words whitespace-pre-wrap">"{rev.komentar}"</p>

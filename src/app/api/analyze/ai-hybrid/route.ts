@@ -473,6 +473,11 @@ Pilih fokus utama dari HANYA 6 kategori ini:
    Bahan yang melarutkan ikatan antar sel mati (desmosomes) secara kimia atau secara fisik mengangkat sel tanduk.
    Contoh bahan: Glycolic Acid, Lactic Acid, PHA (Gluconolactone), Enzim Papain, BHA (Salicylic Acid), Azelaic Acid.
 
+PENGETATAN FOKUS BERDASARKAN DOSIS-RESPONS & INCI (WAJIB):
+Kamu WAJIB mengevaluasi posisi bahan pada daftar komposisi sebelum menetapkan fokus sekunder.
+- Jika bahan aktif pendukung suatu fokus (misal Vitamin E / Tocopherol) berada di ZONA RENDAH (konsentrasi kecil / pelengkap di akhir daftar) dan BUKAN merupakan bahan potent yang sangat aktif pada kadar rendah (seperti Retinol atau Peptides), kamu DILARANG memasukkan kategori fokus tersebut ke dalam manfaat sekunder (secondary).
+- Manfaat sekunder (secondary) harus didukung oleh minimal satu bahan Key Active (Bintang Utama) yang aktif, atau minimal 3 bahan di Zona Dominan/Menengah yang memberikan efek terapeutik riil.
+
 ATURAN 6 — SARAN KONTEKSTUAL BERDASARKAN TIPE PRODUK (SANGAT PENTING):
 Tipe produk saat ini: ${productType}
 

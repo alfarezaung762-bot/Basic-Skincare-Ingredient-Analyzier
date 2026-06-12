@@ -102,8 +102,14 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
         break;
       
       case "VIP":
-        // Hanya produk yang di-pin kreator
-        list = list.filter(p => p.isPinKreator);
+        // Hanya produk yang di-pin kreator dan memiliki irisan fokus perawatan dengan user
+        list = list.filter(p => {
+          if (!p.isPinKreator) return false;
+          if (!userPrimaryFocus) return true;
+          const prodFocusList = p.fokusProduk ? p.fokusProduk.split(",").map(f => f.trim().toLowerCase()).filter(Boolean) : [];
+          const userFocusList = userPrimaryFocus.split(",").map(f => f.trim().toLowerCase()).filter(Boolean);
+          return prodFocusList.some(pf => userFocusList.some(uf => pf.includes(uf) || uf.includes(pf)));
+        });
         list.sort((a, b) => b.similarity - a.similarity);
         break;
       
@@ -191,6 +197,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
             onClose={() => setSelectedProduct(null)}
             onAnalyzeThis={onAnalyzeThis}
             onReviewAdded={handleReviewAdded}
+            showSimilarity={activeTab === "LAB"}
           />
         )}
       </AnimatePresence>
@@ -220,7 +227,13 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
             // Hitung count untuk setiap tab secara akurat
             let count = 0;
             if (tab.key === "VIP") {
-              count = localProducts.filter(p => p.isPinKreator).length;
+              count = localProducts.filter(p => {
+                if (!p.isPinKreator) return false;
+                if (!userPrimaryFocus) return true;
+                const prodFocusList = p.fokusProduk ? p.fokusProduk.split(",").map(f => f.trim().toLowerCase()).filter(Boolean) : [];
+                const userFocusList = userPrimaryFocus.split(",").map(f => f.trim().toLowerCase()).filter(Boolean);
+                return prodFocusList.some(pf => userFocusList.some(uf => pf.includes(uf) || uf.includes(pf)));
+              }).length;
             } else if (tab.key === "LAB") {
               count = localProducts.filter(p => p.similarity >= 10).length;
             } else if (tab.key === "SKIN") {

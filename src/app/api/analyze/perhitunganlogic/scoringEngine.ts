@@ -54,6 +54,7 @@ export type EngineResult = {
   unknownIngredients: string[];
   primaryProductFocus?: string | null;
   secondaryProductFocuses?: string[];
+  focusIngredientsMap?: Record<string, string[]>;
 };
 
 function levenshtein(a: string, b: string): number {
@@ -245,6 +246,7 @@ export function runScoringEngine(
   const uvCulprits: string[] = [];
 
   const focusTally: Record<string, number> = {};
+  const focusIngredientsMap: Record<string, string[]> = {};
 
   detected.forEach(ing => {
     // Toxic / Hamil / Alergi (Safety Score Penalties)
@@ -296,6 +298,13 @@ export function runScoringEngine(
       ing.targetFocus.split(',').forEach(f => {
         const cleanFocus = f.trim();
         focusTally[cleanFocus] = (focusTally[cleanFocus] || 0) + (ing.isKeyActive ? 3 : 1);
+        
+        if (!focusIngredientsMap[cleanFocus]) {
+          focusIngredientsMap[cleanFocus] = [];
+        }
+        if (!focusIngredientsMap[cleanFocus].includes(ing.name)) {
+          focusIngredientsMap[cleanFocus].push(ing.name);
+        }
       });
     }
   });
@@ -403,7 +412,12 @@ export function runScoringEngine(
   const userFocusList = profile.primaryFocus.split(',').map(f => f.trim());
   const sortedFocuses = Object.entries(focusTally).sort((a, b) => b[1] - a[1]);
   const primaryProductFocus = sortedFocuses.length > 0 ? sortedFocuses[0][0] : null;
-  const secondaryProductFocuses = sortedFocuses.slice(1).map(f => f[0]);
+  
+  // Hanya tampilkan fokus sekunder dengan skor tally >= 3
+  const secondaryProductFocuses = sortedFocuses
+    .slice(1)
+    .filter(entry => entry[1] >= 3)
+    .map(entry => entry[0]);
 
   if (primaryProductFocus) {
     if (userFocusList.includes(primaryProductFocus)) {
@@ -456,5 +470,6 @@ export function runScoringEngine(
     unknownIngredients: unknown,
     primaryProductFocus,
     secondaryProductFocuses,
+    focusIngredientsMap,
   };
 }

@@ -28,20 +28,24 @@ function isFuzzyMatch(input: string, target: string): boolean {
   if (input.length >= 4 && target.length >= 4 && levenshtein(input, target) <= 2) return true;
   return false;
 }
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { ingredientsRaw, productType, userProfile } = body;
 
-    const [dictionary, allCatalogProducts] = await Promise.all([
+    const [dictionary, catalogProductsData] = await Promise.all([
       prisma.ingredientDictionary.findMany(),
       prisma.productCatalog.findMany({
-        include: { reviews: { include: { user: true } } }
+        include: { 
+          reviews: { 
+            where: { isDeleted: false },
+            include: { user: true } 
+          } 
+        }
       })
     ]);
 
-    const catalogProducts = allCatalogProducts.filter(p => 
+    const catalogProducts = catalogProductsData.filter(p => 
       p.tipeProduk.toUpperCase() === productType.toUpperCase()
     );
 

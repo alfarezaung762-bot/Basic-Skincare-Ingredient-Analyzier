@@ -24,7 +24,6 @@ export default function CreateProductPage() {
     tautanAfiliasi: "",
     komposisiAsli: "",
     isPinKreator: false,
-    masalahKulitPin: "",
     catatanKreator: "",
     tagKhusus: "",
   });
@@ -176,8 +175,8 @@ export default function CreateProductPage() {
       return;
     }
 
-    if (formData.isPinKreator && (!formData.masalahKulitPin || formData.catatanKreator.trim() === "")) {
-      setMessage({ type: "error", text: "Kegagalan: Masalah Kulit Pin dan Catatan Kreator wajib diisi jika fitur Pin Kreator diaktifkan!" });
+    if (formData.isPinKreator && formData.catatanKreator.trim() === "") {
+      setMessage({ type: "error", text: "Kegagalan: Catatan Kreator wajib diisi jika fitur Pin Kreator diaktifkan!" });
       setIsLoading(false);
       return;
     }
@@ -194,6 +193,7 @@ export default function CreateProductPage() {
 
       const payloadData = {
         ...formData,
+        masalahKulitPin: null,
         tautanAfiliasi: combinedTautan,
         gambarUrl: finalImageUrl,
         fokusProduk: selectedFocuses,
@@ -511,26 +511,6 @@ export default function CreateProductPage() {
 
               {formData.isPinKreator && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 gap-6 bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
-                  <div className="space-y-2">
-                    <label htmlFor="masalahKulitPin" className="text-xs font-bold text-amber-800 uppercase block">Tombol Pelatuk: Tautkan ke Masalah Kulit</label>
-                    <select 
-                      id="masalahKulitPin"
-                      title="Pilih Masalah Kulit Sasaran"
-                      required={formData.isPinKreator} 
-                      value={formData.masalahKulitPin} 
-                      onChange={(e) => setFormData({...formData, masalahKulitPin: e.target.value})} 
-                      className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 outline-none text-sm font-medium focus:ring-2 focus:ring-amber-500"
-                    >
-                      <option value="">-- Pilih Masalah Kulit Sasaran --</option>
-                      <option value="Mencerahkan & Bekas Jerawat">Mencerahkan & Bekas Jerawat</option>
-                      <option value="Merawat Jerawat & Sebum">Merawat Jerawat & Sebum</option>
-                      <option value="Anti-Aging & Garis Halus">Anti-Aging & Garis Halus</option>
-                      <option value="Memperbaiki Skin Barrier & Hidrasi">Memperbaiki Skin Barrier & Hidrasi</option>
-                      <option value="Menenangkan Kemerahan (Soothing)">Menenangkan Kemerahan (Soothing)</option>
-                      <option value="Eksfoliasi & Tekstur Pori-pori">Eksfoliasi & Tekstur Pori-pori</option>
-                    </select>
-                  </div>
-
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <label htmlFor="catatanKreator" className="text-xs font-bold text-amber-800 uppercase">Catatan Pribadi Kreator</label>

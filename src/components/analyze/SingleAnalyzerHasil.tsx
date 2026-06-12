@@ -36,6 +36,7 @@ export interface EngineResult {
   unknownIngredients: string[];
   primaryProductFocus?: string | null;
   secondaryProductFocuses?: string[];
+  focusIngredientsMap?: Record<string, string[]>;
 }
 
 export interface AiAnalysis {

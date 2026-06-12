@@ -25,7 +25,6 @@ export default function EditProductPage() {
     tautanAfiliasi: "",
     komposisiAsli: "",
     isPinKreator: false,
-    masalahKulitPin: "",
     catatanKreator: "",
     tagKhusus: "",
   });
@@ -113,7 +112,6 @@ export default function EditProductPage() {
                 tautanAfiliasi: product.tautanAfiliasi,
                 komposisiAsli: product.komposisiAsli,
                 isPinKreator: product.isPinKreator,
-                masalahKulitPin: product.masalahKulitPin || "",
                 catatanKreator: product.catatanKreator || "",
                 tagKhusus: product.tagKhusus || "",
               });
@@ -253,8 +251,8 @@ export default function EditProductPage() {
       return;
     }
 
-    if (formData.isPinKreator && (!formData.masalahKulitPin || formData.catatanKreator.trim() === "")) {
-      setMessage({ type: "error", text: "Kegagalan: Masalah Kulit dan Catatan wajib diisi untuk Pin Kreator." });
+    if (formData.isPinKreator && formData.catatanKreator.trim() === "") {
+      setMessage({ type: "error", text: "Kegagalan: Catatan wajib diisi untuk Pin Kreator." });
       setIsLoading(false);
       return;
     }
@@ -272,6 +270,7 @@ export default function EditProductPage() {
       const payloadData = {
         id: params.id, 
         ...formData,
+        masalahKulitPin: null,
         tautanAfiliasi: combinedTautan,
         gambarUrl: finalImageUrl, 
         fokusProduk: selectedFocuses,
@@ -300,7 +299,6 @@ export default function EditProductPage() {
               if (combinedTautan !== initialData.tautanAfiliasi) changedFields.push("Tautan Pembelian (Afiliasi)");
               if (formData.komposisiAsli !== initialData.komposisiAsli) changedFields.push("Daftar Komposisi Penuh (Ingredients)");
               if (formData.isPinKreator !== initialData.isPinKreator) changedFields.push("Pin Kreator");
-              if (formData.masalahKulitPin !== (initialData.masalahKulitPin || "")) changedFields.push("Tombol Pelatuk");
               if (formData.catatanKreator !== (initialData.catatanKreator || "")) changedFields.push("Catatan Pribadi Kreator");
               if (selectedFocuses !== (initialData.fokusProduk || "")) changedFields.push("Fokus Perawatan");
             }
@@ -629,27 +627,6 @@ export default function EditProductPage() {
 
               {formData.isPinKreator && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 gap-6 bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
-                  <div className="space-y-2">
-                    <label htmlFor="masalahKulitPin" className="text-xs font-bold text-amber-800 uppercase block">Tombol Pelatuk: Tautkan ke Masalah Kulit</label>
-                    <select 
-                      id="masalahKulitPin"
-                      title="Pilih Masalah Kulit Sasaran"
-                      required={formData.isPinKreator} 
-                      disabled={isViewer}
-                      value={formData.masalahKulitPin} 
-                      onChange={(e) => setFormData({...formData, masalahKulitPin: e.target.value})} 
-                      className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white text-slate-900 outline-none text-sm font-medium focus:ring-2 focus:ring-amber-500 disabled:bg-amber-100 disabled:text-amber-800"
-                    >
-                      <option value="">-- Pilih Masalah Kulit Sasaran --</option>
-                      <option value="Mencerahkan & Bekas Jerawat">Mencerahkan & Bekas Jerawat</option>
-                      <option value="Merawat Jerawat & Sebum">Merawat Jerawat & Sebum</option>
-                      <option value="Anti-Aging & Garis Halus">Anti-Aging & Garis Halus</option>
-                      <option value="Memperbaiki Skin Barrier & Hidrasi">Memperbaiki Skin Barrier & Hidrasi</option>
-                      <option value="Menenangkan Kemerahan (Soothing)">Menenangkan Kemerahan (Soothing)</option>
-                      <option value="Eksfoliasi & Tekstur Pori-pori">Eksfoliasi & Tekstur Pori-pori</option>
-                    </select>
-                  </div>
-
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <label htmlFor="catatanKreator" className="text-xs font-bold text-amber-800 uppercase">Catatan Pribadi Kreator</label>

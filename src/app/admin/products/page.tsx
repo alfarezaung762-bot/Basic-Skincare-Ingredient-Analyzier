@@ -305,7 +305,7 @@ export default function AdminProductsDashboard() {
                             <p className="font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
                               {product.namaProduk}
                               {product.isPinKreator && (
-                                <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider" title={`Pin Kreator: ${product.masalahKulitPin}`}>
+                                <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider" title="Pin Kreator">
                                   📌 Tersemat
                                 </span>
                               )}

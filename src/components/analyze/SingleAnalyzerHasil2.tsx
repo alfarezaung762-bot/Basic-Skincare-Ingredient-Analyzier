@@ -37,6 +37,7 @@ export interface EngineResult {
   unknownIngredients: string[];
   primaryProductFocus?: string | null;
   secondaryProductFocuses?: string[];
+  focusIngredientsMap?: Record<string, string[]>;
 }
 
 export interface AiAnalysis {
@@ -540,28 +541,79 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6 text-center uppercase tracking-widest">
             Profil Formulasi Produk
           </h3>
-          <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex flex-col md:flex-row gap-6 items-stretch">
             <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-200 dark:bg-emerald-800 rounded-full blur-3xl -ml-10 -mt-10 opacity-50"></div>
               <span className="text-3xl mb-3 relative z-10">🎯</span>
               <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Target Utama Formulasi</span>
-              <span className="text-lg font-black text-slate-800 dark:text-slate-100 relative z-10">
+              <span className="text-lg font-black text-slate-800 dark:text-slate-100 relative z-10 mb-4">
                 {result.engineResult.primaryProductFocus || "Tidak Spesifik (Basic Care)"}
               </span>
+              
+              {result.engineResult.primaryProductFocus && (
+                <div className="w-full relative z-10 border-t border-slate-200/50 dark:border-slate-700/50 pt-4">
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Bahan Pendukung Aktif</span>
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {(result.engineResult.focusIngredientsMap?.[result.engineResult.primaryProductFocus] || []).map((name, iIdx) => {
+                      const details = result.engineResult.detectedIngredients.find(
+                        i => i.name.toLowerCase() === name.toLowerCase()
+                      );
+                      const isKey = details?.isKeyActive;
+                      return (
+                        <span
+                          key={iIdx}
+                          className={`text-[9px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1 transition-all ${
+                            isKey
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 shadow-sm"
+                              : "bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600"
+                          }`}
+                        >
+                          {isKey && <span className="text-amber-500">✨</span>}
+                          <span className="capitalize">{name}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0 && (
-              <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+              <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 relative overflow-hidden flex flex-col">
                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-200 dark:bg-blue-800 rounded-full blur-3xl -mr-10 -mb-10 opacity-50"></div>
                 <div className="flex items-center gap-2 mb-4 relative z-10">
                   <span className="text-xl">🎁</span>
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Manfaat Tambahan (Sekunder)</span>
                 </div>
-                <div className="flex flex-wrap gap-2 relative z-10">
+                
+                <div className="space-y-3 relative z-10 w-full flex-1">
                   {result.engineResult.secondaryProductFocuses.map((focus, idx) => (
-                    <span key={idx} className="bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm">
-                      {focus}
-                    </span>
+                    <div key={idx} className="bg-white dark:bg-slate-750 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col items-start">
+                      <span className="bg-blue-50 dark:bg-blue-950 text-blue-750 dark:text-blue-300 text-[10px] font-black px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/50">
+                        {focus}
+                      </span>
+                      <div className="mt-2 flex flex-wrap gap-1 w-full">
+                        {(result.engineResult.focusIngredientsMap?.[focus] || []).map((name, iIdx) => {
+                          const details = result.engineResult.detectedIngredients.find(
+                            i => i.name.toLowerCase() === name.toLowerCase()
+                          );
+                          const isKey = details?.isKeyActive;
+                          return (
+                            <span
+                              key={iIdx}
+                              className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border flex items-center gap-0.5 transition-all ${
+                                isKey
+                                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 shadow-sm animate-pulse"
+                                  : "bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700"
+                              }`}
+                            >
+                              {isKey && <span className="text-amber-500">✨</span>}
+                              <span className="capitalize">{name}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
