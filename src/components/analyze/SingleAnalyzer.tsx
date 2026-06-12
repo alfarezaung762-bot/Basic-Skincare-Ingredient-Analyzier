@@ -9,7 +9,12 @@ import SingleAnalyzerHasil2 from "./SingleAnalyzerHasil2";
 import ProductRecommendation from "./ProductRecommendation";
 import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
 
-export default function SingleAnalyzer() {
+interface SingleAnalyzerProps {
+  points?: number | null;
+  onPointsChange?: (newPoints: number) => void;
+}
+
+export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyzerProps = {}) {
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("FACEWASH");
   const [ingredients, setIngredients] = useState("");
@@ -25,7 +30,16 @@ export default function SingleAnalyzer() {
   // Titik Referensi untuk animasi gulir otomatis (Auto-Scroll)
   const resultRef = useRef<HTMLDivElement>(null);
 
-  const [points, setPoints] = useState<number | null>(null);
+  const [localPoints, setLocalPoints] = useState<number | null>(null);
+  const pointsVal = points !== undefined ? points : localPoints;
+
+  const updatePointsVal = (newPoints: number) => {
+    if (onPointsChange) {
+      onPointsChange(newPoints);
+    } else {
+      setLocalPoints(newPoints);
+    }
+  };
 
   // Ambil profil pengguna saat pertama kali komponen dimuat
   // + Baca data dari sessionStorage jika datang dari halaman History
@@ -38,7 +52,7 @@ export default function SingleAnalyzer() {
           else if (data.profile) setUserProfile(data.profile);
           
           if (typeof data.points === "number") {
-            setPoints(data.points);
+            updatePointsVal(data.points);
           }
         }
       })
@@ -71,7 +85,7 @@ export default function SingleAnalyzer() {
 
     // Cek kecukupan kredit poin lokal
     const requiredPoints = analysisMode === "HYBRID" ? 2 : 1;
-    if (points !== null && points < requiredPoints) {
+    if (pointsVal !== null && pointsVal < requiredPoints) {
       setError(`Kredit poin Anda tidak cukup. Anda membutuhkan minimal ${requiredPoints} kredit poin untuk analisis ${analysisMode === "HYBRID" ? "AI Hybrid" : "Sistem Cepat"}. Silakan isi ulang kredit Anda melalui Pengaturan.`);
       return;
     }
@@ -98,9 +112,9 @@ export default function SingleAnalyzer() {
       const responseData = await response.json();
       setResult(responseData);
 
-      // Kurangi kredit poin di state lokal setelah sukses
-      if (points !== null) {
-        setPoints(points - requiredPoints);
+      // Kurangi kredit poin di state lokal/global setelah sukses
+      if (pointsVal !== null) {
+        updatePointsVal(pointsVal - requiredPoints);
       }
 
       // 2. Jalankan Pencarian Rekomendasi Produk Mirip 🚀
@@ -176,9 +190,9 @@ export default function SingleAnalyzer() {
                   🤖 AI Hybrid (2 Poin)
                 </button>
               </div>
-              {points !== null && (
+              {pointsVal !== null && (
                 <div className="text-[11px] font-bold text-slate-500">
-                  Saldo Anda: <span className="text-amber-600 font-extrabold">🪙 {points} Kredit</span>
+                  Saldo Anda: <span className="text-amber-600 font-extrabold">🪙 {pointsVal} Kredit</span>
                 </div>
               )}
             </div>

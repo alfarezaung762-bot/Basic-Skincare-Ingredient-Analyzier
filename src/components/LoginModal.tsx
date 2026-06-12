@@ -81,6 +81,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   Lanjutkan dengan Google
                 </motion.button>
 
+                {process.env.NODE_ENV === "development" && (
+                  <button
+                    onClick={() => signIn("credentials", { email: "alfarezaung762@gmail.com", callbackUrl: "/" })}
+                    id="dev-bypass-login-btn"
+                    className="w-full px-8 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-sm text-sm"
+                  >
+                    🧪 Masuk Mode Uji Coba (Bypass - zophie)
+                  </button>
+                )}
+
                 {/* Privacy note */}
                 <p className="text-[11px] text-gray-400 leading-relaxed">
                   Dengan masuk, Anda menyetujui kami mengakses data profil Google Anda untuk personalisasi analisis skincare.

@@ -417,7 +417,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                 >
                   <div className={`glass-card rounded-[2.5rem] p-4 md:p-8 relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400" />
-                    <SingleAnalyzer />
+                    <SingleAnalyzer points={points} onPointsChange={(newPoints) => setPoints(newPoints)} />
                   </div>
                 </motion.div>
               )}
