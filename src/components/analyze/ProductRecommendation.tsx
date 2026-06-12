@@ -37,7 +37,7 @@ type FilterTab = "LAB" | "SKIN" | "VIP" | "RATING";
 const FILTER_TABS: { key: FilterTab; label: string; icon: string; desc: string }[] = [
   { key: "VIP", label: "Pilihan Kreator", icon: "👑", desc: "Rekomendasi langsung dari kreator" },
   { key: "LAB", label: "Kemiripan Bahan", icon: "🧬", desc: "Diurutkan dari komposisi paling mirip" },
-  { key: "SKIN", label: "Cocok Kulitmu", icon: "🎯", desc: "Produk yang paling aman & cocok untuk profil kulitmu" },
+  { key: "SKIN", label: "Sesuai Tipe Kulitmu", icon: "🎯", desc: "Produk yang paling aman & cocok untuk profil kulitmu" },
   { key: "RATING", label: "Rating Tertinggi", icon: "⭐", desc: "Produk dengan ulasan terbaik dari komunitas" },
 ];
 
@@ -81,8 +81,8 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
     
     switch (activeTab) {
       case "LAB":
-        // Filter >= 30% similarity, sort by similarity DESC
-        list = list.filter(p => p.similarity >= 30);
+        // Filter >= 10% similarity, sort by similarity DESC
+        list = list.filter(p => p.similarity >= 10);
         list.sort((a, b) => b.similarity - a.similarity);
         break;
       
@@ -108,15 +108,20 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
         break;
       
       case "RATING":
-        // Sort by rating, fallback ke formula safety score jika rating & jumlah review = 0
+        // Sort by rating (with ratings floating to top), fallback to combined match & safety score
         list.sort((a, b) => {
-          if (a.rating === 0 && b.rating === 0) {
-            const scoreA = (a.matchScore + a.safetyScore) / 2;
-            const scoreB = (b.matchScore + b.safetyScore) / 2;
-            return scoreB - scoreA; // Urutkan dari kecocokan teraman tertinggi
+          const hasRatingA = a.rating > 0;
+          const hasRatingB = b.rating > 0;
+          if (hasRatingA && !hasRatingB) return -1;
+          if (!hasRatingA && hasRatingB) return 1;
+          if (hasRatingA && hasRatingB) {
+            if (b.rating !== a.rating) return b.rating - a.rating;
+            return b.reviews.length - a.reviews.length;
           }
-          if (b.rating !== a.rating) return b.rating - a.rating;
-          return b.reviews.length - a.reviews.length;
+          // Jika keduanya belum ada rating (rating === 0), urutkan dari kecocokan teraman tertinggi
+          const scoreA = (a.matchScore + a.safetyScore) / 2;
+          const scoreB = (b.matchScore + b.safetyScore) / 2;
+          return scoreB - scoreA;
         });
         break;
     }
@@ -139,6 +144,14 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
 
   // Badge kemiripan berwarna dinamis
   const SimilarityBadge = ({ similarity }: { similarity: number }) => {
+    if (similarity === 100) {
+      return (
+        <span className="text-[9px] font-black px-2.5 py-1 rounded border shadow-md bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white border-emerald-400 animate-pulse shadow-emerald-500/25">
+          ✨ Formulasi Identik (100%)
+        </span>
+      );
+    }
+
     let colorClass = "text-slate-600 bg-slate-100 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
     if (similarity >= 70) colorClass = "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/50";
     else if (similarity >= 50) colorClass = "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800/50";
@@ -193,7 +206,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
         {/* Header */}
         <div className="mb-8 border-b border-slate-100 dark:border-slate-800 pb-5">
           <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span>🔬</span> Rekomendasi Produk Serupa
+            <span>🔬</span> Rekomendasi & Alternatif Produk Pilihan
           </h2>
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
             {filteredProducts.length} produk ditemukan · {FILTER_TABS.find(t => t.key === activeTab)?.desc}
@@ -209,7 +222,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
             if (tab.key === "VIP") {
               count = localProducts.filter(p => p.isPinKreator).length;
             } else if (tab.key === "LAB") {
-              count = localProducts.filter(p => p.similarity >= 30).length;
+              count = localProducts.filter(p => p.similarity >= 10).length;
             } else if (tab.key === "SKIN") {
               if (userBaseSkin) {
                 count = localProducts.filter(p => !p.targetSkinTypes || p.targetSkinTypes.toLowerCase().includes(userBaseSkin)).length;
@@ -252,7 +265,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
               {activeTab === "VIP" 
                 ? "Belum ada rekomendasi kreator untuk kategori ini."
                 : activeTab === "LAB"
-                ? "Tidak ada produk dengan kemiripan bahan ≥ 30%."
+                ? "Tidak ada produk dengan kemiripan bahan ≥ 10%."
                 : "Tidak ada produk yang sesuai filter ini."}
             </p>
           </div>
@@ -311,9 +324,11 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
 
                   {/* Info */}
                   <div className="p-4 flex flex-col flex-1 gap-2">
-                    <div className="flex items-start gap-1.5 flex-wrap">
-                      <SimilarityBadge similarity={product.similarity} />
-                    </div>
+                    {activeTab === "LAB" && (
+                      <div className="flex items-start gap-1.5 flex-wrap">
+                        <SimilarityBadge similarity={product.similarity} />
+                      </div>
+                    )}
                     
                     <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs line-clamp-2 leading-snug">
                       {product.namaProduk}

@@ -115,9 +115,8 @@ export async function POST(req: Request) {
       };
     });
 
-    // Filter: minimum similarity >= 5% (threshold rendah, UI akan tampilkan >= 50% saja tapi data tersedia untuk semua tab)
+    // Kembalikan semua produk dalam kategori terpilih untuk diproses di tab UI (misal: Rating Tertinggi)
     const finalResult = recommendations
-      .filter(p => p.similarity >= 5 || p.isPinKreator) // VIP selalu tampil
       .sort((a, b) => {
         if (a.isPinKreator !== b.isPinKreator) return a.isPinKreator ? -1 : 1;
         return b.similarity - a.similarity;

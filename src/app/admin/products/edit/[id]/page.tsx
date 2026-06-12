@@ -1,12 +1,13 @@
 // src/app/admin/products/edit/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -29,6 +30,9 @@ export default function EditProductPage() {
     tagKhusus: "",
   });
 
+  const [tautanShopee, setTautanShopee] = useState("");
+  const [tautanTokopedia, setTautanTokopedia] = useState("");
+
   const [skinTypes, setSkinTypes] = useState({
     "Berminyak": false,
     "Kering": false,
@@ -40,6 +44,14 @@ export default function EditProductPage() {
   const handleSkinTypeChange = (st: keyof typeof skinTypes) => {
     setSkinTypes(prev => ({ ...prev, [st]: !prev[st] }));
   };
+
+  const [existingProducts, setExistingProducts] = useState<any[]>([]);
+
+  const similarProducts = useMemo(() => {
+    const query = formData.namaProduk.trim().toLowerCase();
+    if (query.length < 3) return [];
+    return existingProducts.filter(p => p.id !== params.id && p.namaProduk.toLowerCase().includes(query));
+  }, [formData.namaProduk, existingProducts, params.id]);
 
   const [initialData, setInitialData] = useState<any>(null);
 
@@ -90,6 +102,7 @@ export default function EditProductPage() {
         fetch("/api/admin/products")
           .then((res) => res.json())
           .then((data) => {
+            setExistingProducts(data);
             const product = data.find((p: any) => p.id === params.id);
             if (product) {
               setInitialData(product);
@@ -104,6 +117,31 @@ export default function EditProductPage() {
                 catatanKreator: product.catatanKreator || "",
                 tagKhusus: product.tagKhusus || "",
               });
+
+              // Parse tautanAfiliasi
+              const links = product.tautanAfiliasi ? product.tautanAfiliasi.split("|").map((l: string) => l.trim()).filter(Boolean) : [];
+              let shopee = "";
+              let tokopediatiktok = "";
+              
+              links.forEach((link: string) => {
+                const lower = link.toLowerCase();
+                if (lower.includes("shopee") || lower.includes("shp.ee")) {
+                  shopee = link;
+                } else if (lower.includes("tokopedia") || lower.includes("tiktok")) {
+                  tokopediatiktok = link;
+                }
+              });
+
+              if (links.length > 0 && !shopee && !tokopediatiktok) {
+                shopee = links[0] || "";
+                tokopediatiktok = links[1] || "";
+              } else if (links.length > 1) {
+                if (!shopee) shopee = links.find((l: string) => l !== tokopediatiktok) || "";
+                if (!tokopediatiktok) tokopediatiktok = links.find((l: string) => l !== shopee) || "";
+              }
+
+              setTautanShopee(shopee);
+              setTautanTokopedia(tokopediatiktok);
 
               // Load targetSkinTypes
               if (product.targetSkinTypes) {
@@ -229,10 +267,12 @@ export default function EditProductPage() {
 
     try {
       const finalImageUrl = uploadedImages.join(",");
+      const combinedTautan = [tautanShopee.trim(), tautanTokopedia.trim()].filter(Boolean).join("|");
 
       const payloadData = {
         id: params.id, 
         ...formData,
+        tautanAfiliasi: combinedTautan,
         gambarUrl: finalImageUrl, 
         fokusProduk: selectedFocuses,
         targetSkinTypes: selectedSkinTypes || null,
@@ -257,7 +297,7 @@ export default function EditProductPage() {
               if (formData.namaProduk !== initialData.namaProduk) changedFields.push("Nama Lengkap & Merek");
               if (formData.tipeProduk !== initialData.tipeProduk) changedFields.push("Tipe Kategori Produk");
               if (finalImageUrl !== (initialData.gambarUrl || "")) changedFields.push("Gambar Produk");
-              if (formData.tautanAfiliasi !== initialData.tautanAfiliasi) changedFields.push("Tautan Pembelian (Afiliasi)");
+              if (combinedTautan !== initialData.tautanAfiliasi) changedFields.push("Tautan Pembelian (Afiliasi)");
               if (formData.komposisiAsli !== initialData.komposisiAsli) changedFields.push("Daftar Komposisi Penuh (Ingredients)");
               if (formData.isPinKreator !== initialData.isPinKreator) changedFields.push("Pin Kreator");
               if (formData.masalahKulitPin !== (initialData.masalahKulitPin || "")) changedFields.push("Tombol Pelatuk");
@@ -298,6 +338,8 @@ export default function EditProductPage() {
       setIsLoading(false);
     }
   };
+
+  const ingredientCount = formData.komposisiAsli ? ekstrakDaftarBahan(formData.komposisiAsli).length : 0;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 lg:p-12">
@@ -413,7 +455,7 @@ export default function EditProductPage() {
             
             {/* Identitas Produk */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label htmlFor="namaProduk" className="text-xs font-bold text-slate-700 uppercase">Nama Lengkap & Merek</label>
                 <input 
                   id="namaProduk"
@@ -423,7 +465,24 @@ export default function EditProductPage() {
                   value={formData.namaProduk} 
                   onChange={(e) => setFormData({...formData, namaProduk: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 transition-all disabled:bg-slate-100 disabled:text-slate-500" 
+                  autoComplete="off"
                 />
+                {similarProducts.length > 0 && (
+                  <div className="absolute left-0 right-0 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl mt-1 p-2 max-h-48 overflow-y-auto">
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest px-2 py-1 flex items-center gap-1.5">
+                      <span>⚠️</span> Terdeteksi Produk Serupa (Hindari Duplikasi):
+                    </p>
+                    {similarProducts.map((p) => {
+                      const isExact = p.namaProduk.trim().toLowerCase() === formData.namaProduk.trim().toLowerCase();
+                      return (
+                        <div key={p.id} className={`flex items-center justify-between p-2 rounded-lg text-xs font-medium ${isExact ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 font-bold" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850"}`}>
+                          <span>{p.namaProduk} <span className="text-[9px] opacity-75 font-normal">({p.tipeProduk})</span></span>
+                          {isExact && <span className="text-[9px] font-black bg-rose-100 dark:bg-rose-900 text-rose-600 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800">KEMBAR PERSIS</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="tipeProduk" className="text-xs font-bold text-slate-700 uppercase">Tipe Kategori Produk</label>
@@ -443,17 +502,37 @@ export default function EditProductPage() {
             </div>
 
             {/* Tautan Afiliasi */}
-            <div className="space-y-2">
-              <label htmlFor="tautanAfiliasi" className="text-xs font-bold text-slate-700 uppercase">Tautan Pembelian (Afiliasi)</label>
-              <input 
-                id="tautanAfiliasi"
-                required 
-                disabled={isViewer}
-                type="url" 
-                value={formData.tautanAfiliasi} 
-                onChange={(e) => setFormData({...formData, tautanAfiliasi: e.target.value})}
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500" 
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="tautanShopee" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                  <img src="/shopee-seeklogo.png" alt="" className="w-4 h-4 object-contain" />
+                  Tautan Shopee Affiliate
+                </label>
+                <input 
+                  id="tautanShopee"
+                  disabled={isViewer}
+                  type="url" 
+                  placeholder="https://s.shopee.co.id/..." 
+                  value={tautanShopee} 
+                  onChange={(e) => setTautanShopee(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="tautanTokopedia" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                  <img src="/vecteezy_tiktok-shop-tokopedia-marketplace-online-shopping-icon_66779667-removebg-preview.png" alt="" className="w-4 h-4 object-contain" />
+                  Tautan Tokopedia / TikTok
+                </label>
+                <input 
+                  id="tautanTokopedia"
+                  disabled={isViewer}
+                  type="url" 
+                  placeholder="https://vt.tokopedia.com/..." 
+                  value={tautanTokopedia} 
+                  onChange={(e) => setTautanTokopedia(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500" 
+                />
+              </div>
             </div>
 
             {/* Komposisi Asli */}
@@ -468,6 +547,11 @@ export default function EditProductPage() {
                 onChange={(e) => setFormData({...formData, komposisiAsli: e.target.value})} 
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none text-sm font-medium resize-none bg-white text-slate-900 focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500" 
               />
+              {formData.komposisiAsli.trim().length > 0 && (
+                <p className="text-xs font-bold text-slate-400 mt-2 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> {ingredientCount} bahan terdeteksi dari teks
+                </p>
+              )}
             </div>
 
             {/* Fokus Produk */}

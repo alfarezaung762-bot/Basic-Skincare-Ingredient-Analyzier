@@ -1,7 +1,7 @@
 // src/app/admin/products/create/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -9,6 +9,7 @@ import { AccessDeniedModal } from "@/components/admin/AccessDeniedModal";
 import AdminHeader from "@/components/admin/AdminHeader";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -27,6 +28,24 @@ export default function CreateProductPage() {
     catatanKreator: "",
     tagKhusus: "",
   });
+
+  const [tautanShopee, setTautanShopee] = useState("");
+  const [tautanTokopedia, setTautanTokopedia] = useState("");
+
+  const [existingProducts, setExistingProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/products")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setExistingProducts(data))
+      .catch((err) => console.error("Gagal memuat produk untuk validasi duplikasi:", err));
+  }, []);
+
+  const similarProducts = useMemo(() => {
+    const query = formData.namaProduk.trim().toLowerCase();
+    if (query.length < 3) return [];
+    return existingProducts.filter(p => p.namaProduk.toLowerCase().includes(query));
+  }, [formData.namaProduk, existingProducts]);
 
   const [skinTypes, setSkinTypes] = useState({
     "Berminyak": false,
@@ -171,9 +190,11 @@ export default function CreateProductPage() {
 
     try {
       const finalImageUrl = uploadedImages.join(",");
+      const combinedTautan = [tautanShopee.trim(), tautanTokopedia.trim()].filter(Boolean).join("|");
 
       const payloadData = {
         ...formData,
+        tautanAfiliasi: combinedTautan,
         gambarUrl: finalImageUrl,
         fokusProduk: selectedFocuses,
         targetSkinTypes: selectedSkinTypes || null,
@@ -223,6 +244,8 @@ export default function CreateProductPage() {
       setIsLoading(false);
     }
   };
+
+  const ingredientCount = formData.komposisiAsli ? ekstrakDaftarBahan(formData.komposisiAsli).length : 0;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 p-4 md:p-8 lg:p-12">
@@ -325,7 +348,7 @@ export default function CreateProductPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 dark:border-slate-800">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label htmlFor="namaProduk" className="text-xs font-bold text-slate-700 uppercase">Nama Lengkap & Merek</label>
                 <input 
                   id="namaProduk"
@@ -335,7 +358,24 @@ export default function CreateProductPage() {
                   value={formData.namaProduk} 
                   onChange={(e) => setFormData({...formData, namaProduk: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 transition-all" 
+                  autoComplete="off"
                 />
+                {similarProducts.length > 0 && (
+                  <div className="absolute left-0 right-0 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl mt-1 p-2 max-h-48 overflow-y-auto">
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest px-2 py-1 flex items-center gap-1.5">
+                      <span>⚠️</span> Terdeteksi Produk Serupa (Hindari Duplikasi):
+                    </p>
+                    {similarProducts.map((p) => {
+                      const isExact = p.namaProduk.trim().toLowerCase() === formData.namaProduk.trim().toLowerCase();
+                      return (
+                        <div key={p.id} className={`flex items-center justify-between p-2 rounded-lg text-xs font-medium ${isExact ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 font-bold" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850"}`}>
+                          <span>{p.namaProduk} <span className="text-[9px] opacity-75 font-normal">({p.tipeProduk})</span></span>
+                          {isExact && <span className="text-[9px] font-black bg-rose-100 dark:bg-rose-900 text-rose-600 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800">KEMBAR PERSIS</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="tipeProduk" className="text-xs font-bold text-slate-700 uppercase">Tipe Kategori Produk</label>
@@ -353,17 +393,35 @@ export default function CreateProductPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="tautanAfiliasi" className="text-xs font-bold text-slate-700 uppercase">Tautan Pembelian (Afiliasi)</label>
-              <input 
-                id="tautanAfiliasi"
-                required 
-                type="url" 
-                placeholder="https://..." 
-                value={formData.tautanAfiliasi} 
-                onChange={(e) => setFormData({...formData, tautanAfiliasi: e.target.value})}
-                className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="tautanShopee" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                  <img src="/shopee-seeklogo.png" alt="" className="w-4 h-4 object-contain" />
+                  Tautan Shopee Affiliate
+                </label>
+                <input 
+                  id="tautanShopee"
+                  type="url" 
+                  placeholder="https://s.shopee.co.id/..." 
+                  value={tautanShopee} 
+                  onChange={(e) => setTautanShopee(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="tautanTokopedia" className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                  <img src="/vecteezy_tiktok-shop-tokopedia-marketplace-online-shopping-icon_66779667-removebg-preview.png" alt="" className="w-4 h-4 object-contain" />
+                  Tautan Tokopedia / TikTok
+                </label>
+                <input 
+                  id="tautanTokopedia"
+                  type="url" 
+                  placeholder="https://vt.tokopedia.com/..." 
+                  value={tautanTokopedia} 
+                  onChange={(e) => setTautanTokopedia(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl outline-none text-sm font-medium border border-slate-200 dark:border-slate-800 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -377,6 +435,11 @@ export default function CreateProductPage() {
                 onChange={(e) => setFormData({...formData, komposisiAsli: e.target.value})} 
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 dark:border-slate-800 outline-none text-sm font-medium resize-none bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-900 dark:text-slate-100 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-600" 
               />
+              {formData.komposisiAsli.trim().length > 0 && (
+                <p className="text-xs font-bold text-slate-400 mt-2 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> {ingredientCount} bahan terdeteksi dari teks
+                </p>
+              )}
             </div>
 
             <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 dark:border-slate-800">
