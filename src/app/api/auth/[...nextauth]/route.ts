@@ -2,7 +2,7 @@
 
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials";
+
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
@@ -14,23 +14,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
     }),
-    ...(process.env.NODE_ENV === "development"
-      ? [
-          CredentialsProvider({
-            name: "Bypass",
-            credentials: {
-              email: { label: "Email", type: "text" },
-            },
-            async authorize(credentials) {
-              if (!credentials?.email) return null;
-              const user = await prisma.user.findUnique({
-                where: { email: credentials.email },
-              });
-              return user;
-            },
-          }),
-        ]
-      : []),
+
   ],
   session: {
     strategy: "jwt",

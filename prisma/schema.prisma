@@ -58,6 +58,7 @@ model User {
   profile       Profile?
   histories     AnalysisHistory[]
   reviews       ProductReview[] 
+  bugReports    BugReport[]
 }
 
 model VerificationToken {
@@ -346,4 +347,37 @@ model PointTransaction {
   paymentType String   // "GOPAY", "DANA", atau "BANK_VA"
   status      String   // "PENDING", "SUCCESS", "FAILED"
   createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// 10. SYSTEM CONFIGURATION SYSTEM
+// ==========================================
+
+model SubscriptionConfig {
+  id            String   @id @default("singleton_sub_config")
+  pricePro      Int      @default(10000)
+  pointsPro     Int      @default(100)
+  priceProPlus  Int      @default(30000)
+  pointsProPlus Int      @default(500)
+  initialPoints Int      @default(10)
+  dailyRefresh  Int      @default(1)
+  costFast      Int      @default(1)
+  costHybrid    Int      @default(2)
+  updatedAt     DateTime @updatedAt
+}
+
+// ==========================================
+// 11. BUG REPORT SYSTEM
+// ==========================================
+
+model BugReport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   String   @db.Text
+  images    String[] // Array of Cloudinary image URLs (max 2)
+  status    String   @default("PENDING") // "PENDING", "VALID", "INVALID", "REWARDED"
+  reward    Int      @default(0) // Amount of koin rewarded
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { runScoringEngine, UserProfile, ProductInput } from "../perhitunganlogic/scoringEngine";
+import { getSubscriptionConfig } from "@/lib/config";
 
 export async function POST(req: Request) {
   try {
@@ -29,8 +30,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Pengguna tidak ditemukan." }, { status: 404 });
     }
 
-    if ((user.points ?? 10) < 1) {
-      return NextResponse.json({ message: "Kredit poin Anda tidak cukup untuk Analisis Sistem Cepat (butuh 1 poin)." }, { status: 403 });
+    // Ambil konfigurasi langganan dari DB
+    const config = await getSubscriptionConfig();
+    const costFast = config.costFast;
+    const initialPoints = config.initialPoints;
+
+    if ((user.points ?? initialPoints) < costFast) {
+      return NextResponse.json({ message: `Kredit poin Anda tidak cukup untuk Analisis Sistem Cepat (butuh ${costFast} poin).` }, { status: 403 });
     }
 
     const profile = user.profile;
@@ -39,10 +45,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Harap isi profil kulit Anda terlebih dahulu di menu Profil." }, { status: 400 });
     }
 
-    // Kurangi 1 poin
+    // Kurangi poin secara dinamis
     await prisma.user.update({
       where: { id: userId },
-      data: { points: (user.points ?? 10) - 1 }
+      data: { points: (user.points ?? initialPoints) - costFast }
     });
 
     const dictionary = await prisma.ingredientDictionary.findMany();

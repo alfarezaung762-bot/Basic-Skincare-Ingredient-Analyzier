@@ -7,6 +7,7 @@ import SingleAnalyzer from "@/components/analyze/SingleAnalyzer";
 import CombineAnalyzer from "@/components/analyze/CombineAnalyzer";
 import LoginModal from "@/components/LoginModal";
 import SubscriptionModal from "@/components/subscription/SubscriptionModal";
+import BugReportModal from "@/components/BugReportModal";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Banner {
@@ -39,6 +40,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
   const [points, setPoints] = useState<number | null>(null);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showBugReportModal, setShowBugReportModal] = useState(false);
   
   const settingsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -215,10 +217,14 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                                 ) : (
                   /* Logged in: Poin, Profil Kulit, Keluar & Tombol Pengaturan Dropdown */
                   <>
-                    <div className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center gap-1.5 shadow-sm">
+                    <button
+                      onClick={() => setShowSubscriptionModal(true)}
+                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-500 flex items-center gap-1.5 shadow-sm transition-all btn-press"
+                      title="Top Up Kredit Poin"
+                    >
                       <span>🪙</span>
                       <span>{points !== null ? `${points} Kredit` : "..."}</span>
-                    </div>
+                    </button>
 
                     <Link href="/profile" className="gradient-btn px-6 py-2 rounded-xl text-sm flex items-center btn-press">
                       <span className="relative z-10">Profil Kulit</span>
@@ -289,6 +295,23 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                             >
                               <span>🕒</span> Riwayat Analisis
                             </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                if (isGuest) {
+                                  setShowLoginModal(true);
+                                } else {
+                                  setShowBugReportModal(true);
+                                }
+                              }}
+                              className={`flex items-center gap-2 px-3 py-2 w-full text-left rounded-xl text-xs font-bold transition-all ${
+                                isDark ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-teal-600"
+                              }`}
+                            >
+                              <span>🐛</span> Lapor Bug
+                            </button>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -509,6 +532,13 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
         onClose={() => setShowSubscriptionModal(false)}
         currentPoints={points}
         onPurchaseSuccess={(newPoints) => setPoints(newPoints)}
+        isDark={isDark}
+      />
+
+      {/* Bug Report Modal — modal pelaporan bug */}
+      <BugReportModal
+        isOpen={showBugReportModal}
+        onClose={() => setShowBugReportModal(false)}
         isDark={isDark}
       />
     </>

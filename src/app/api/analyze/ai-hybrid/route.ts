@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import { runScoringEngine, UserProfile, ProductInput, EngineResult, FlagDetail } from "../perhitunganlogic/scoringEngine";
+import { getSubscriptionConfig } from "@/lib/config";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -310,8 +311,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Pengguna tidak ditemukan." }, { status: 404 });
     }
 
-    if ((user.points ?? 10) < 2) {
-      return NextResponse.json({ message: "Kredit poin Anda tidak cukup untuk Analisis AI Hybrid (butuh 2 poin)." }, { status: 403 });
+    // Ambil konfigurasi langganan dari DB
+    const config = await getSubscriptionConfig();
+    const costHybrid = config.costHybrid;
+    const initialPoints = config.initialPoints;
+
+    if ((user.points ?? initialPoints) < costHybrid) {
+      return NextResponse.json({ message: `Kredit poin Anda tidak cukup untuk Analisis AI Hybrid (butuh ${costHybrid} poin).` }, { status: 403 });
     }
 
     const profile = user.profile;
@@ -319,10 +325,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Harap isi profil kulit Anda terlebih dahulu." }, { status: 400 });
     }
 
-    // Kurangi 2 poin
+    // Kurangi poin secara dinamis
     await prisma.user.update({
       where: { id: userId },
-      data: { points: (user.points ?? 10) - 2 }
+      data: { points: (user.points ?? initialPoints) - costHybrid }
     });
 
     // 2. Ambil dictionary (termasuk aiContext untuk grounding)

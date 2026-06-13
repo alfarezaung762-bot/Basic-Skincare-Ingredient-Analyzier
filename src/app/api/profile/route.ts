@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { getSubscriptionConfig } from "@/lib/config";
 
 // ==========================================
 // GET: MENGAMBIL DATA PROFIL PENGGUNA
@@ -26,20 +27,28 @@ export async function GET() {
       return NextResponse.json({ message: "Pengguna tidak ditemukan." }, { status: 404 });
     }
 
+    // Ambil konfigurasi langganan dari DB
+    const config = await getSubscriptionConfig();
+    const initialPoints = config.initialPoints;
+    const dailyRefresh = config.dailyRefresh;
+
     // --- LAZY DAILY REFRESH LOGIC ---
     const now = new Date();
     const lastRefresh = user.lastPointRefresh || now;
 
-    // Hitung perbedaan hari (24 jam)
-    const diffTime = now.getTime() - lastRefresh.getTime();
-    const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+    // Hitung perbedaan hari kalender (berdasarkan pergantian hari pada pukul 24:00/00:00)
+    const d1 = new Date(lastRefresh);
+    d1.setHours(0, 0, 0, 0);
+    const d2 = new Date(now);
+    d2.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((d2.getTime() - d1.getTime()) / (24 * 60 * 60 * 1000));
 
-    let updatedPoints = user.points ?? 10;
+    let updatedPoints = user.points ?? initialPoints;
     let shouldUpdateUser = false;
     let updateData: any = {};
 
     if (diffDays > 0) {
-      updatedPoints = (user.points ?? 10) + diffDays;
+      updatedPoints = (user.points ?? initialPoints) + (diffDays * dailyRefresh);
       updateData.points = updatedPoints;
       updateData.lastPointRefresh = now;
       shouldUpdateUser = true;
@@ -47,7 +56,7 @@ export async function GET() {
 
     // Pengaman jika points bernilai null di database (migrasi user lama)
     if (user.points === null || user.points === undefined) {
-      updateData.points = 10;
+      updateData.points = initialPoints;
       shouldUpdateUser = true;
     }
     if (!user.lastPointRefresh) {
@@ -67,7 +76,7 @@ export async function GET() {
     // maupun pembacaan properti `.profile`
     return NextResponse.json({
       profile: user.profile,
-      points: user.points ?? 10,
+      points: user.points ?? initialPoints,
     }, { status: 200 });
 
   } catch (error) {

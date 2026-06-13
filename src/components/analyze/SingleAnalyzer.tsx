@@ -20,6 +20,8 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
   const [ingredients, setIngredients] = useState("");
   const [analysisMode, setAnalysisMode] = useState<"HYBRID" | "FAST">("FAST");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [costFast, setCostFast] = useState(1);
+  const [costHybrid, setCostHybrid] = useState(2);
   
   // Data Hasil API
   const [result, setResult] = useState<FullAnalysisResponse | null>(null);
@@ -58,6 +60,16 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
       })
       .catch(() => console.log("Gagal memuat profil"));
 
+    fetch("/api/admin/subscription/config")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          if (typeof data.costFast === "number") setCostFast(data.costFast);
+          if (typeof data.costHybrid === "number") setCostHybrid(data.costHybrid);
+        }
+      })
+      .catch(() => console.log("Gagal memuat tarif poin"));
+
     // Pre-fill form dari History page (Analisis Ulang)
     const savedProduct = sessionStorage.getItem("lastAnalysisProduct");
     const savedIngredients = sessionStorage.getItem("lastAnalysisIngredients");
@@ -84,7 +96,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
     if (!ingredients.trim()) return;
 
     // Cek kecukupan kredit poin lokal
-    const requiredPoints = analysisMode === "HYBRID" ? 2 : 1;
+    const requiredPoints = analysisMode === "HYBRID" ? costHybrid : costFast;
     if (pointsVal !== null && pointsVal < requiredPoints) {
       setError(`Kredit poin Anda tidak cukup. Anda membutuhkan minimal ${requiredPoints} kredit poin untuk analisis ${analysisMode === "HYBRID" ? "AI Hybrid" : "Sistem Cepat"}. Silakan isi ulang kredit Anda melalui Pengaturan.`);
       return;
@@ -177,17 +189,17 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
                   type="button" 
                   onClick={() => setAnalysisMode("FAST")} 
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
-                  title="Biaya: 1 Kredit"
+                  title={`Biaya: ${costFast} Kredit`}
                 >
-                  ⚡ Sistem Cepat (1 Poin)
+                  ⚡ Sistem Cepat ({costFast} Poin)
                 </button>
                 <button 
                   type="button" 
                   onClick={() => setAnalysisMode("HYBRID")} 
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
-                  title="Biaya: 2 Kredit"
+                  title={`Biaya: ${costHybrid} Kredit`}
                 >
-                  🤖 AI Hybrid (2 Poin)
+                  🤖 AI Hybrid ({costHybrid} Poin)
                 </button>
               </div>
               {pointsVal !== null && (

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { getSubscriptionConfig } from "@/lib/config";
 
 export async function POST(req: Request) {
   try {
@@ -19,16 +20,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Paket dan metode pembayaran wajib dipilih." }, { status: 400 });
     }
 
-    // Tentukan jumlah poin dan harga berdasarkan nama paket
+    // Ambil konfigurasi langganan dari DB
+    const config = await getSubscriptionConfig();
+    const initialPoints = config.initialPoints;
+
+    // Tentukan jumlah poin dan harga berdasarkan nama paket secara dinamis
     let amount = 0;
     let price = 0;
 
     if (packageName === "PRO") {
-      amount = 100;
-      price = 10000;
+      amount = config.pointsPro;
+      price = config.pricePro;
     } else if (packageName === "PRO_PLUS") {
-      amount = 500;
-      price = 30000;
+      amount = config.pointsProPlus;
+      price = config.priceProPlus;
     } else {
       return NextResponse.json({ message: "Paket langganan tidak valid." }, { status: 400 });
     }
@@ -49,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     // Tambahkan poin ke saldo user
-    const currentPoints = user.points ?? 10;
+    const currentPoints = user.points ?? initialPoints;
     const newPoints = currentPoints + amount;
 
     // Transaksi Database: Tambah poin & Simpan riwayat transaksi sebagai SUCCESS

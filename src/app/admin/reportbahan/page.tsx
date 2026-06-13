@@ -492,6 +492,15 @@ export default function AdminReportBahan() {
                 👤 Laporan Pengguna
                 {Object.keys(groupedMismatch).length > 0 && <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md text-[10px] transition-all">{Object.keys(groupedMismatch).length}</span>}
               </button>
+
+              {(isSuperAdmin || adminRole === "ADMIN") && (
+                <Link
+                  href="/admin/reportbahan/bugreportuser"
+                  className="pb-2 px-2 text-sm font-bold text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-350 transition-all flex items-center gap-2 border-b-2 border-transparent"
+                >
+                  🐛 Laporan Bug
+                </Link>
+              )}
             </div>
 
             {/* SEARCH INPUT (Tersedia untuk Kedua Tab) */}
