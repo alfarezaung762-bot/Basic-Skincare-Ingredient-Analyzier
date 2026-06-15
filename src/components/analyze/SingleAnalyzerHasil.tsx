@@ -288,10 +288,12 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
 // --- KOMPONEN UTAMA ANAK (BAGIAN ATAS) ---
 export default function SingleAnalyzerHasil({ 
   result, 
-  userProfile 
+  userProfile,
+  onGoToAiSummary
 }: { 
   result: FullAnalysisResponse; 
   userProfile: UserProfileSummary | null;
+  onGoToAiSummary?: () => void;
 }) {
   const hasWarning = result.engineResult.safetyScore < 70 || result.engineResult.matchScore < 40;
 
@@ -363,8 +365,20 @@ export default function SingleAnalyzerHasil({
             Memuat detail profil uji...
           </div>
         )}
-      </div>
 
+        {result.aiHybridData && onGoToAiSummary && (
+          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+            <button
+              type="button"
+              onClick={onGoToAiSummary}
+              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/5 hover:from-indigo-500/20 hover:via-purple-500/20 text-indigo-700 dark:text-indigo-300 rounded-2xl border border-indigo-200/50 dark:border-indigo-800/50 hover:border-indigo-300 transition-all font-bold text-xs shadow-sm active:scale-95"
+              title="Klik untuk langsung menggulir ke bawah dan melihat Rangkuman Analisis AI Hybrid selengkapnya"
+            >
+              <span>🔬</span> Baca Rangkuman Analisis AI Selengkapnya <span className="animate-bounce inline-block">↓</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

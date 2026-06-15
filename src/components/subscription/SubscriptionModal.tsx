@@ -262,27 +262,29 @@ export default function SubscriptionModal({
                       {/* GoPay */}
                       <button
                         onClick={() => setPaymentMethod("GOPAY")}
-                        className={`p-3.5 rounded-xl border text-center font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === "GOPAY"
+                        className={`p-3.5 rounded-xl border text-center font-bold text-xs flex flex-col items-center justify-center gap-2 transition-all min-h-[80px] ${paymentMethod === "GOPAY"
                           ? "border-[#23b3b2] bg-[#23b3b2]/5 text-[#23b3b2] font-extrabold ring-1 ring-[#23b3b2]"
                           : isDark
                             ? "border-slate-800 bg-slate-900/20 text-slate-400 hover:border-slate-700"
                             : "border-slate-200 bg-slate-50/55 text-slate-650 hover:border-slate-350"
                           }`}
                       >
-                        <span className="text-2xl">📱</span> GoPay
+                        <img src="/gopay-logo.svg" alt="GoPay" className="h-5 object-contain" />
+
                       </button>
 
                       {/* DANA */}
                       <button
                         onClick={() => setPaymentMethod("DANA")}
-                        className={`p-3.5 rounded-xl border text-center font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === "DANA"
+                        className={`p-3.5 rounded-xl border text-center font-bold text-xs flex flex-col items-center justify-center gap-2 transition-all min-h-[80px] ${paymentMethod === "DANA"
                           ? "border-[#23b3b2] bg-[#23b3b2]/5 text-[#23b3b2] font-extrabold ring-1 ring-[#23b3b2]"
                           : isDark
                             ? "border-slate-800 bg-slate-900/20 text-slate-400 hover:border-slate-700"
                             : "border-slate-200 bg-slate-50/55 text-slate-650 hover:border-slate-350"
                           }`}
                       >
-                        <span className="text-2xl">💸</span> DANA
+                        <img src="/dana-logo.png" alt="DANA" className="h-5 object-contain" />
+
                       </button>
 
                       {/* Bank VA */}

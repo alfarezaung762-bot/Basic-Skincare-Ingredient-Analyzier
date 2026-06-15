@@ -52,7 +52,7 @@ export interface FullAnalysisResponse {
   aiHybridData?: {
     rekomendasiAkhir?: string;
     overallSummary?: {
-      recommendationStatus: "SANGAT_DIREKOMENDASIKAN" | "BOLEH_DICOBA" | "TIDAK_DIREKOMENDASIKAN";
+      recommendationStatus: "SANGAT_DIREKOMENDASIKAN" | "DIREKOMENDASIKAN" | "BOLEH_DICOBA" | "KURANG_DISARANKAN" | "TIDAK_DIREKOMENDASIKAN";
       suitabilitySummary: string;
       alternativeSkinType: string;
     };
@@ -67,7 +67,7 @@ export interface FullAnalysisResponse {
       clashes: { pair: string; risk: string; severity: "LOW" | "MEDIUM" | "HIGH"; contextualAdvice: string }[];
     };
     aiUnknownAnalysis?: string;
-    adjustmentsSummary?: { trigger: string; neutralizers: string[]; restored: number; type: string }[];
+    adjustmentsSummary?: { trigger: string; neutralizers: string[]; restored: number; type: string; reasoning?: string; scientificBasis?: string }[];
     modelUsed?: string;
   } | null;
 }
@@ -136,13 +136,24 @@ const IngredientCard = ({ ing }: { ing: IngredientDb }) => {
 };
 
 // --- KOMPONEN UTAMA (BAGIAN BAWAH) ---
-export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisResponse }) {
+export default function SingleAnalyzerHasil2({ 
+  result,
+  isDashboardOpen: propIsDashboardOpen,
+  setIsDashboardOpen: propSetIsDashboardOpen
+}: { 
+  result: FullAnalysisResponse;
+  isDashboardOpen?: boolean;
+  setIsDashboardOpen?: (open: boolean) => void;
+}) {
   const [showAllGoodIngredients, setShowAllGoodIngredients] = useState(false);
   const [showUnknownIngredients, setShowUnknownIngredients] = useState(false);
   const [showComedogenicIngredients, setShowComedogenicIngredients] = useState(false);
   const [showAiUnknownAnalysis, setShowAiUnknownAnalysis] = useState(false);
   const [showAiConsultation, setShowAiConsultation] = useState(false);
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+
+  const [localOpen, setLocalOpen] = useState(false);
+  const isDashboardOpen = propIsDashboardOpen !== undefined ? propIsDashboardOpen : localOpen;
+  const setIsDashboardOpen = propSetIsDashboardOpen || setLocalOpen;
 
   // Tokenizer Client-Side untuk merekomendasikan bahan klikable di paragraf Rekomendasi Akhir
   const parseRecommendationText = (text: string) => {
@@ -253,6 +264,16 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
   const [activeIngredient, setActiveIngredient] = useState<IngredientDb | null>(null);
   const [reportReason, setReportReason] = useState(""); // <-- TAMBAHAN BARU: State untuk input teks keluhan
   const [isReporting, setIsReporting] = useState(false);
+
+  // State untuk Detail Penjelasan Ilmiah Mitigasi Bahan (Penyelamatan & Netralisasi)
+  const [activeMitigationDetail, setActiveMitigationDetail] = useState<{
+    trigger: string;
+    neutralizers: string[];
+    restored: number;
+    type: string;
+    reasoning?: string;
+    scientificBasis?: string;
+  } | null>(null);
 
   // Mencegah auto-report menembak berkali-kali
   const hasAutoReported = useRef(false);
@@ -374,166 +395,75 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
           </motion.div>
         </div>
       )}
-      {/* RANGKUMAN ANALISIS AI-HYBRID PREMIUM (DASHBOARD) */}
-      {result.aiHybridData && (
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="bg-gradient-to-br from-indigo-50/80 via-purple-50/30 to-white dark:from-indigo-950/20 dark:via-purple-950/10 dark:to-slate-900/80 rounded-[2.5rem] shadow-[0_12px_40px_rgba(99,102,241,0.06)] border border-indigo-100/80 dark:border-indigo-900/30 overflow-hidden"
-        >
-          {/* Header Dashboard Premium */}
-          <div 
-            onClick={() => setIsDashboardOpen(!isDashboardOpen)}
-            className="p-6 md:p-8 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent border-b border-indigo-50/80 dark:border-indigo-900/30 cursor-pointer hover:bg-indigo-500/5 transition-colors select-none flex items-center justify-between gap-4"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30">
-                🔬
+
+      {/* MODAL PENJELASAN ILMIAH MITIGASI */}
+      <AnimatePresence>
+        {activeMitigationDetail && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setActiveMitigationDetail(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 max-w-md w-full rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3.5">
+                <h4 className="font-black text-sm text-indigo-750 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                  <span>🛡️</span> Detail Netralisasi Risiko
+                </h4>
+                <button
+                  onClick={() => setActiveMitigationDetail(null)}
+                  className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-500 hover:text-slate-750 dark:text-slate-400 dark:hover:text-slate-200 rounded-full transition-colors font-bold"
+                >
+                  ✕
+                </button>
               </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Rangkuman Analisis AI-Hybrid</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mt-0.5">Laporan Rekomendasi & Evaluasi Medis</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Badge Model */}
-              {result.aiHybridData.modelUsed && (
-                <span className="hidden sm:inline-block text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl">
-                  🤖 AI: {result.aiHybridData.modelUsed.replace('openrouter/', '')}
-                </span>
-              )}
-              <motion.span 
-                animate={{ rotate: isDashboardOpen ? 180 : 0 }}
-                transition={{ duration: 0.3 }}
-                className="text-slate-500 dark:text-slate-400 text-lg font-bold"
-              >
-                ▼
-              </motion.span>
-            </div>
-          </div>
 
-          <AnimatePresence initial={false}>
-            {isDashboardOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="p-6 md:p-8 space-y-8 border-t border-indigo-50/50 dark:border-indigo-900/20 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
-                  {/* STATUS REKOMENDASI UTAMA */}
-                  {(() => {
-                    const status = result.aiHybridData?.overallSummary?.recommendationStatus || 
-                      (result.engineResult.matchScore >= 80 && result.engineResult.safetyScore >= 80 ? "SANGAT_DIREKOMENDASIKAN" : 
-                       result.engineResult.matchScore >= 60 && result.engineResult.safetyScore >= 60 ? "BOLEH_DICOBA" : "TIDAK_DIREKOMENDASIKAN");
-                    
-                    let title = "Perlu Patch Test";
-                    let desc = "Formulasi relatif aman namun membutuhkan penyesuaian khusus atau tes usap.";
-                    let style = "from-amber-500/10 to-orange-600/5 border-amber-200 dark:border-orange-900/30 text-amber-800 dark:text-amber-300";
-                    let emoji = "⚠️";
-
-                    if (status === "SANGAT_DIREKOMENDASIKAN") {
-                      title = "Cocok";
-                      desc = "Formulasi sangat kompatibel dengan jenis kulit dan tujuan Anda.";
-                      style = "from-emerald-500/10 to-teal-600/5 border-emerald-200 dark:border-teal-900/30 text-emerald-800 dark:text-emerald-300";
-                      emoji = "✅";
-                    } else if (status === "TIDAK_DIREKOMENDASIKAN") {
-                      title = "Tidak Disarankan";
-                      desc = "Ada potensi risiko iritasi tinggi atau ketidakcocokan besar.";
-                      style = "from-rose-500/10 to-red-600/5 border-rose-200 dark:border-rose-900/30 text-rose-800 dark:text-rose-300";
-                      emoji = "❌";
-                    }
-
-                    return (
-                      <div className={`w-full bg-gradient-to-br ${style} border p-6 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[140px] shadow-sm`}>
-                        <div className="absolute right-0 bottom-0 text-[120px] opacity-[0.04] font-bold select-none pointer-events-none translate-y-1/4 translate-x-1/8">
-                          {emoji}
-                        </div>
-                        <div className="relative z-10">
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg opacity-80 font-sans">Kesimpulan Kecocokan dengan Profil Kulit Anda</span>
-                          <h4 className="text-xl md:text-2xl font-black mt-3.5 flex items-center gap-2">
-                            <span className="text-2xl">{emoji}</span> {title}
-                          </h4>
-                        </div>
-                        <p className="text-xs md:text-sm font-semibold opacity-95 leading-relaxed mt-4 relative z-10 max-w-[95%]">
-                          {desc}
-                        </p>
-                      </div>
-                    );
-                  })()}
-
-                  {/* REKOMENDASI AKHIR CARD (INTERAKTIF DENGAN BAHAN DILINK) */}
-                  {result.aiHybridData.rekomendasiAkhir && (
-                    <div className="bg-white/80 dark:bg-slate-900/80 border border-indigo-100/50 dark:border-indigo-900/30 p-6 md:p-8 rounded-2xl shadow-sm">
-                      <h5 className="text-sm md:text-base font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide mb-4 flex items-center gap-2">
-                        <span>📝</span> Laporan Rekomendasi Akhir
-                      </h5>
-                      <div className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
-                        {parseRecommendationText(result.aiHybridData.rekomendasiAkhir)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SINERGI & PERINGATAN BAHAN */}
-                  <div className="bg-white/60 dark:bg-slate-900/60 p-6 rounded-2xl border border-indigo-100/40 dark:border-indigo-900/20 shadow-sm">
-                    <h4 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-4">🔗⚡ Sinergi & Peringatan Bahan</h4>
-
-                    <div className="space-y-4">
-                      {/* Sinergi */}
-                      {result.aiHybridData.synergyAnalysis && result.aiHybridData.synergyAnalysis.length > 0 && (
-                        <div className="space-y-3">
-                          <h5 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Sinergi Positif</h5>
-                          {result.aiHybridData.synergyAnalysis.map((syn, idx) => (
-                            <div key={idx} className="flex items-start gap-2.5 text-xs bg-white/85 dark:bg-slate-850 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                              <span className="text-emerald-500 shrink-0 mt-0.5">✅</span>
-                              <div>
-                                <span className="font-bold text-slate-800 dark:text-slate-200">{syn.pair}</span>
-                                <p className="text-slate-600 dark:text-slate-400 text-[11px] font-medium mt-0.5 leading-relaxed">{syn.effect}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Peringatan (Clashes) */}
-                      {result.aiHybridData.warningsAndAdvice?.clashes && result.aiHybridData.warningsAndAdvice.clashes.length > 0 && (
-                        <div className="space-y-3 mt-4 pt-4 border-t border-indigo-50 dark:border-indigo-900/20">
-                          <h5 className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Interaksi Perlu Perhatian</h5>
-                          {result.aiHybridData.warningsAndAdvice.clashes.map((clash, idx) => (
-                            <div key={idx} className="bg-white/85 dark:bg-slate-850 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md shrink-0 ${clash.severity === 'HIGH' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40' :
-                                  clash.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40' :
-                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/40'
-                                  }`}>
-                                  {clash.severity === 'HIGH' ? '🔴 Tinggi' : clash.severity === 'MEDIUM' ? '🟡 Sedang' : '🔵 Rendah'}
-                                </span>
-                                <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{clash.pair}</span>
-                              </div>
-                              <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mb-1.5 leading-relaxed">{clash.risk}</p>
-                              <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold bg-indigo-50/50 dark:bg-indigo-950/20 p-2.5 rounded-lg leading-relaxed">
-                                💡 Saran Penggunaan: {clash.contextualAdvice}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {(!result.aiHybridData.synergyAnalysis?.length && !result.aiHybridData.warningsAndAdvice?.clashes?.length) && (
-                        <p className="text-xs text-slate-500 italic">Tidak ada sinergi spesifik atau peringatan interaksi bahan yang perlu dikhawatirkan.</p>
-                      )}
-                    </div>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Potensi Risiko</span>
+                  <p className="text-xs font-black text-rose-600 dark:text-rose-400 mt-1 uppercase tracking-wide">
+                    Bahan: {activeMitigationDetail.trigger} ({activeMitigationDetail.type.replace('_', ' ')})
+                  </p>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      )}
+
+                {activeMitigationDetail.neutralizers && activeMitigationDetail.neutralizers.length > 0 && (
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Bahan Penetral / Buffer</span>
+                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1 uppercase tracking-wide">
+                      {activeMitigationDetail.neutralizers.join(', ')}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Penjelasan Mekanisme Kerja</span>
+                  <p className="text-xs font-semibold text-slate-650 dark:text-slate-300 leading-relaxed mt-1.5 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-900">
+                    {activeMitigationDetail.reasoning || "Tidak ada penjelasan terperinci tersedia."}
+                  </p>
+                </div>
+
+                {activeMitigationDetail.scientificBasis && (
+                  <div className="bg-indigo-50/20 dark:bg-indigo-950/20 p-4 rounded-2xl border border-indigo-100/10 dark:border-indigo-900/10">
+                    <span className="text-[9px] font-black text-indigo-550 dark:text-indigo-400 uppercase tracking-wider block mb-1">Referensi & Dasar Ilmiah</span>
+                    <p className="text-[10px] font-bold text-indigo-650 dark:text-indigo-300 leading-relaxed italic">
+                      {activeMitigationDetail.scientificBasis}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setActiveMitigationDetail(null)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-355 font-bold text-xs rounded-2xl transition-colors"
+              >
+                Tutup
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
 
       {/* 1. KESIMPULAN FOKUS PRODUK V3 */}
       {(result.engineResult.primaryProductFocus || (result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0)) && (
@@ -840,6 +770,269 @@ export default function SingleAnalyzerHasil2({ result }: { result: FullAnalysisR
               {showAllGoodIngredients ? "Sembunyikan Bahan ▲" : `Tampilkan ${goodIngredients.length - 4} Bahan Lainnya 🔽`}
             </button>
           )}
+        </motion.div>
+      )}
+
+      {/* RANGKUMAN ANALISIS AI-HYBRID PREMIUM (DASHBOARD) - Pindahan */}
+      {result.aiHybridData && (
+        <motion.div
+          id="ai-hybrid-dashboard"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="scroll-mt-24 bg-gradient-to-br from-indigo-50/80 via-purple-50/30 to-white dark:from-indigo-950/20 dark:via-purple-950/10 dark:to-slate-900/80 rounded-[2.5rem] shadow-[0_12px_40px_rgba(99,102,241,0.06)] border border-indigo-100/80 dark:border-indigo-900/30 overflow-hidden"
+        >
+          {/* Header Dashboard Premium */}
+          <div 
+            onClick={() => setIsDashboardOpen(!isDashboardOpen)}
+            className="p-6 md:p-8 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent border-b border-indigo-50/80 dark:border-indigo-900/30 cursor-pointer hover:bg-indigo-500/5 transition-colors select-none flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30">
+                🔬
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Rangkuman Analisis AI-Hybrid</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mt-0.5">Laporan Rekomendasi & Evaluasi Medis</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Badge Model */}
+              {result.aiHybridData.modelUsed && (
+                <span className="hidden sm:inline-block text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl">
+                  🤖 AI: {result.aiHybridData.modelUsed.replace('openrouter/', '')}
+                </span>
+              )}
+              <motion.span 
+                animate={{ rotate: isDashboardOpen ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-slate-500 dark:text-slate-400 text-lg font-bold"
+              >
+                ▼
+              </motion.span>
+            </div>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {isDashboardOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="p-6 md:p-8 space-y-8 border-t border-indigo-50/50 dark:border-indigo-900/20 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+                  {/* STATUS REKOMENDASI UTAMA */}
+                  {(() => {
+                    const STATUS_ORDER = [
+                      "TIDAK_DIREKOMENDASIKAN",
+                      "KURANG_DISARANKAN",
+                      "BOLEH_DICOBA",
+                      "DIREKOMENDASIKAN",
+                      "SANGAT_DIREKOMENDASIKAN"
+                    ];
+
+                    const normalizeStatus = (statusStr?: string): string => {
+                      if (!statusStr) return "";
+                      return statusStr.trim().toUpperCase().replace(/[-\s]/g, "_");
+                    };
+
+                    const getMaximumAllowedStatus = (matchScore: number, safetyScore: number): string => {
+                      if (matchScore >= 90 && safetyScore >= 90) {
+                        return "SANGAT_DIREKOMENDASIKAN";
+                      }
+                      if (matchScore >= 85 && safetyScore >= 85) {
+                        return "DIREKOMENDASIKAN";
+                      }
+                      if (matchScore >= 70 && safetyScore >= 70) {
+                        return "BOLEH_DICOBA";
+                      }
+                      if (matchScore >= 50 && safetyScore >= 50) {
+                        return "KURANG_DISARANKAN";
+                      }
+                      return "TIDAK_DIREKOMENDASIKAN";
+                    };
+
+                    const clampStatus = (rawAiStatus: string, maxAllowedStatus: string): string => {
+                      const aiIndex = STATUS_ORDER.indexOf(rawAiStatus);
+                      const maxIndex = STATUS_ORDER.indexOf(maxAllowedStatus);
+                      if (aiIndex === -1) return maxAllowedStatus;
+                      if (aiIndex > maxIndex) {
+                        return maxAllowedStatus;
+                      }
+                      return rawAiStatus;
+                    };
+
+                    const engineMax = getMaximumAllowedStatus(result.engineResult.matchScore, result.engineResult.safetyScore);
+                    const rawAi = normalizeStatus(result.aiHybridData?.overallSummary?.recommendationStatus);
+                    
+                    // Fallback jika data AI hybrid kosong, hitung langsung menggunakan engineMax
+                    const status = rawAi ? clampStatus(rawAi, engineMax) : engineMax;
+                    
+                    let title = "";
+                    let desc = "";
+                    let style = "";
+                    let emoji = "";
+
+                    if (status === "SANGAT_DIREKOMENDASIKAN") {
+                      title = "Sangat Direkomendasikan";
+                      desc = "Formulasi ideal untuk kulit Anda. Bebas dari penalti aktif yang tidak termitigasi.";
+                      style = "from-emerald-500/10 to-teal-600/5 border-emerald-255 dark:border-teal-900/40 text-emerald-800 dark:text-emerald-300";
+                      emoji = "✨";
+                    } else if (status === "DIREKOMENDASIKAN") {
+                      title = "Cocok";
+                      desc = "Formulasi kompatibel dengan jenis kulit Anda secara umum. Hanya ada penalti minor yang tidak membahayakan.";
+                      style = "from-blue-500/10 to-indigo-650/5 border-blue-200 dark:border-indigo-900/30 text-blue-800 dark:text-blue-300";
+                      emoji = "✅";
+                    } else if (status === "BOLEH_DICOBA") {
+                      title = "Perlu Patch Test / Boleh Dicoba";
+                      desc = "Formulasi memiliki bahan aktif kuat atau kulit Anda sensitif. Dianjurkan melakukan tes usap terlebih dahulu.";
+                      style = "from-amber-500/10 to-orange-600/5 border-amber-250 dark:border-orange-950/30 text-amber-800 dark:text-amber-300";
+                      emoji = "⚠️";
+                    } else if (status === "KURANG_DISARANKAN") {
+                      title = "Kurang Disarankan";
+                      desc = "Mengandung bahan blacklist tipe kulit di konsentrasi rendah, atau iritan tinggi yang berisiko memicu breakout.";
+                      style = "from-orange-500/10 to-red-650/5 border-orange-200 dark:border-red-950/30 text-orange-800 dark:text-orange-300";
+                      emoji = "❌";
+                    } else {
+                      title = "Sangat Tidak Disarankan";
+                      desc = "Mengandung bahan berbahaya (TOXIC) atau pelanggaran keras blacklist tipe kulit. Berisiko merusak skin barrier.";
+                      style = "from-rose-500/10 to-red-600/5 border-rose-200 dark:border-red-900/30 text-rose-800 dark:text-rose-300";
+                      emoji = "🚫";
+                    }
+
+                    const suitabilityDesc = result.aiHybridData?.overallSummary?.suitabilitySummary || desc;
+
+                    return (
+                      <div className={`w-full bg-gradient-to-br ${style} border p-6 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[140px] shadow-sm`}>
+                        <div className="absolute right-0 bottom-0 text-[120px] opacity-[0.04] font-bold select-none pointer-events-none translate-y-1/4 translate-x-1/8">
+                          {emoji}
+                        </div>
+                        <div className="relative z-10">
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg opacity-80 font-sans">Kesimpulan Kecocokan dengan Profil Kulit Anda</span>
+                          <h4 className="text-xl md:text-2xl font-black mt-3.5 flex items-center gap-2">
+                            <span className="text-2xl">{emoji}</span> {title}
+                          </h4>
+                        </div>
+                        <p className="text-xs md:text-sm font-semibold opacity-95 leading-relaxed mt-4 relative z-10 max-w-[95%]">
+                          {suitabilityDesc}
+                        </p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* REKOMENDASI AKHIR CARD (INTERAKTIF DENGAN BAHAN DILINK) */}
+                  {result.aiHybridData.rekomendasiAkhir && (
+                    <div className="bg-white/80 dark:bg-slate-900/80 border border-indigo-100/50 dark:border-indigo-900/30 p-6 md:p-8 rounded-2xl shadow-sm">
+                      <h5 className="text-sm md:text-base font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+                        <span>📝</span> Laporan Rekomendasi Akhir
+                      </h5>
+                      <div className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {parseRecommendationText(result.aiHybridData.rekomendasiAkhir)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PENYELAMATAN & NETRALISASI RISIKO BAHAN */}
+                  {result.aiHybridData.adjustmentsSummary && result.aiHybridData.adjustmentsSummary.length > 0 && (
+                    <div className="bg-white/60 dark:bg-slate-900/60 p-6 rounded-2xl border border-indigo-100/40 dark:border-indigo-900/20 shadow-sm">
+                      <h4 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span>🛡️</span> Penyelamatan & Netralisasi Risiko Bahan
+                      </h4>
+                      <p className="text-xs text-slate-550 dark:text-slate-400 mb-4 font-medium leading-relaxed">
+                        Sistem mendeteksi potensi efek negatif bahan berikut yang berhasil dimitigasi atau dinetralkan oleh keberadaan bahan penyeimbang (buffer/soothing) atau karena karakteristik jenis produk:
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {result.aiHybridData.adjustmentsSummary.map((adj, idx) => (
+                          <div key={idx} className="bg-white/85 dark:bg-slate-850 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-md">
+                                  +{adj.restored} Poin Pulih
+                                </span>
+                                <span className="text-[9px] font-black text-indigo-500/80 dark:text-indigo-400/85 uppercase tracking-wider">
+                                  {adj.type.replace('_', ' ')}
+                                </span>
+                              </div>
+                              <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Risiko Pemicu: <span className="text-rose-600 dark:text-rose-400 font-extrabold">{adj.trigger}</span>
+                              </h5>
+                              {adj.neutralizers && adj.neutralizers.length > 0 && (
+                                <p className="text-[11px] text-slate-550 dark:text-slate-400 font-semibold mt-1.5 leading-relaxed">
+                                  Dinetralkan oleh: <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{adj.neutralizers.join(', ')}</span>
+                                </p>
+                              )}
+                              
+                              <button
+                                onClick={() => setActiveMitigationDetail(adj)}
+                                className="mt-3.5 w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider rounded-xl transition-colors border border-indigo-150/20 flex items-center justify-center gap-1 active:scale-[0.98]"
+                              >
+                                🔍 Lihat Penjelasan Ilmiah
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SINERGI & PERINGATAN BAHAN */}
+                  <div className="bg-white/60 dark:bg-slate-900/60 p-6 rounded-2xl border border-indigo-100/40 dark:border-indigo-900/20 shadow-sm">
+                    <h4 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-4">🔗⚡ Sinergi & Peringatan Bahan</h4>
+
+                    <div className="space-y-4">
+                      {/* Sinergi */}
+                      {result.aiHybridData.synergyAnalysis && result.aiHybridData.synergyAnalysis.length > 0 && (
+                        <div className="space-y-3">
+                          <h5 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Sinergi Positif</h5>
+                          {result.aiHybridData.synergyAnalysis.map((syn, idx) => (
+                            <div key={idx} className="flex items-start gap-2.5 text-xs bg-white/85 dark:bg-slate-850 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                              <span className="text-emerald-500 shrink-0 mt-0.5">✅</span>
+                              <div>
+                                <span className="font-bold text-slate-800 dark:text-slate-200">{syn.pair}</span>
+                                <p className="text-slate-600 dark:text-slate-400 text-[11px] font-medium mt-0.5 leading-relaxed">{syn.effect}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Peringatan (Clashes) */}
+                      {result.aiHybridData.warningsAndAdvice?.clashes && result.aiHybridData.warningsAndAdvice.clashes.length > 0 && (
+                        <div className="space-y-3 mt-4 pt-4 border-t border-indigo-50 dark:border-indigo-900/20">
+                          <h5 className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Interaksi Perlu Perhatian</h5>
+                          {result.aiHybridData.warningsAndAdvice.clashes.map((clash, idx) => (
+                            <div key={idx} className="bg-white/85 dark:bg-slate-850 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md shrink-0 ${clash.severity === 'HIGH' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40' :
+                                  clash.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40' :
+                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/40'
+                                  }`}>
+                                  {clash.severity === 'HIGH' ? '🔴 Tinggi' : clash.severity === 'MEDIUM' ? '🟡 Sedang' : '🔵 Rendah'}
+                                </span>
+                                <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{clash.pair}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mb-1.5 leading-relaxed">{clash.risk}</p>
+                              <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold bg-indigo-50/50 dark:bg-indigo-950/20 p-2.5 rounded-lg leading-relaxed">
+                                💡 Saran Penggunaan: {clash.contextualAdvice}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {(!result.aiHybridData.synergyAnalysis?.length && !result.aiHybridData.warningsAndAdvice?.clashes?.length) && (
+                        <p className="text-xs text-slate-500 italic">Tidak ada sinergi spesifik atau peringatan interaksi bahan yang perlu dikhawatirkan.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
 

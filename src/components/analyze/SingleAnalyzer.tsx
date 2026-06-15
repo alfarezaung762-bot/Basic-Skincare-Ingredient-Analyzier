@@ -31,6 +31,17 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
   
   // Titik Referensi untuk animasi gulir otomatis (Auto-Scroll)
   const resultRef = useRef<HTMLDivElement>(null);
+  const [isAiSummaryOpen, setIsAiSummaryOpen] = useState(false);
+
+  const handleGoToAiSummary = () => {
+    setIsAiSummaryOpen(true);
+    setTimeout(() => {
+      const element = document.getElementById("ai-hybrid-dashboard");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
+  };
 
   const [localPoints, setLocalPoints] = useState<number | null>(null);
   const pointsVal = points !== undefined ? points : localPoints;
@@ -105,6 +116,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
     setIsAnalyzing(true);
     setError("");
     setResult(null); 
+    setIsAiSummaryOpen(false);
     setRecommendations([]); // Reset rekomendasi lama setiap mulai analisis baru
 
     try {
@@ -275,8 +287,16 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
             
             {/* BAGIAN A: Evaluasi Klinis (Hasil Analisis Langsung) */}
             <div className="space-y-6">
-              <SingleAnalyzerHasil result={result} userProfile={userProfile} />
-              <SingleAnalyzerHasil2 result={result} />
+              <SingleAnalyzerHasil 
+                result={result} 
+                userProfile={userProfile} 
+                onGoToAiSummary={handleGoToAiSummary}
+              />
+              <SingleAnalyzerHasil2 
+                result={result} 
+                isDashboardOpen={isAiSummaryOpen}
+                setIsDashboardOpen={setIsAiSummaryOpen}
+              />
             </div>
 
             {/* BAGIAN B: Katalog Rekomendasi (Alternatif Mirip dari Database) 🛍️ */}

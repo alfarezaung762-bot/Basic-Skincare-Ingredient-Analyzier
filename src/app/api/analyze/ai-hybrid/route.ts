@@ -48,7 +48,7 @@ interface AiHybridResult {
     reasoning: string;
   };
   overallSummary?: {
-    recommendationStatus: "SANGAT_DIREKOMENDASIKAN" | "BOLEH_DICOBA" | "TIDAK_DIREKOMENDASIKAN";
+    recommendationStatus: "SANGAT_DIREKOMENDASIKAN" | "DIREKOMENDASIKAN" | "BOLEH_DICOBA" | "KURANG_DISARANKAN" | "TIDAK_DIREKOMENDASIKAN";
     suitabilitySummary: string;
     matchScoreSummary: string;
     safetyScoreSummary: string;
@@ -596,6 +596,27 @@ Kulit sensitif BUKAN tipe kulit bawaan lahir. Kulit sensitif adalah KONDISI kuli
 - Wash-Off (FACEWASH): Durasi kontak kulit sangat singkat (~60 detik) lalu dibilas air. Penetrasi bahan aktif keras (HARSH) berkurang drastis sehingga efek iritasi/penyumbatan pori sangat minim. Sinergi antagonis penetralisir penalti dapat dinilai lebih longgar.
 - Leave-On (MOISTURIZER & SUNSCREEN): Menempel di kulit berjam-jam tanpa dibilas. Penetrasi bahan aktif bersifat maksimal. Risiko komedogenik rating tinggi (3-5) dan iritan (HARSH) dinilai secara absolut berdasarkan posisi INCI dan ketersediaan penetralisir barrier nyata.
 
+=== LOGIKA KLINIS PENENTUAN STATUS REKOMENDASI (recommendationStatus) ===
+Anda WAJIB memilih salah satu dari 5 status berikut secara akurat berdasarkan hasil evaluasi akhir dan parameter skor awal mesin (engineResult):
+1. "SANGAT_DIREKOMENDASIKAN":
+   * Skor Kompatibilitas (Match) ≥ 90 DAN Skor Keamanan (Safety) ≥ 90.
+   * Bebas dari penalti aktif yang tidak termitigasi/dinetralkan (yaitu, semua penalti dari engine berhasil dinetralkan penuh oleh BUFFER penenang, atau dinilai tidak aktif karena wash-off/Zona Rendah).
+   * Tipe kulit pengguna bukan bertipe sensitif.
+2. "DIREKOMENDASIKAN":
+   * Skor Kompatibilitas (Match) ≥ 85 DAN Skor Keamanan (Safety) ≥ 85 (namun tidak memenuhi syarat 90/90).
+   * Hampir bebas dari penalti aktif. Hanya ada penalti minor/ringan yang belum ternetralkan sepenuhnya (tidak membahayakan skin barrier secara umum), namun membutuhkan instruksi adaptasi pemakaian awal.
+3. "BOLEH_DICOBA":
+   * Skor Kompatibilitas (Match) ≥ 70 DAN Skor Keamanan (Safety) ≥ 70 (namun tidak memenuhi syarat di atas).
+   * Mengandung bahan aktif kuat (HARSH Level 2/3) atau komedogenik sedang/tinggi tanpa penawar penuh di Zona Menengah/Dominan, namun tidak melanggar Blacklist mutlak.
+   * ATAU tipe kulit pengguna adalah sensitif (wajib dialihkan ke status ini sebagai bentuk kehati-hatian klinis agar pengguna melakukan uji usap / patch test terlebih dahulu).
+4. "KURANG_DISARANKAN":
+   * Skor Kompatibilitas (Match) 50-69 ATAU Skor Keamanan (Safety) 50-69.
+   * Mengandung bahan Blacklist kulit pengguna di Zona Menengah/Rendah (bukan dominan), atau mengandung bahan iritan tinggi tanpa penawar memadai. Berisiko memicu breakout/purging hebat jika dipakai harian.
+5. "TIDAK_DIREKOMENDASIKAN":
+   * Skor Kompatibilitas (Match) < 50 ATAU Skor Keamanan (Safety) < 50.
+   * Mengandung bahan TOXIC (skor keselamatan otomatis drop ke tingkat kritis).
+   * Mengandung bahan Blacklist tipe kulit pengguna di Zona Dominan/Menengah tanpa modifikasi/penetral nyata. Risiko tinggi merusak lapisan pelindung kulit.
+
 === DATA PROFIL PENGGUNA ===
 - Tipe Kulit: ${profile.skinType}
 - Umur: ${profile.age} tahun
@@ -631,7 +652,7 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
 {
   "rekomendasiAkhir": "Tuliskan laporan rekomendasi akhir dalam SATU PARAGRAF UTUH yang sangat kaya informasi, padat, medis/ilmiah, bebas dari kata penenang tidak perlu, dan DILARANG keras menggunakan list, bullet points, atau pemisahan baris (newline). Paragraf tunggal ini harus memadatkan 4 komponen terstruktur berikut: 1) [KLASIFIKASI & PROFIL FORMULASI]: Analisis produk secara struktural (misal wash-off facewash dengan surfaktan anionik lembut, leave-on moisturizer, dll), sebutkan bahan aktif utama (Key Actives) beserta fungsinya. 2) [EVALUASI KECOCOKAN KULIT & ZONA INCI]: Evaluasi kecocokan dengan jenis kulit, keparahan kondisi, kehamilan, dan sensitivitas pengguna. Jelaskan relevansi posisi bahan di daftar INCI (dose-response) untuk menilai apakah risiko bahan komedogenik rating 3-5 atau iritan berkurang secara drastis jika posisinya di bagian akhir (Zona Rendah) atau pada produk bilas (wash-off). Deteksi jika ada bahan yang melanggar aturan Blacklist untuk jenis kulit pengguna. 3) [INSTRUKSI KLINIS & UJI USAP]: Instruksikan uji usap (patch test) minimal 3 hari berturut-turut di area rahang/belakang telinga dengan menyebutkan nama INCI pemicu sensitivitas (misal minyak atsiri, eksfoliator keras, alkohol denat) secara jelas sesuai ejaan INCI agar sistem bisa membungkusnya sebagai tombol interaktif. Jelaskan kondisi yang diharapkan: 'jika tidak ada gatal, kemerahan, bruntusan, atau rasa panas selama 3 hari...'. 4) [OUTLOOK EFEKTIVITAS & ESTIMASI HASIL]: Proyeksikan efektivitas produk terhadap fokus perawatan (primaryFocus) pengguna, berikan rekomendasi frekuensi penggunaan yang konkret (misal: 2x seminggu di malam hari), dan urutan penggunaannya dalam rutinitas.",
   "overallSummary": {
-    "recommendationStatus": "SANGAT_DIREKOMENDASIKAN | BOLEH_DICOBA | TIDAK_DIREKOMENDASIKAN",
+    "recommendationStatus": "SANGAT_DIREKOMENDASIKAN | DIREKOMENDASIKAN | BOLEH_DICOBA | KURANG_DISARANKAN | TIDAK_DIREKOMENDASIKAN",
     "suitabilitySummary": "Penjelasan singkat (1-2 kalimat) apakah produk ini cocok untuk mengatasi masalah kulit target pengguna (primaryFocus) dan seberapa efektif formulasinya.",
     "alternativeSkinType": "Pilihlah secara tepat SATU dari 7 opsi jenis kulit ini: 'berminyak', 'kering', 'kombinasi', 'normal', 'berminyak sensitif', 'kering sensitif', 'kombinasi sensitif'. Dilarang menulis di luar 7 opsi ini!"
   },
@@ -879,6 +900,8 @@ Kembalikan HANYA JSON valid tanpa markdown code block:
           neutralizers: a.neutralizerIngredients,
           restored: a.pointsRestored,
           type: a.adjustmentType,
+          reasoning: a.reasoning,
+          scientificBasis: a.scientificBasis || "",
         })),
         modelUsed: usedModel,
       };

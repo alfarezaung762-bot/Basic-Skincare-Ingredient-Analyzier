@@ -429,6 +429,93 @@ export default function AIHybridHistoryPage() {
                   </div>
                 </div>
 
+                {/* Rangkuman AI-Hybrid Terstruktur */}
+                {(() => {
+                  const aiResponse = selectedItemDetail.aiResponse;
+                  const hybrid = aiResponse?.aiHybridData;
+                  if (!hybrid) return null;
+
+                  const overall = hybrid.overallSummary;
+                  const status = overall?.recommendationStatus;
+                  const suitability = overall?.suitabilitySummary;
+                  const adjustments = hybrid.adjustmentsSummary;
+
+                  let title = status || "TIDAK_DIREKOMENDASIKAN";
+                  let style = "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
+                  let emoji = "ℹ️";
+
+                  if (status === "SANGAT_DIREKOMENDASIKAN") {
+                    title = "Sangat Direkomendasikan";
+                    style = "bg-emerald-50 text-emerald-800 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30";
+                    emoji = "✨";
+                  } else if (status === "DIREKOMENDASIKAN") {
+                    title = "Cocok";
+                    style = "bg-blue-50 text-blue-800 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30";
+                    emoji = "✅";
+                  } else if (status === "BOLEH_DICOBA") {
+                    title = "Perlu Patch Test / Boleh Dicoba";
+                    style = "bg-amber-50 text-amber-800 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30";
+                    emoji = "⚠️";
+                  } else if (status === "KURANG_DISARANKAN") {
+                    title = "Kurang Disarankan";
+                    style = "bg-orange-50 text-orange-850 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30";
+                    emoji = "❌";
+                  } else if (status === "TIDAK_DIREKOMENDASIKAN") {
+                    title = "Sangat Tidak Disarankan";
+                    style = "bg-rose-50 text-rose-800 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30";
+                    emoji = "🚫";
+                  }
+
+                  return (
+                    <div className="space-y-3 border-t border-slate-100 dark:border-slate-800/80 pt-4">
+                      <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Rangkuman AI-Hybrid (Monitoring)</h4>
+                      
+                      {/* Kartu Status */}
+                      <div className={`p-4 rounded-xl border ${style} space-y-2`}>
+                        <div className="flex items-center gap-2 font-black text-sm">
+                          <span className="text-lg">{emoji}</span> {title}
+                        </div>
+                        {suitability && (
+                          <p className="text-xs font-semibold leading-relaxed opacity-90">{suitability}</p>
+                        )}
+                      </div>
+
+                      {/* Penyelamatan & Netralisasi Risiko */}
+                      {adjustments && adjustments.length > 0 && (
+                        <div className="space-y-2">
+                          <h5 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <span>🛡️</span> Netralisasi Risiko Bahan
+                          </h5>
+                          <div className="space-y-2">
+                            {adjustments.map((adj: any, idx: number) => (
+                              <div key={idx} className="bg-slate-50 dark:bg-slate-955/40 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80 text-xs flex justify-between items-center gap-4">
+                                <div>
+                                  <div className="font-bold text-slate-800 dark:text-slate-200">
+                                    Bahan: <span className="text-rose-600 dark:text-rose-400 font-extrabold">{adj.trigger}</span>
+                                  </div>
+                                  {adj.neutralizers && adj.neutralizers.length > 0 && (
+                                    <div className="text-[10px] text-slate-500 mt-1">
+                                      Dinetralkan: <span className="text-indigo-600 dark:text-indigo-400 font-black">{adj.neutralizers.join(', ')}</span>
+                                    </div>
+                                  )}
+                                  {adj.reasoning && (
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 italic bg-white dark:bg-slate-900/60 p-2 rounded-lg border border-slate-100/30 dark:border-slate-800/40">
+                                      {adj.reasoning}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 shrink-0 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/50">
+                                  +{adj.restored} Poin
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* AI Response Output */}
                 <div className="space-y-1.5">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hasil Analisis AI (Respons JSON)</h4>
