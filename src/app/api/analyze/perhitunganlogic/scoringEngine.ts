@@ -298,7 +298,7 @@ export function runScoringEngine(
       ing.targetFocus.split(',').forEach(f => {
         const cleanFocus = f.trim();
         focusTally[cleanFocus] = (focusTally[cleanFocus] || 0) + (ing.isKeyActive ? 3 : 1);
-        
+
         if (!focusIngredientsMap[cleanFocus]) {
           focusIngredientsMap[cleanFocus] = [];
         }
@@ -373,7 +373,7 @@ export function runScoringEngine(
       const moistHeavyFlagType: FlagDetail["type"] = isWashOff ? "WARNING" : "CRITICAL";
       const moistHeavyMessage = isWashOff
         ? "Minyak Pelembap di Produk Bilas: Produk ini mengandung minyak pelembap yang bisa membantu menjaga kelembapan kulit saat dibilas. Bagi kulit berjerawat aktif, pastikan membilas wajah dengan air sampai benar-benar bersih agar tidak ada sisa minyak yang menyumbat pori."
-        : "tekstur SKINCARE terdeteksi cream/Heavy: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif. Gunakan tipis tipis jika ingin mencoba Skincare ini dan hindari penggunaanya di area berjerawat aktif.";
+        : "ada bahan terdeteksi cream/Heavy: Kandungan oklusif (minyak pengunci) ini biasanya dihindari saat kulit sedang berjerawat aktif. Gunakan tipis tipis jika ingin mencoba Skincare ini dan hindari penggunaanya di area berjerawat aktif.";
 
       matchScore -= moistHeavyPenalty;
       matchFlags.push({
@@ -412,7 +412,7 @@ export function runScoringEngine(
   const userFocusList = profile.primaryFocus.split(',').map(f => f.trim());
   const sortedFocuses = Object.entries(focusTally).sort((a, b) => b[1] - a[1]);
   const primaryProductFocus = sortedFocuses.length > 0 ? sortedFocuses[0][0] : null;
-  
+
   // Hanya tampilkan fokus sekunder dengan skor tally >= 3
   const secondaryProductFocuses = sortedFocuses
     .slice(1)
