@@ -208,12 +208,12 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800"
+        className="bg-white dark:bg-slate-900 p-4 sm:p-6 md:p-10 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800"
       >
         {/* Header */}
-        <div className="mb-8 border-b border-slate-100 dark:border-slate-800 pb-5">
-          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span>🔬</span> Rekomendasi & Alternatif Produk Pilihan
+        <div className="mb-6 sm:mb-8 border-b border-slate-100 dark:border-slate-800 pb-4 sm:pb-5">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <span>🔬</span> Rekomendasi & Alternatif Produk
           </h2>
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
             {filteredProducts.length} produk ditemukan · {FILTER_TABS.find(t => t.key === activeTab)?.desc}
@@ -283,7 +283,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {currentItems.map((product, idx) => {
               const isVipMode = product.isPinKreator && activeTab === "VIP";
               const globalRank = (currentPage - 1) * itemsPerPage + idx;
@@ -295,9 +295,9 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
                   animate={{ opacity: 1, scale: 1, y: 0 }} 
                   exit={{ opacity: 0, scale: 0.96, y: 12 }} 
                   transition={{ 
-                    duration: 0.35, 
-                    ease: [0.16, 1, 0.3, 1], // Custom ultra-smooth easeOutExpo
-                    delay: idx * 0.04 
+                    duration: 0.25, 
+                    ease: [0.16, 1, 0.3, 1],
+                    delay: idx * 0.02 
                   }}
                   onClick={() => setSelectedProduct(product)}
                   className={`flex flex-col rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative h-full ${
@@ -325,7 +325,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
                   )}
 
                   {/* Image */}
-                  <div className={`w-full aspect-square relative flex items-center justify-center p-4 border-b ${
+                  <div className={`w-full aspect-square relative flex items-center justify-center p-2 sm:p-4 border-b ${
                     isVipMode ? "bg-amber-50/30 dark:bg-amber-950/10 border-amber-100 dark:border-amber-800/30" : "bg-slate-50 dark:bg-slate-850 border-slate-100 dark:border-slate-800"
                   }`}>
                     <img 
@@ -336,7 +336,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
                   </div>
 
                   {/* Info */}
-                  <div className="p-4 flex flex-col flex-1 gap-2">
+                  <div className="p-3 sm:p-4 flex flex-col flex-1 gap-1.5 sm:gap-2">
                     {activeTab === "LAB" && (
                       <div className="flex items-start gap-1.5 flex-wrap">
                         <SimilarityBadge similarity={product.similarity} />

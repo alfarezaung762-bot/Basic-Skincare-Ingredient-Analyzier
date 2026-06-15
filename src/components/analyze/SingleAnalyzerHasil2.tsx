@@ -342,11 +342,11 @@ export default function SingleAnalyzerHasil2({
 
       {/* POP-UP MODAL UNTUK DETAIL BAHAN TERDETEKSI */}
       {activeIngredient && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={closeModal}>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm" onClick={closeModal}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl"
+            className="bg-white rounded-[2rem] sm:rounded-[2rem] p-5 sm:p-6 max-w-sm w-full shadow-2xl modal-bottom-sheet"
             onClick={(e) => e.stopPropagation()} // Mencegah klik di dalam modal menutup modal
           >
             <div className="flex justify-between items-start mb-4">
@@ -399,12 +399,12 @@ export default function SingleAnalyzerHasil2({
       {/* MODAL PENJELASAN ILMIAH MITIGASI */}
       <AnimatePresence>
         {activeMitigationDetail && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setActiveMitigationDetail(null)}>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setActiveMitigationDetail(null)}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-slate-900 max-w-md w-full rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4"
+              className="bg-white dark:bg-slate-900 max-w-md w-full rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 modal-bottom-sheet"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3.5">
@@ -467,7 +467,7 @@ export default function SingleAnalyzerHasil2({
 
       {/* 1. KESIMPULAN FOKUS PRODUK V3 */}
       {(result.engineResult.primaryProductFocus || (result.engineResult.secondaryProductFocuses && result.engineResult.secondaryProductFocuses.length > 0)) && (
-        <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700">
           <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6 text-center uppercase tracking-widest">
             Profil Formulasi Produk
           </h3>
@@ -571,7 +571,7 @@ export default function SingleAnalyzerHasil2({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="bg-slate-50 dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700"
+          className="bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 dark:border-slate-700"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -737,7 +737,7 @@ export default function SingleAnalyzerHasil2({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-          className="bg-rose-50/50 dark:bg-rose-950/20 p-6 md:p-8 rounded-[2rem] shadow-sm border border-rose-200 dark:border-rose-800/50"
+          className="bg-rose-50/50 dark:bg-rose-950/20 p-4 sm:p-6 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-rose-200 dark:border-rose-800/50"
         >
           <h3 className="text-lg font-black text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-2"><span>⚠️</span> Bahan Perlu Perhatian</h3>
           <p className="text-sm text-rose-600/70 dark:text-rose-400/70 mb-6 font-medium">Sistem mendeteksi bahan aktif kuat atau berisiko dalam formulasi ini.</p>
@@ -754,7 +754,7 @@ export default function SingleAnalyzerHasil2({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-          className="bg-emerald-50/40 dark:bg-emerald-950/20 p-6 md:p-8 rounded-[2rem] shadow-sm border border-emerald-200 dark:border-emerald-800/50"
+          className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 sm:p-6 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-emerald-200 dark:border-emerald-800/50"
         >
           <h3 className="text-lg font-black text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-2"><span>🌱</span> Bahan Unggulan & Penenang</h3>
           <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70 mb-6 font-medium">Bahan-bahan ini memberikan nilai tambah berupa perawatan ekstra untuk kulit.</p>

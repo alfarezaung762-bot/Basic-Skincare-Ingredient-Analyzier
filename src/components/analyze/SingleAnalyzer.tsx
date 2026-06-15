@@ -2,12 +2,25 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-// SessionProvider sudah disediakan secara global di layout.tsx
-// Impor Komponen Anak
-import SingleAnalyzerHasil, { FullAnalysisResponse, UserProfileSummary } from "./SingleAnalyzerHasil";
-import SingleAnalyzerHasil2 from "./SingleAnalyzerHasil2";
-import ProductRecommendation from "./ProductRecommendation";
+import dynamic from "next/dynamic";
+// Type-only import (stripped at compile time, no bundle cost)
+import type { FullAnalysisResponse, UserProfileSummary } from "./SingleAnalyzerHasil";
 import { ekstrakDaftarBahan } from "@/lib/pemisahBahan";
+
+// Dynamic imports — these components only render AFTER analysis completes,
+// so they don't need to be in the initial bundle (~400KB savings)
+const SingleAnalyzerHasil = dynamic(() => import("./SingleAnalyzerHasil"), {
+  ssr: false,
+  loading: () => <div className="skeleton w-full h-[200px] rounded-2xl" />,
+});
+const SingleAnalyzerHasil2 = dynamic(() => import("./SingleAnalyzerHasil2"), {
+  ssr: false,
+  loading: () => <div className="skeleton w-full h-[300px] rounded-2xl" />,
+});
+const ProductRecommendation = dynamic(() => import("./ProductRecommendation"), {
+  ssr: false,
+  loading: () => <div className="skeleton w-full h-[200px] rounded-2xl" />,
+});
 
 interface SingleAnalyzerProps {
   points?: number | null;
@@ -183,24 +196,24 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-4">
         
         {/* === KOTAK FORMULIR === */}
-        <div className="bg-white p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden">
+        <div className="bg-white p-4 sm:p-6 md:p-10 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-5">
-            <div className="flex items-center gap-4">
-              <span className="bg-slate-100 text-slate-800 font-black text-lg px-4 py-2 rounded-xl border border-slate-200">01</span>
+          <div className="flex flex-col gap-4 mb-6 sm:mb-8 border-b border-slate-100 pb-4 sm:pb-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="bg-slate-100 text-slate-800 font-black text-base sm:text-lg px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-slate-200">01</span>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Formulir Analisis Klinis</h2>
-                <p className="text-sm text-slate-500 mt-1 font-medium">Masukkan komposisi produk untuk dievaluasi sistem</p>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Formulir Analisis Klinis</h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium hidden sm:block">Masukkan komposisi produk untuk dievaluasi sistem</p>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner w-fit">
+            <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 bg-slate-50 p-1 sm:p-1.5 rounded-xl border border-slate-200 shadow-inner w-full sm:w-fit">
                 <button 
                   type="button" 
                   onClick={() => setAnalysisMode("FAST")} 
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
                   title={`Biaya: ${costFast} Kredit`}
                 >
                   ⚡ Sistem Cepat ({costFast} Poin)
@@ -208,7 +221,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
                 <button 
                   type="button" 
                   onClick={() => setAnalysisMode("HYBRID")} 
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
                   title={`Biaya: ${costHybrid} Kredit`}
                 >
                   🤖 AI Hybrid ({costHybrid} Poin)
@@ -222,8 +235,8 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
             </div>
           </div>
           
-          <form onSubmit={handleAnalyze} className="space-y-8 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <form onSubmit={handleAnalyze} className="space-y-5 sm:space-y-8 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Nama Produk <span className="text-slate-400 font-normal">(opsional)</span></label>
                 <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Contoh: laboré" className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm shadow-sm" />
@@ -231,8 +244,8 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Klasifikasi Produk</label>
                 <div className="flex bg-slate-50 p-1.5 rounded-2xl border-2 border-slate-100 shadow-inner">
-                  {[ { id: "FACEWASH", label: "Face Wash", icon: "💧" }, { id: "MOISTURIZER", label: "Moisturizer", icon: "✨" }, { id: "SUNSCREEN", label: "Sunscreen", icon: "🌞" } ].map((type) => (
-                    <button key={type.id} type="button" onClick={() => setProductType(type.id)} className={`flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${productType === type.id ? "bg-white text-slate-900 shadow-md border border-slate-200 scale-[1.02]" : "text-slate-400 hover:text-slate-700"}`}>
+                    {[ { id: "FACEWASH", label: "Face Wash", icon: "💧" }, { id: "MOISTURIZER", label: "Moisturizer", icon: "✨" }, { id: "SUNSCREEN", label: "Sunscreen", icon: "🌞" } ].map((type) => (
+                    <button key={type.id} type="button" onClick={() => setProductType(type.id)} className={`flex-1 py-2.5 sm:py-3 text-[10px] sm:text-sm font-bold rounded-xl flex items-center justify-center gap-1 sm:gap-2 transition-all duration-300 ${productType === type.id ? "bg-white text-slate-900 shadow-md border border-slate-200 scale-[1.02]" : "text-slate-400 hover:text-slate-700"}`}>
                       <span>{type.icon}</span> {type.label}
                     </button>
                   ))}

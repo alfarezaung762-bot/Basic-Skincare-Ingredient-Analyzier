@@ -3,12 +3,22 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import SingleAnalyzer from "@/components/analyze/SingleAnalyzer";
-import CombineAnalyzer from "@/components/analyze/CombineAnalyzer";
-import LoginModal from "@/components/LoginModal";
-import SubscriptionModal from "@/components/subscription/SubscriptionModal";
-import BugReportModal from "@/components/BugReportModal";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Dynamic imports — these components only render on user interaction,
+// so they don't need to be in the initial JS bundle (~200-300KB savings)
+const SingleAnalyzer = dynamic(() => import("@/components/analyze/SingleAnalyzer"), {
+  ssr: false,
+  loading: () => <div className="skeleton w-full h-[300px] rounded-2xl" />,
+});
+const CombineAnalyzer = dynamic(() => import("@/components/analyze/CombineAnalyzer"), {
+  ssr: false,
+  loading: () => <div className="skeleton w-full h-[200px] rounded-2xl" />,
+});
+const LoginModal = dynamic(() => import("@/components/LoginModal"), { ssr: false });
+const SubscriptionModal = dynamic(() => import("@/components/subscription/SubscriptionModal"), { ssr: false });
+const BugReportModal = dynamic(() => import("@/components/BugReportModal"), { ssr: false });
 
 interface Banner {
   id: string;
@@ -41,8 +51,28 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showBugReportModal, setShowBugReportModal] = useState(false);
+  const [isFooterExpanded, setIsFooterExpanded] = useState(false);
   
   const settingsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll listener for sticky footer peeking effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const threshold = 60;
+      const scrolledToBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 150;
+      
+      if (window.scrollY > threshold || scrolledToBottom) {
+        setIsFooterExpanded(true);
+      } else {
+        setIsFooterExpanded(false);
+      }
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     fetchBanners();
@@ -162,11 +192,8 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
         <div className="max-w-5xl mx-auto space-y-8 w-full flex-grow relative z-10">
 
           {/* Top Header */}
-          <motion.header
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className={`glass-card rounded-3xl p-6 sticky top-4 z-50 backdrop-blur-xl shadow-lg border border-slate-200/50 ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80'}`}
+          <header
+            className={`glass-card rounded-3xl p-4 sm:p-6 sticky top-4 z-50 shadow-lg border border-slate-200/50 ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80'}`}
           >
             {/* Gradient top accent bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400 rounded-t-3xl" />
@@ -183,10 +210,10 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   </button>
                 )}
                 <div>
-                  <h2 className={`text-2xl font-bold ${textPrimary} flex items-center gap-2`}>
+                  <h2 className={`text-xl sm:text-2xl font-bold ${textPrimary} flex items-center gap-2`}>
                     Halo, <span className="gradient-text">{displayName}</span> 👋
                   </h2>
-                  <p className={`${textSecondary} text-sm mt-1 font-medium`}>
+                  <p className={`${textSecondary} text-xs sm:text-sm mt-1 font-medium hidden sm:block`}>
                     {isGuest ? "Masuk untuk mulai analisis skincare-mu!" : "Siap merawat kulitmu hari ini?"}
                   </p>
                 </div>
@@ -219,20 +246,21 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   <>
                     <button
                       onClick={() => setShowSubscriptionModal(true)}
-                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-500 flex items-center gap-1.5 shadow-sm transition-all btn-press"
+                      className="px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-500 flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all btn-press"
                       title="Top Up Kredit Poin"
                     >
                       <span>🪙</span>
-                      <span>{points !== null ? `${points} Kredit` : "..."}</span>
+                      <span>{points !== null ? `${points}` : "..."}</span>
                     </button>
 
-                    <Link href="/profile" className="gradient-btn px-6 py-2 rounded-xl text-sm flex items-center btn-press">
-                      <span className="relative z-10">Profil Kulit</span>
+                    <Link href="/profile" className="gradient-btn px-3 sm:px-6 py-2 rounded-xl text-xs sm:text-sm flex items-center btn-press">
+                      <span className="relative z-10 hidden sm:inline">Profil Kulit</span>
+                      <span className="relative z-10 sm:hidden">Profil</span>
                     </Link>
 
                     <button
                       onClick={() => signOut({ callbackUrl: "/" })}
-                      className={`px-4 py-2 font-medium rounded-xl transition-all text-sm btn-press border ${isDark ? "bg-slate-700/60 border-slate-600 text-slate-400 hover:bg-red-900/30 hover:text-red-400 hover:border-red-800" : "bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"}`}
+                      className={`hidden sm:block px-4 py-2 font-medium rounded-xl transition-all text-sm btn-press border ${isDark ? "bg-slate-700/60 border-slate-600 text-slate-400 hover:bg-red-900/30 hover:text-red-400 hover:border-red-800" : "bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"}`}
                     >
                       Keluar
                     </button>
@@ -312,6 +340,20 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                             >
                               <span>🐛</span> Lapor Bug
                             </button>
+
+                            {/* Keluar — visible only on mobile (desktop has standalone button) */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                signOut({ callbackUrl: "/" });
+                              }}
+                              className={`sm:hidden flex items-center gap-2 px-3 py-2 w-full text-left rounded-xl text-xs font-bold transition-all border-t mt-1 pt-2 ${
+                                isDark ? "text-red-400 hover:bg-red-900/30 border-slate-700" : "text-red-500 hover:bg-red-50 border-slate-100"
+                              }`}
+                            >
+                              <span>🚪</span> Keluar
+                            </button>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -320,7 +362,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                 )}
               </div>
             </div>
-          </motion.header>
+          </header>
 
           {/* Dynamic Content Area */}
           <div className="relative">
@@ -346,7 +388,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleMenuClick("single")}
-                      className={`group glass-card glass-card-hover shimmer-border rounded-3xl p-8 flex flex-col justify-between min-h-[280px] text-left relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}
+                      className={`group glass-card glass-card-hover shimmer-border rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col justify-between min-h-[200px] sm:min-h-[280px] text-left relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}
                     >
                       {/* Gradient accent top */}
                       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 to-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -368,7 +410,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleMenuClick("combine")}
-                      className={`group glass-card glass-card-hover shimmer-border rounded-3xl p-8 flex flex-col justify-between min-h-[280px] text-left relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}
+                      className={`group glass-card glass-card-hover shimmer-border rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col justify-between min-h-[200px] sm:min-h-[280px] text-left relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}
                     >
                       {/* Gradient accent top */}
                       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -387,14 +429,14 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   </div>
 
                   {/* Features Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                     {FEATURES.map((f, i) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 * i, duration: 0.4 }}
-                        className={`glass-card rounded-2xl p-5 text-center border transition-all hover:shadow-md ${isDark ? "border-slate-700 hover:border-slate-600" : "border-slate-200/80 hover:border-teal-200"}`}
+                        className={`glass-card rounded-xl sm:rounded-2xl p-3 sm:p-5 text-center border transition-all hover:shadow-md ${isDark ? "border-slate-700 hover:border-slate-600" : "border-slate-200/80 hover:border-teal-200"}`}
                       >
                         <div className="text-3xl mb-3">{f.icon}</div>
                         <h4 className={`text-sm font-bold ${textPrimary} mb-1`}>{f.title}</h4>
@@ -404,7 +446,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                   </div>
 
                   {/* Stats Bar */}
-                  <div className={`glass-card rounded-2xl p-4 flex flex-wrap items-center justify-center gap-6 md:gap-12 border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
+                  <div className={`glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-12 border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
                     <div className="text-center">
                       <div className={`text-2xl font-black ${textPrimary}`}>{stats.ingredientCount || "100"}+</div>
                       <div className={`text-xs font-medium ${textMuted}`}>Bahan Terdata</div>
@@ -467,7 +509,13 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
         </div>
 
         {/* Footer Marquee Banner */}
-        <footer className={`mt-16 w-full overflow-hidden py-8 glass-card rounded-t-3xl flex flex-col items-center shrink-0 relative border-t ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
+        <footer className={`${
+          activeView === "menu"
+            ? `sticky bottom-0 z-30 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] transition-all duration-500 ease-out hover:translate-y-0 ${
+                isFooterExpanded ? "translate-y-0" : "translate-y-[45%]"
+              }`
+            : "relative translate-y-0"
+        } mt-16 w-full overflow-hidden py-6 sm:py-8 glass-card rounded-t-3xl flex flex-col items-center shrink-0 border-t ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
           {/* Gradient accent top line */}
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-teal-400 to-transparent" />
 
@@ -480,7 +528,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                 <>
                   {banners.map((banner, i) => (
                     <span key={`a-${banner.id}-${i}`} className={`hover:scale-[1.04] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden ring-1 hover:shadow-md hover:shadow-teal-100/30 ${isDark ? "ring-slate-700 hover:ring-teal-700" : "ring-slate-200 hover:ring-teal-200"}`}>
-                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} loading="lazy" className="h-[60px] sm:h-[80px] md:h-[120px] w-auto max-w-[200px] sm:max-w-[300px] md:max-w-[400px] object-cover" />
                     </span>
                   ))}
                   {banners.map((banner, i) => (
@@ -502,7 +550,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                 <>
                   {banners.map((banner, i) => (
                     <span key={`b-${banner.id}-${i}`} className={`hover:scale-[1.04] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden ring-1 hover:shadow-md hover:shadow-teal-100/30 ${isDark ? "ring-slate-700 hover:ring-teal-700" : "ring-slate-200 hover:ring-teal-200"}`}>
-                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} loading="lazy" className="h-[60px] sm:h-[80px] md:h-[120px] w-auto max-w-[200px] sm:max-w-[300px] md:max-w-[400px] object-cover" />
                     </span>
                   ))}
                   {banners.map((banner, i) => (

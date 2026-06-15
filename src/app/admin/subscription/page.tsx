@@ -215,14 +215,14 @@ export default function AdminSubscriptionPage() {
         subtitle="Halaman khusus SUPERADMIN untuk mengatur harga paket, kuota poin, dan memantau transaksi masuk."
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-8">
         {/* Tautan Kembali & Judul */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-teal-600 to-indigo-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-indigo-400">
-              ⚙️ Pengaturan Langganan & Transaksi
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-teal-600 to-indigo-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-indigo-400">
+              ⚙️ Pengaturan Langganan
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm hidden sm:block">
               Halaman khusus SUPERADMIN untuk mengatur harga paket, kuota poin, dan memantau transaksi masuk.
             </p>
           </div>
@@ -261,11 +261,11 @@ export default function AdminSubscriptionPage() {
             <p className="text-slate-500 font-medium">Memuat data konfigurasi...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
             
             {/* PANEL KIRI: FORM PENGATURAN KONFIGURASI (KOLOM 12 -> 5) */}
             <div className="lg:col-span-5">
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-md shadow-slate-100/40 dark:shadow-none">
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md shadow-slate-100/40 dark:shadow-none">
                 <div className="border-b border-slate-100 dark:border-slate-700 pb-4 mb-6">
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     Konfigurasi Poin & Tarif
@@ -432,26 +432,26 @@ export default function AdminSubscriptionPage() {
             <div className="lg:col-span-7 space-y-6">
               
               {/* STATISTIK RINGKASAN */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col justify-between">
                   <span className="text-[10px] font-bold text-slate-400 tracking-wider">TOTAL REVENUE</span>
-                  <span className="text-lg font-extrabold text-teal-600 dark:text-teal-400 mt-2">
+                  <span className="text-sm sm:text-lg font-extrabold text-teal-600 dark:text-teal-400 mt-1 sm:mt-2">
                     Rp {totalRevenue.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col justify-between">
                   <span className="text-[10px] font-bold text-slate-400 tracking-wider">SUKSES TRANSAKSI</span>
                   <span className="text-xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">
                     {successTransactions.length} <span className="text-xs font-normal text-slate-400">kali</span>
                   </span>
                 </div>
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col justify-between">
                   <span className="text-[10px] font-bold text-slate-400 tracking-wider">POIN TERDISTRIBUSI</span>
                   <span className="text-xl font-extrabold text-amber-500 mt-2">
                     🪙 {totalPointsDistributed}
                   </span>
                 </div>
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col justify-between">
                   <span className="text-[10px] font-bold text-slate-400 tracking-wider">PEMBAYARAN POPULER</span>
                   <span className="text-sm font-extrabold text-slate-700 dark:text-slate-300 mt-2 truncate">
                     {popularPayment === "BANK_VA" ? "💸 BANK VA" : popularPayment === "GOPAY" ? "📱 GOPAY" : popularPayment === "DANA" ? "💎 DANA" : "-"}
@@ -460,7 +460,7 @@ export default function AdminSubscriptionPage() {
               </div>
 
               {/* DAFTAR TRANSAKSI */}
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-md">
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-slate-700 pb-4 mb-6 gap-4">
                   <div>
                     <h2 className="text-xl font-bold flex items-center gap-2">

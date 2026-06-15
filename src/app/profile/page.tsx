@@ -36,21 +36,21 @@ export default async function ProfilePage() {
   };
 
   return (
-    <main className="min-h-screen p-6 flex flex-col items-center justify-center font-sans py-12 relative overflow-hidden">
-      {/* Ambient Blobs */}
+    <main className="min-h-screen p-4 sm:p-6 flex flex-col items-center justify-center font-sans py-8 sm:py-12 relative overflow-hidden">
+      {/* Ambient Blobs — hidden on mobile via CSS */}
       <div className="ambient-blob ambient-blob-1" />
       <div className="ambient-blob ambient-blob-2" />
       <div className="ambient-blob ambient-blob-3" />
 
-      <div className="max-w-2xl w-full mb-8 text-center space-y-2 relative z-10">
+      <div className="max-w-2xl w-full mb-6 sm:mb-8 text-center space-y-2 relative z-10">
         <div className="inline-flex items-center gap-2 glass-card px-4 py-1.5 rounded-full text-xs font-bold text-teal-600 mb-4">
           <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
           Profil Kulit
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
           <span className="gradient-text">Lengkapi Profil Kulitmu</span> ✨
         </h1>
-        <p className="text-slate-500 font-medium">
+        <p className="text-slate-500 font-medium text-sm hidden sm:block">
           Bantu AI memahami kondisi kulitmu secara spesifik untuk hasil analisis yang personal dan akurat.
         </p>
       </div>

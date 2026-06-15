@@ -108,14 +108,14 @@ export default function SubscriptionModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={resetState}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-[4px] sm:backdrop-blur-sm"
           />
 
           {/* Modal Container */}
@@ -124,9 +124,9 @@ export default function SubscriptionModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className={`relative w-full max-w-2xl max-h-[95vh] overflow-y-auto rounded-[2rem] p-6 md:p-8 border shadow-2xl z-10 backdrop-blur-xl ${isDark
-              ? "bg-slate-950/70 border-slate-800/60 text-slate-100"
-              : "bg-white/70 border-white/50 text-slate-800"
+            className={`relative w-full max-w-2xl max-h-[90vh] sm:max-h-[95vh] overflow-y-auto rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-6 md:p-8 border shadow-2xl z-10 backdrop-blur-lg sm:backdrop-blur-xl ${isDark
+              ? "bg-slate-950/80 border-slate-800/60 text-slate-100"
+              : "bg-white/80 sm:bg-white/70 border-white/50 text-slate-800"
               }`}
           >
             {/* Close Button */}
@@ -139,9 +139,9 @@ export default function SubscriptionModal({
             </button>
 
             {/* Teal Header Card */}
-            <div className="bg-[#23b3b2] text-white py-8 px-6 rounded-[1.5rem] text-center mb-6 shadow-sm relative overflow-hidden">
-              <h3 className="text-2xl md:text-3xl font-extrabold tracking-wide">Top Up Kredit Poin</h3>
-              <p className="text-xs md:text-sm text-white/90 mt-1"> Pilih Paket Kredit Untuk Melanjutkan Analisis Skincare anda!</p>
+            <div className="bg-[#23b3b2] text-white py-6 sm:py-8 px-4 sm:px-6 rounded-[1.25rem] sm:rounded-[1.5rem] text-center mb-5 sm:mb-6 shadow-sm relative overflow-hidden">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-wide">Top Up Kredit Poin</h3>
+              <p className="text-[10px] sm:text-xs md:text-sm text-white/90 mt-1"> Pilih Paket Kredit Untuk Melanjutkan Analisis Skincare anda!</p>
             </div>
 
             {/* Balance Info (Left Aligned) */}

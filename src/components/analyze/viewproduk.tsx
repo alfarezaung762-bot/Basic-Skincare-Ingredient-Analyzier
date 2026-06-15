@@ -152,17 +152,17 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-slate-900/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/70 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.95, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 30, opacity: 0 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="bg-slate-50 w-full max-w-4xl max-h-[95vh] rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col relative"
+        initial={{ scale: 1, y: 60, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 1, y: 60, opacity: 0 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-slate-50 w-full max-w-4xl max-h-[95vh] sm:max-h-[95vh] rounded-t-[2rem] sm:rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
           <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
-            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-full font-black transition-all shrink-0">✕</button>
+            <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-full font-black transition-all shrink-0 text-sm">✕</button>
             <div className="min-w-0 flex-1">
               <h2 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate" title={product.namaProduk}>{product.namaProduk}</h2>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{product.tipeProduk}</p>
@@ -176,11 +176,11 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
           )}
         </div>
 
-        <div className="overflow-y-auto flex-1 p-5 sm:p-8 space-y-8 custom-scrollbar">
+        <div className="overflow-y-auto flex-1 p-4 sm:p-5 md:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-5 flex flex-col gap-4">
-              <div className="aspect-square bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 flex items-center justify-center relative overflow-hidden group">
+              <div className="aspect-square bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 shadow-sm p-3 sm:p-6 flex items-center justify-center relative overflow-hidden group">
                 {product.isPinKreator && (
                   <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[9px] font-black px-3 py-1.5 rounded-lg shadow-md z-20">👑 VIP KREATOR</div>
                 )}
@@ -335,7 +335,7 @@ export default function ProductDetailModal({ product, userIngredients, onClose, 
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              <form onSubmit={handleReviewSubmit} className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] space-y-5 relative overflow-hidden shadow-sm">
+              <form onSubmit={handleReviewSubmit} className="bg-slate-50 border border-slate-200 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] space-y-4 sm:space-y-5 relative overflow-hidden shadow-sm">
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-rose-200 rounded-full blur-[80px] opacity-40"></div>
                 <div className="relative z-10">
                   <h4 className="font-bold text-sm text-slate-800 mb-1">Berikan Penilaianmu</h4>

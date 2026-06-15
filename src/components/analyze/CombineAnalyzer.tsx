@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 
 export default function CombineAnalyzer() {
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 pb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-5">
+    <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 pb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 border-b border-slate-100 pb-4 sm:pb-5">
         <div className="flex items-center gap-4">
           <span className="bg-gradient-to-br from-indigo-100 to-violet-100 text-indigo-700 font-black text-lg px-4 py-2 rounded-xl border border-indigo-200 shadow-sm">02</span>
           <div>
@@ -19,7 +19,7 @@ export default function CombineAnalyzer() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative p-10 rounded-3xl text-center flex flex-col items-center justify-center min-h-[300px] glass-card overflow-hidden"
+        className="relative p-6 sm:p-10 rounded-2xl sm:rounded-3xl text-center flex flex-col items-center justify-center min-h-[240px] sm:min-h-[300px] glass-card overflow-hidden"
       >
         {/* Animated gradient border effect */}
         <div className="absolute inset-0 rounded-3xl" style={{ 

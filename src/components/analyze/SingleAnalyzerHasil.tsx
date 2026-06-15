@@ -116,7 +116,7 @@ const FlagItem = ({
   const animationClass = isDeteksiButa ? "animate-[pulse_3s_ease-in-out_infinite] shadow-[0_0_15px_rgba(245,158,11,0.3)] ring-1 ring-amber-400" : "";
 
   return (
-    <div className={`p-4 rounded-xl border-l-4 text-xs font-semibold leading-relaxed shadow-sm flex flex-col sm:flex-row items-start gap-3 border ${style} ${animationClass}`}>
+    <div className={`p-3 sm:p-4 rounded-xl border-l-4 text-xs font-semibold leading-relaxed shadow-sm flex flex-col sm:flex-row items-start gap-2 sm:gap-3 border ${style} ${animationClass}`}>
       <span className="text-base shrink-0">{icon}</span>
       <div className="flex-1 w-full">
         <p>
@@ -252,7 +252,7 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
 
   return (
     <div className="flex flex-col items-center w-full">
-      <div className={`relative w-48 h-24 flex justify-center ${pulseClass}`}>
+      <div className={`relative w-36 h-[72px] sm:w-48 sm:h-24 flex justify-center ${pulseClass}`}>
         <svg className="w-full h-full absolute top-0" viewBox="0 0 100 50" style={{ overflow: 'visible' }}>
           <path d={`M ${strokeWidth/2} 50 A ${normalizedRadius} ${normalizedRadius} 0 0 1 ${100 - strokeWidth/2} 50`} fill="transparent" stroke="#F1F5F9" strokeWidth={strokeWidth} strokeLinecap="round" className="dark:stroke-slate-700" />
           
@@ -275,7 +275,7 @@ const HalfDonutChart = ({ score, colorClass, label }: { score: number, colorClas
           />
         </svg>
         <div className="absolute bottom-0 flex flex-col items-center">
-          <span className={`text-4xl font-black ${colorClass} drop-shadow-sm`}>{animatedScore}%</span>
+          <span className={`text-3xl sm:text-4xl font-black ${colorClass} drop-shadow-sm`}>{animatedScore}%</span>
         </div>
       </div>
       <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-3 bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-full">
@@ -301,12 +301,12 @@ export default function SingleAnalyzerHasil({
     <div className="space-y-6">
 
       {/* HEADER SKOR KLINIS DENGAN FOOTER PROFIL */}
-      <div className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 relative">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 md:p-10 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 relative">
         <h2 className="text-sm font-black text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-4 mb-8 text-center uppercase tracking-widest">
           Laporan Evaluasi Produk
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 relative">
           
           {/* IKON PULSE TENGAH */}
           {hasWarning && (
@@ -346,7 +346,7 @@ export default function SingleAnalyzerHasil({
 
         {/* FOOTER PROFIL PENGGUNA TERINTEGRASI */}
         {userProfile ? (
-          <div className="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-center gap-3 text-sm animate-in slide-in-from-bottom-4 duration-500">
+          <div className="mt-6 sm:mt-10 pt-4 sm:pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm animate-in slide-in-from-bottom-4 duration-500">
             <span className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mr-1">Berdasarkan Profil Kulitmu:</span>
             <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-3 py-1.5 rounded-xl font-bold capitalize shadow-sm">
               {userProfile.skinType}

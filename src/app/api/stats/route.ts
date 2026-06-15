@@ -14,6 +14,8 @@ export async function GET() {
     return NextResponse.json({
       ingredientCount,
       productCount,
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
     });
   } catch (error: any) {
     console.error("Gagal mengambil statistik:", error);

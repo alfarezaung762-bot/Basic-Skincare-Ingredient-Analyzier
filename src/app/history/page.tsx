@@ -47,7 +47,7 @@ function HistoryCard({ history, onToggleSave, onDelete, onAnalyze }: {
       {/* Gradient accent bar atas — warna sesuai tipe produk */}
       <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${typeInfo.gradient} opacity-50 group-hover:opacity-100 transition-opacity`} />
 
-      <div className="p-4 sm:p-5">
+      <div className="p-3 sm:p-4 md:p-5">
         {/* Row 1: Info + Bookmark */}
         <div className="flex justify-between items-start mb-3">
           <div className="min-w-0 flex-1">
@@ -87,14 +87,14 @@ function HistoryCard({ history, onToggleSave, onDelete, onAnalyze }: {
         </div>
 
         {/* Row 2: Scores */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-slate-50 rounded-xl py-2 px-3 text-center border border-slate-100">
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-3">
+          <div className="bg-slate-50 rounded-lg sm:rounded-xl py-1.5 sm:py-2 px-2 sm:px-3 text-center border border-slate-100">
             <p className="text-[9px] uppercase font-semibold text-slate-400 tracking-wide">Kecocokan</p>
-            <p className={`font-black text-xl leading-tight ${scoreColor(history.matchScore)}`}>{history.matchScore}</p>
+            <p className={`font-black text-lg sm:text-xl leading-tight ${scoreColor(history.matchScore)}`}>{history.matchScore}</p>
           </div>
-          <div className="bg-slate-50 rounded-xl py-2 px-3 text-center border border-slate-100">
+          <div className="bg-slate-50 rounded-lg sm:rounded-xl py-1.5 sm:py-2 px-2 sm:px-3 text-center border border-slate-100">
             <p className="text-[9px] uppercase font-semibold text-slate-400 tracking-wide">Keamanan</p>
-            <p className={`font-black text-xl leading-tight ${scoreColor(history.safetyScore)}`}>{history.safetyScore}</p>
+            <p className={`font-black text-lg sm:text-xl leading-tight ${scoreColor(history.safetyScore)}`}>{history.safetyScore}</p>
           </div>
         </div>
 
@@ -204,7 +204,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="min-h-screen p-4 md:p-8 font-sans relative">
+    <main className="min-h-screen p-3 sm:p-4 md:p-8 font-sans relative">
       {/* Background — sama persis seperti Dashboard */}
       <div className="fixed inset-0 dot-pattern pointer-events-none z-0" />
       <div className="ambient-blob ambient-blob-1" />

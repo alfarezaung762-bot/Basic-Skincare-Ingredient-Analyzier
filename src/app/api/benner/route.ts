@@ -9,7 +9,10 @@ export async function GET() {
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(banners, { status: 200 });
+    return NextResponse.json(banners, {
+      status: 200,
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+    });
   } catch (error: any) {
     console.error("GET Public Banners Error:", error.message);
     return NextResponse.json({ message: "Gagal mengambil data banner" }, { status: 500 });
