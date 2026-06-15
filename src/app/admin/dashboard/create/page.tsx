@@ -387,7 +387,19 @@ export default function CreateIngredientPage() {
                   <option value={2}>2 - Menengah</option>
                   <option value={3}>3 - Sangat Kuat</option>
                 </select>
-                <p className="text-[10px] text-slate-500 font-medium">Hanya aktif untuk HARSH & BUFFER</p>
+                <p className="text-[10px] text-slate-500 font-medium min-h-[14px]">
+                  {formData.type === "HARSH" ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold block leading-tight">
+                      * HARSH: Lvl 1 (PHA/LHA/Mandelic), Lvl 2 (Lactic/BHA std), Lvl 3 (Glycolic/Retinol)
+                    </span>
+                  ) : formData.type === "BUFFER" ? (
+                    <span className="text-blue-600 dark:text-blue-400 font-semibold block leading-tight">
+                      * BUFFER: Lvl 1 (Aloe/Chamomile), Lvl 2 (Panthenol), Lvl 3 (Madecassoside/Ceramide)
+                    </span>
+                  ) : (
+                    "Hanya aktif untuk HARSH & BUFFER"
+                  )}
+                </p>
               </div>
 
               <div className={`space-y-2 ${isToxic ? 'opacity-50' : ''}`}>

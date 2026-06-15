@@ -562,6 +562,40 @@ Masukkan klarifikasi tersebut ke dalam array "toxicClarifications". Jangan ubah 
 ATURAN 10 — LARANGAN PLACEHOLDER KOSONG (MUTLAK):
 Anda DILARANG keras membiarkan simbol angka kosong atau tak lengkap seperti "#", "/", atau "(%)". Tuliskan nomor urut INCI, denominator rating, atau persentase konsentrasi secara lengkap (seperti "#8", "3/5", atau "<1%") sesuai data yang valid dari database dan daftar bahan.
 
+=== PARAMETER & KONDISI KLINIS MUTLAK (WAJIB DIPATUHI) ===
+
+1. DEFINISI KULIT SENSITIF (Untuk parameter safeForSensitive)
+Kulit sensitif BUKAN tipe kulit bawaan lahir. Kulit sensitif adalah KONDISI kulit dimana:
+- Skin barrier (lapisan stratum corneum) rusak atau melemah, menyebabkan TEWL (Trans-Epidermal Water Loss) tinggi.
+- Ujung saraf di epidermis lebih terekspos, sehingga mudah bereaksi terhadap stimulus ringan.
+- Termasuk dalam kondisi ini: dermatitis kontak, rosacea ringan, post-prosedur kulit (laser/chemical peel), kulit yang barrier-nya terganggu akibat over-exfoliation, dan kulit atopik.
+- Ciri klinis: eritema (kemerahan), rasa terbakar/perih, gatal, kering, dan timbul papula/pustula dari bahan yang normalnya aman.
+- Bahan yang TIDAK AMAN untuk kulit sensitif: bahan yang merusak barrier lebih lanjut (SLS, Alkohol Denat tinggi), iritan kuat (Glycolic Acid >10%, Retinol >0.5% pada awal penggunaan), allergen umum (Fragrance sintetis, Essential Oil konsentrasi tinggi, MI/MCI pengawet).
+- Bahan yang AMAN untuk kulit sensitif walau aktif: Niacinamide ≤5%, Centella Asiatica, Panthenol, Ceramide, Allantoin, Bisabolol, Madecassoside, Oat Beta-Glucan.
+
+2. PARAMETER KELAS PELEMBAP (Moisturizer Class)
+- moistLight (ringan / humektan mendominasi): Sangat baik untuk kulit berminyak/kombinasi, meminimalkan risiko penyumbatan pori.
+- moistMedium (sedang / emolien mendominasi): Memberikan hidrasi optimal untuk kulit normal atau kombinasi tanpa terasa terlalu berat.
+- moistHeavy (tebal / oklusif mendominasi): Menghalangi TEWL secara mekanis, mutlak dibutuhkan kulit sangat kering/barrier rusak parah, namun dilarang keras untuk kulit berminyak berjerawat parah karena oklusivitas tinggi.
+
+3. PARAMETER TINGKAT EKSFOLIASI AKTIF (Untuk bahan tipe HARSH)
+- Level 1 (Lembut): PHA (Gluconolactone, Lactobionic Acid), LHA (Capryloyl Salicylic Acid), Mandelic Acid. Penetrasi lambat, minimal iritasi, relatif aman untuk kulit sensitif ringan.
+- Level 2 (Menengah): Lactic Acid, Salicylic Acid (BHA) konsentrasi standar (≤2%). Efektif membersihkan pori & mengangkat sel kulit mati tanpa over-peeling jika didukung buffer penenang.
+- Level 3 (Kuat/Sangat Aktif): Glycolic Acid tinggi, Retinol (>0.5%), Tretinoin, AHA tinggi (>10%). Penetrasi sangat cepat ke lapisan epidermis dalam. Berpotensi tinggi merusak barrier jika tidak diimbangi buffering lipid barrier yang kuat.
+
+4. PARAMETER TINGKAT KEKUATAN BUFFER (Untuk bahan tipe BUFFER)
+- Level 1 (Penenang Ringan): Aloe Vera, Chamomile Extract, Green Tea Extract. Meredakan kemerahan minor.
+- Level 2 (Penyokong Barrier Sedang): Panthenol (2-5%), Allantoin, Bisabolol. Membantu menenangkan perih akibat eksfoliasi sedang.
+- Level 3 (Penyembuh Barrier Kuat): Madecassoside murni, Ceramide Complex (NP/AP/EOP + Cholesterol + Fatty Acid), Oat Beta-Glucan. Secara klinis mempercepat sintesis lipid stratum corneum dan menutup kebocoran TEWL pada kulit sensitif/pasca-prosedur.
+
+5. PARAMETER KATEGORI FILTER UV (Untuk Sunscreen)
+- Physical/Mineral Filter (Zinc Oxide, Titanium Dioxide): Bekerja secara mekanik memantulkan sinar UV, bersifat lembap, dan sangat aman (soothing) untuk kulit sensitif/barrier rusak.
+- Chemical Filter (Avobenzone, Oxybenzone, Octinoxate, Homosalate): Menyerap UV dan mengubahnya menjadi energi panas di kulit. Dapat memicu dermatitis kontak atau rasa terbakar (stinging) pada barrier kulit yang tipis/sensitif.
+
+6. LOGIKA KONTAK FISIK (WASH-OFF VS LEAVE-ON EXPOSURE)
+- Wash-Off (FACEWASH): Durasi kontak kulit sangat singkat (~60 detik) lalu dibilas air. Penetrasi bahan aktif keras (HARSH) berkurang drastis sehingga efek iritasi/penyumbatan pori sangat minim. Sinergi antagonis penetralisir penalti dapat dinilai lebih longgar.
+- Leave-On (MOISTURIZER & SUNSCREEN): Menempel di kulit berjam-jam tanpa dibilas. Penetrasi bahan aktif bersifat maksimal. Risiko komedogenik rating tinggi (3-5) dan iritan (HARSH) dinilai secara absolut berdasarkan posisi INCI dan ketersediaan penetralisir barrier nyata.
+
 === DATA PROFIL PENGGUNA ===
 - Tipe Kulit: ${profile.skinType}
 - Umur: ${profile.age} tahun

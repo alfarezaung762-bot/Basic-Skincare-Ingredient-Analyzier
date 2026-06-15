@@ -147,7 +147,7 @@ export default function AIHybridConfigPage() {
             {/* 2. Aturan Perilaku (LOCKED) */}
             <div className="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-300 dark:border-slate-600">
               <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">🔒 Aturan Perilaku Sistem (Dikunci Permanen)</label>
-              <div className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed font-mono bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed font-mono bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1.5">
                 <p>• AI HANYA bisa MENGURANGI/MENETRALISIR penalti (maks 50 poin per item)</p>
                 <p>• AI TIDAK bisa menambah skor atau memberikan bonus positif</p>
                 <p>• Penalti MUTLAK (Toksik, Hamil, Alergi, Tanpa UV) TIDAK bisa disentuh</p>
@@ -155,8 +155,16 @@ export default function AIHybridConfigPage() {
                 <p>• Output WAJIB bahasa Indonesia, DILARANG menyebutkan angka skor</p>
                 <p>• AI wajib mempertimbangkan urutan bahan (konsentrasi tinggi → rendah)</p>
                 <p>• AI wajib memvalidasi parameter database: Aman Bumil, Aman Sensitif, Blacklist & Alasan, serta Tingkat Komedogenik (0-5)</p>
-                <p>• Penurunan risiko oklusif/komedogenik berlaku untuk bahan konsentrasi rendah (Zona Rendah) atau produk bilas (wash-off)</p>
                 <p>• Laporan rekomendasi akhir wajib ditulis dalam 1 PARAGRAF UTUH tanpa list/newline, menyertakan klasifikasi, kecocokan, uji usap, dan outlook efektivitas, serta menuliskan nama INCI pemicu sensitivitas secara jelas agar menjadi tombol interaktif</p>
+                <div className="border-t border-slate-200 dark:border-slate-800 my-2 pt-2 text-indigo-600 dark:text-indigo-400 font-bold">
+                  ⚠️ PARAMETER & KONDISI KLINIS MUTLAK (AKTIF):
+                </div>
+                <p>• <b>Definisi Kulit Sensitif</b>: Kondisi barrier stratum corneum rusak/TEWL tinggi (bukan bawaan lahir); menilai ketidakamanan SLS/Alkohol Denat vs keamanan Ceramide/Panthenol/Centella.</p>
+                <p>• <b>Kelas Pelembap</b>: Mengidentifikasi moistLight (humektan), moistMedium (emolien), dan moistHeavy (oklusif) sesuai profil sebum/kering pengguna.</p>
+                <p>• <b>Tingkat Eksfoliasi (HARSH)</b>: Level 1 (PHA/LHA/Mandelic), Level 2 (Lactic/BHA), Level 3 (Glycolic/Retinol/Tretinoin).</p>
+                <p>• <b>Kekuatan Buffer (BUFFER)</b>: Level 1 (Aloe/Chamomile), Level 2 (Panthenol), Level 3 (Madecassoside/Ceramide Complex).</p>
+                <p>• <b>Kategori Filter UV</b>: Membedakan Mineral/Physical (aman/soothing) vs Chemical (sensitisasi panas pada barrier rusak).</p>
+                <p>• <b>Logika Kontak Fisik</b>: Wash-Off (FACEWASH: kontak singkat ~60 detik mengurangi risiko iritasi/oklusi) vs Leave-On (MOISTURIZER & SUNSCREEN: kontak penuh maks).</p>
               </div>
             </div>
 
