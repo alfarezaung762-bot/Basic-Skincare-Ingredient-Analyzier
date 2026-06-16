@@ -199,37 +199,39 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
         <div className="bg-white p-4 sm:p-6 md:p-10 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
 
-          <div className="flex flex-col gap-4 mb-6 sm:mb-8 border-b border-slate-100 pb-4 sm:pb-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <span className="bg-slate-100 text-slate-800 font-black text-base sm:text-lg px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-slate-200">01</span>
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Formulir Analisis Klinis</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium hidden sm:block">Masukkan komposisi produk untuk dievaluasi sistem</p>
+          <div className="flex flex-col gap-3 sm:gap-4 mb-5 sm:mb-8 border-b border-slate-100 pb-4 sm:pb-5">
+            <div className="flex items-center gap-2.5 sm:gap-4">
+              <span className="bg-slate-100 text-slate-800 font-black text-sm sm:text-lg px-2.5 sm:px-4 py-1 sm:py-2 rounded-xl border border-slate-200 shrink-0">01</span>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-xl font-bold text-slate-900 truncate">Formulir Analisis Klinis</h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1 font-medium hidden sm:block">Masukkan komposisi produk untuk dievaluasi sistem</p>
               </div>
             </div>
 
             <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 bg-slate-50 p-1 sm:p-1.5 rounded-xl border border-slate-200 shadow-inner w-full sm:w-fit">
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-slate-50 p-1 sm:p-1.5 rounded-xl border border-slate-200 shadow-inner w-full sm:w-fit">
                 <button 
                   type="button" 
                   onClick={() => setAnalysisMode("FAST")} 
-                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 text-[9px] sm:text-xs font-bold rounded-lg transition-all ${analysisMode === "FAST" ? "bg-white text-blue-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
                   title={`Biaya: ${costFast} Kredit`}
                 >
-                  ⚡ Sistem Cepat ({costFast} Poin)
+                  <span className="sm:hidden">⚡ Cepat ({costFast})</span>
+                  <span className="hidden sm:inline">⚡ Sistem Cepat ({costFast} Poin)</span>
                 </button>
                 <button 
                   type="button" 
                   onClick={() => setAnalysisMode("HYBRID")} 
-                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 text-[9px] sm:text-xs font-bold rounded-lg transition-all ${analysisMode === "HYBRID" ? "bg-white text-purple-600 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
                   title={`Biaya: ${costHybrid} Kredit`}
                 >
-                  🤖 AI Hybrid ({costHybrid} Poin)
+                  <span className="sm:hidden">🤖 Hybrid ({costHybrid})</span>
+                  <span className="hidden sm:inline">🤖 AI Hybrid ({costHybrid} Poin)</span>
                 </button>
               </div>
               {pointsVal !== null && (
-                <div className="text-[11px] font-bold text-slate-500">
-                  Saldo Anda: <span className="text-amber-600 font-extrabold">🪙 {pointsVal} Kredit</span>
+                <div className="text-[10px] sm:text-[11px] font-bold text-slate-500">
+                  Saldo: <span className="text-amber-600 font-extrabold">🪙 {pointsVal} Kredit</span>
                 </div>
               )}
             </div>
@@ -243,10 +245,12 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Klasifikasi Produk</label>
-                <div className="flex bg-slate-50 p-1.5 rounded-2xl border-2 border-slate-100 shadow-inner">
-                    {[ { id: "FACEWASH", label: "Face Wash", icon: "💧" }, { id: "MOISTURIZER", label: "Moisturizer", icon: "✨" }, { id: "SUNSCREEN", label: "Sunscreen", icon: "🌞" } ].map((type) => (
-                    <button key={type.id} type="button" onClick={() => setProductType(type.id)} className={`flex-1 py-2.5 sm:py-3 text-[10px] sm:text-sm font-bold rounded-xl flex items-center justify-center gap-1 sm:gap-2 transition-all duration-300 ${productType === type.id ? "bg-white text-slate-900 shadow-md border border-slate-200 scale-[1.02]" : "text-slate-400 hover:text-slate-700"}`}>
-                      <span>{type.icon}</span> {type.label}
+                <div className="flex bg-slate-50 p-1 sm:p-1.5 rounded-2xl border-2 border-slate-100 shadow-inner gap-0.5 sm:gap-0">
+                    {[ { id: "FACEWASH", label: "Face Wash", shortLabel: "Wash", icon: "💧" }, { id: "MOISTURIZER", label: "Moisturizer", shortLabel: "Moist", icon: "✨" }, { id: "SUNSCREEN", label: "Sunscreen", shortLabel: "SPF", icon: "🌞" } ].map((type) => (
+                    <button key={type.id} type="button" onClick={() => setProductType(type.id)} className={`flex-1 py-2 sm:py-3 text-[9px] sm:text-sm font-bold rounded-xl flex items-center justify-center gap-0.5 sm:gap-2 transition-all duration-300 ${productType === type.id ? "bg-white text-slate-900 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-700"}`}>
+                      <span className="text-xs sm:text-base">{type.icon}</span>
+                      <span className="sm:hidden">{type.shortLabel}</span>
+                      <span className="hidden sm:inline">{type.label}</span>
                     </button>
                   ))}
                 </div>
@@ -254,19 +258,19 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
             </div>
             
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-0">Daftar Komposisi <span className="text-rose-500">*</span></label>
-                  <div className="group relative flex items-center justify-center">
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <label className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-0 shrink-0">Komposisi <span className="text-rose-500">*</span></label>
+                  <div className="group relative flex items-center justify-center shrink-0">
                     <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center cursor-help transition-colors group-hover:bg-indigo-100 group-hover:text-indigo-600">?</span>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 text-slate-200 text-[11px] font-medium rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 leading-relaxed pointer-events-none">
-                      Masukkan daftar bahan yang dipisahkan dengan koma (,). Dapatkan data ini dari label kemasan produk atau deskripsi di toko online.
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 sm:w-64 p-2.5 sm:p-3 bg-slate-800 text-slate-200 text-[10px] sm:text-[11px] font-medium rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 leading-relaxed pointer-events-none">
+                      Masukkan daftar bahan yang dipisahkan dengan koma (,). Dapatkan data ini dari label kemasan produk.
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800"></div>
                     </div>
                   </div>
                 </div>
-                <button type="button" onClick={handleOCRClick} className="text-xs flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl hover:bg-slate-50 font-bold shadow-sm transition-all active:scale-95">
-                  <span>📷</span> Pindai Label
+                <button type="button" onClick={handleOCRClick} className="text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2 bg-white border border-slate-200 text-slate-700 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl hover:bg-slate-50 font-bold shadow-sm transition-all active:scale-95 shrink-0">
+                  <span>📷</span> <span className="hidden sm:inline">Pindai Label</span><span className="sm:hidden">Pindai</span>
                 </button>
               </div>
               <textarea rows={6} required value={ingredients} onChange={(e) => setIngredients(e.target.value)} placeholder="Paste daftar ingredients di sini, pisahkan dengan koma..." className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm resize-none shadow-inner leading-relaxed" />
@@ -277,17 +281,18 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
               )}
             </div>
 
-            <button type="submit" disabled={isAnalyzing || !ingredients.trim()} className="w-full py-4 bg-[#111827] text-white font-bold rounded-2xl hover:bg-black transition-all disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none flex items-center justify-center gap-3 shadow-lg shadow-slate-900/20 text-base tracking-wide relative overflow-hidden">
+            <button type="submit" disabled={isAnalyzing || !ingredients.trim()} className="w-full py-3 sm:py-4 bg-[#111827] text-white font-bold rounded-2xl hover:bg-black transition-all disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none flex items-center justify-center gap-2 sm:gap-3 shadow-lg shadow-slate-900/20 text-sm sm:text-base tracking-wide relative overflow-hidden">
               {isAnalyzing ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Memproses Data Lab...
+                  <span className="sm:hidden">Memproses...</span>
+                  <span className="hidden sm:inline">Memproses Data Lab...</span>
                 </>
               ) : (
-                <><span>🧪</span> Jalankan Analisis Laboratorium</>
+                <><span>🧪</span> <span className="sm:hidden">Jalankan Analisis</span><span className="hidden sm:inline">Jalankan Analisis Laboratorium</span></>
               )}
             </button>
           </form>

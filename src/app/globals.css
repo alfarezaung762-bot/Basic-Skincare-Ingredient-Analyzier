@@ -453,9 +453,21 @@ body {
     transition-duration: 0.15s !important;
   }
 
-  /* 12. Kembalikan animasi yang HARUS tetap jalan (skeleton loading) */
+  /* 12. Kembalikan animasi yang HARUS tetap jalan */
   .skeleton {
     animation: shimmer 1.5s ease-in-out infinite !important;
+  }
+  .animate-marquee {
+    animation: marquee 40s linear infinite !important;
+  }
+  .animate-marquee2 {
+    animation: marquee2 40s linear infinite !important;
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
   }
 }
 
