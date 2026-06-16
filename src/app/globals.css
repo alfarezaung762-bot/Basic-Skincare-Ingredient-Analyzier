@@ -366,33 +366,96 @@ body {
 }
 
 /* ===== MOBILE PERFORMANCE OPTIMIZATIONS ===== */
+/* Menghapus SEMUA efek GPU-berat di layar < 640px untuk menghilangkan lag di HP */
 @media (max-width: 640px) {
-  /* Hide GPU-heavy ambient blobs on mobile */
+
+  /* 1. MATIKAN ambient blobs sepenuhnya */
   .ambient-blob {
     display: none !important;
   }
 
-  /* Reduce dot-pattern density on mobile */
+  /* 2. MATIKAN dot-pattern overlay */
   .dot-pattern {
-    background-size: 40px 40px;
-    opacity: 0.5;
+    display: none !important;
   }
 
-  /* Lighter glass-card blur on mobile GPU */
+  /* 3. MATIKAN backdrop-blur → ganti warna solid */
   .glass-card {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  }
+  [data-theme="dark"] .glass-card {
+    background: rgba(30, 41, 59, 0.95) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
   }
 
-  /* Slower, simpler background gradient animation */
+  /* 4. MATIKAN glass-card-hover transform & heavy shadow */
+  .glass-card-hover:hover {
+    transform: none !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* 5. MATIKAN animasi gradient background → warna statis */
   .gradient-mesh-bg {
-    background-size: 200% 200%;
-    animation-duration: 30s;
+    animation: none !important;
+    background-size: 100% 100% !important;
   }
 
-  /* Reduce shimmer border GPU cost */
+  /* 6. MATIKAN shimmer border pseudo-element */
   .shimmer-border::after {
-    display: none;
+    display: none !important;
+  }
+
+  /* 7. MATIKAN semua glow box-shadow */
+  .glow-teal,
+  .glow-indigo,
+  .glow-amber {
+    box-shadow: none !important;
+  }
+  .glow-teal:hover,
+  .glow-indigo:hover {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* 8. MATIKAN interactive-card hover transform */
+  .interactive-card:hover {
+    transform: none !important;
+  }
+  .interactive-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  /* 9. Sederhanakan gradient-btn shadow */
+  .gradient-btn {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  }
+  .gradient-btn:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    transform: none !important;
+  }
+  .gradient-btn::before {
+    display: none !important;
+  }
+
+  /* 10. Sederhanakan premium-input focus glow */
+  .premium-input:focus {
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15) !important;
+  }
+
+  /* 11. MATIKAN semua animasi floating/keyframe berat */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+  }
+
+  /* 12. Kembalikan animasi yang HARUS tetap jalan (skeleton loading) */
+  .skeleton {
+    animation: shimmer 1.5s ease-in-out infinite !important;
   }
 }
 
