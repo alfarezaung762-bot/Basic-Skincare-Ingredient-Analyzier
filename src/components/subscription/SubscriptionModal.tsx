@@ -159,18 +159,62 @@ export default function SubscriptionModal({
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center py-8 space-y-4"
+                className="text-center py-8 space-y-4 relative overflow-hidden"
               >
-                <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto animate-bounce">
+                {/* Coin Shower Animation */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden min-h-[300px]">
+                  {Array.from({ length: 30 }).map((_, i) => {
+                    const randomX = Math.random() * 500 - 250;
+                    const randomDelay = Math.random() * 1.5;
+                    const randomDuration = Math.random() * 2 + 1.5;
+                    const randomScale = Math.random() * 0.7 + 0.5;
+                    const randomRotate = Math.random() * 360;
+                    
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ 
+                          opacity: 0, 
+                          y: -50, 
+                          x: randomX, 
+                          scale: 0,
+                          rotate: 0 
+                        }}
+                        animate={{ 
+                          opacity: [0, 1, 1, 0],
+                          y: [0, 150, 280, 350],
+                          x: [randomX, randomX + 20, randomX - 20, randomX + 10],
+                          scale: [0, randomScale, randomScale, 0],
+                          rotate: randomRotate + 360
+                        }}
+                        transition={{
+                          duration: randomDuration,
+                          delay: randomDelay,
+                          ease: "easeInOut",
+                          repeat: Infinity,
+                          repeatDelay: Math.random() * 2
+                        }}
+                        className="absolute text-3xl select-none"
+                        style={{ top: "0%", left: "50%" }}
+                      >
+                        🪙
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto animate-bounce relative z-10">
                   ✅
                 </div>
-                <h4 className={`text-xl font-bold ${textPrimary}`}>Pembayaran Berhasil!</h4>
-                <p className={`text-sm ${textSecondary} max-w-md mx-auto`}>
+                <h4 className={`text-xl font-bold ${textPrimary} relative z-10`}>Pembayaran Berhasil!</h4>
+                <p className={`text-sm ${textSecondary} max-w-md mx-auto relative z-10`}>
                   Kredit poin Anda telah ditambahkan ke akun secara real-time. Terima kasih atas dukungan Anda!
                 </p>
-                <button onClick={resetState} className="gradient-btn px-8 py-3 rounded-xl text-sm font-bold btn-press">
-                  Selesai
-                </button>
+                <div className="relative z-10 pt-2">
+                  <button onClick={resetState} className="gradient-btn px-8 py-3 rounded-xl text-sm font-bold btn-press">
+                    Selesai
+                  </button>
+                </div>
               </motion.div>
             ) : (
               <div className="space-y-6">
