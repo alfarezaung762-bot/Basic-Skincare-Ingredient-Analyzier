@@ -6,16 +6,12 @@ import { signOut } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Static imports to prevent network latency when switching views
+import SingleAnalyzer from "@/components/analyze/SingleAnalyzer";
+import CombineAnalyzer from "@/components/analyze/CombineAnalyzer";
+
 // Dynamic imports — these components only render on user interaction,
 // so they don't need to be in the initial JS bundle (~200-300KB savings)
-const SingleAnalyzer = dynamic(() => import("@/components/analyze/SingleAnalyzer"), {
-  ssr: false,
-  loading: () => <div className="skeleton w-full h-[300px] rounded-2xl" />,
-});
-const CombineAnalyzer = dynamic(() => import("@/components/analyze/CombineAnalyzer"), {
-  ssr: false,
-  loading: () => <div className="skeleton w-full h-[200px] rounded-2xl" />,
-});
 const LoginModal = dynamic(() => import("@/components/LoginModal"), { ssr: false });
 const SubscriptionModal = dynamic(() => import("@/components/subscription/SubscriptionModal"), { ssr: false });
 const BugReportModal = dynamic(() => import("@/components/BugReportModal"), { ssr: false });
@@ -258,7 +254,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                       className="px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-500 flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all btn-press"
                       title="Top Up Kredit Poin"
                     >
-                      <span>🪙</span>
+                      <img src="/wallet.png" alt="Poin" className="w-3.5 h-3.5 object-contain" />
                       <span>{points !== null ? `${points}` : "..."}</span>
                     </button>
 
@@ -375,7 +371,7 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
 
           {/* Dynamic Content Area */}
           <div className="relative">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="wait">
 
               {/* VIEW: MAIN MENU */}
               {activeView === "menu" && (
@@ -483,10 +479,10 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
               {activeView === "single" && !isGuest && (
                 <motion.div
                   key="single"
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                   className="space-y-4 w-full"
                 >
                   <div className={`glass-card rounded-[2.5rem] p-4 md:p-8 relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>
@@ -500,10 +496,10 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
               {activeView === "combine" && !isGuest && (
                 <motion.div
                   key="combine"
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                   className="space-y-4 w-full"
                 >
                   <div className={`glass-card rounded-[2.5rem] p-4 md:p-8 relative overflow-hidden border ${isDark ? "border-slate-700" : "border-slate-200/80"}`}>

@@ -247,7 +247,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
               </div>
               {pointsVal !== null && (
                 <div className="text-[10px] sm:text-[11px] font-bold text-slate-500">
-                  Saldo: <span className="text-amber-600 font-extrabold">🪙 {pointsVal} Kredit</span>
+                  Saldo: <span className="text-amber-600 font-extrabold inline-flex items-center gap-1 align-middle"><img src="/wallet.png" alt="Poin" className="w-3.5 h-3.5 object-contain" /> {pointsVal} Kredit</span>
                 </div>
               )}
             </div>

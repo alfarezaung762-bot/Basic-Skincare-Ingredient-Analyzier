@@ -294,13 +294,15 @@ body {
   100% { transform: translate3d(0%, 0, 0); }
 }
 
-/* Diperlambat 30% dari 40 detik menjadi 52 detik */
+/* Diperlambat menjadi 80 detik agar pergerakan sangat lambat, tenang, dan mulus */
 .animate-marquee {
-  animation: marquee 52s linear infinite;
+  animation: marquee 80s linear infinite;
+  will-change: transform;
 }
 
 .animate-marquee2 {
-  animation: marquee2 52s linear infinite;
+  animation: marquee2 80s linear infinite;
+  will-change: transform;
 }
 
 /* ===== INTERACTIVE UTILITIES ===== */
@@ -460,10 +462,12 @@ body {
     animation: shimmer 1.5s ease-in-out infinite !important;
   }
   .animate-marquee {
-    animation: marquee 52s linear infinite !important;
+    animation: marquee 80s linear infinite !important;
+    will-change: transform;
   }
   .animate-marquee2 {
-    animation: marquee2 52s linear infinite !important;
+    animation: marquee2 80s linear infinite !important;
+    will-change: transform;
   }
   .animate-spin {
     animation: spin 1s linear infinite !important;
