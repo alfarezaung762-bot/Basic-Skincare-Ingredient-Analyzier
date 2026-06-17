@@ -63,17 +63,26 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
     }));
   };
 
-  // Ekstrak base skin type dari string profil user
-  const userBaseSkin = useMemo(() => {
-    if (!userSkinType) return "";
+  // Ekstrak SEMUA komponen tipe kulit dari string profil user (misal: "Berminyak & Sensitif" → ["berminyak", "sensitif"])
+  const userSkinParts = useMemo(() => {
+    if (!userSkinType) return [];
     const lower = userSkinType.toLowerCase();
-    if (lower.includes("berminyak")) return "berminyak";
-    if (lower.includes("kering")) return "kering";
-    if (lower.includes("kombinasi")) return "kombinasi";
-    if (lower.includes("normal")) return "normal";
-    if (lower.includes("sensitif")) return "sensitif";
-    return "";
+    const parts: string[] = [];
+    if (lower.includes("berminyak")) parts.push("berminyak");
+    if (lower.includes("kering")) parts.push("kering");
+    if (lower.includes("kombinasi")) parts.push("kombinasi");
+    if (lower.includes("normal")) parts.push("normal");
+    if (lower.includes("sensitif")) parts.push("sensitif");
+    return parts;
   }, [userSkinType]);
+
+  // Helper: cek apakah produk cocok untuk SEMUA komponen kulit user
+  const isProductMatchSkin = (product: RecommendationProduct): boolean => {
+    if (userSkinParts.length === 0) return true;
+    if (!product.targetSkinTypes) return false; // Produk tanpa data skin type → tidak cocok
+    const prodSkin = product.targetSkinTypes.toLowerCase();
+    return userSkinParts.every(part => prodSkin.includes(part));
+  };
 
   // Filter & sort berdasarkan tab aktif
   const filteredProducts = useMemo(() => {
@@ -87,13 +96,8 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
         break;
       
       case "SKIN":
-        // Sort by combined matchScore + safetyScore, filtered by targetSkinTypes jika ada
-        if (userBaseSkin) {
-          list = list.filter(p => {
-            if (!p.targetSkinTypes) return true; // Jika admin belum set, tetap tampilkan
-            return p.targetSkinTypes.toLowerCase().includes(userBaseSkin);
-          });
-        }
+        // Filter produk yang cocok dengan SEMUA tipe kulit user
+        list = list.filter(isProductMatchSkin);
         list.sort((a, b) => {
           const scoreA = a.matchScore * 0.5 + a.safetyScore * 0.5;
           const scoreB = b.matchScore * 0.5 + b.safetyScore * 0.5;
@@ -133,7 +137,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
     }
 
     return list;
-  }, [localProducts, activeTab, userBaseSkin]);
+  }, [localProducts, activeTab, userSkinParts]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const currentItems = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -237,11 +241,7 @@ export default function ProductRecommendation({ products, userPrimaryFocus, user
             } else if (tab.key === "LAB") {
               count = localProducts.filter(p => p.similarity >= 10).length;
             } else if (tab.key === "SKIN") {
-              if (userBaseSkin) {
-                count = localProducts.filter(p => !p.targetSkinTypes || p.targetSkinTypes.toLowerCase().includes(userBaseSkin)).length;
-              } else {
-                count = localProducts.length;
-              }
+              count = localProducts.filter(isProductMatchSkin).length;
             } else if (tab.key === "RATING") {
               count = localProducts.length;
             }
