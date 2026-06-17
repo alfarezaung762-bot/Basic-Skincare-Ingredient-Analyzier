@@ -112,9 +112,9 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       });
 
       if (response.ok) {
-        localStorage.removeItem("quizSkinType"); 
+        localStorage.removeItem("quizSkinType");
         router.push("/");
-        router.refresh(); 
+        router.refresh();
       } else {
         const data = await response.json();
         setError(data.message || "Gagal menyimpan profil.");
@@ -128,9 +128,9 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
   const formVariants: Variants = {
     hidden: { opacity: 0, y: 40, scale: 0.8 },
-    visible: { 
+    visible: {
       opacity: 1, y: 0, scale: 1,
-      transition: { type: "spring", bounce: 0.3, duration: 0.8, staggerChildren: 0.1 } 
+      transition: { type: "spring", bounce: 0.3, duration: 0.8, staggerChildren: 0.1 }
     }
   };
 
@@ -142,11 +142,11 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
   // DAFTAR FOKUS V3 (Sesuai dengan Dasbor Admin)
   const focusOptions = [
     { id: "Mencerahkan & Bekas Jerawat", icon: "✨" },
-    { id: "Merawat Jerawat & Sebum", icon: "🛡️" },
-    { id: "Anti-Aging & Garis Halus", icon: "⏳" },
+    { id: "Mengatasi Jerawat & Mengontrol Sebum", icon: "🛡️" },
+    { id: "Mengencangkan & Menyamarkan Garis Halus", icon: "⏳" },
     { id: "Memperbaiki Skin Barrier & Hidrasi", icon: "🧱" },
     { id: "Menenangkan Kemerahan (Soothing)", icon: "🌿" },
-    { id: "Eksfoliasi & Tekstur Pori-pori", icon: "🌪️" },
+    { id: "Eksfoliasi & Mengurangi Tampilan Pori-pori", icon: "🌪️" },
   ];
 
   return (
@@ -163,8 +163,8 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       </div>
 
       {/* --- KOTAK FORM UTAMA --- */}
-      <motion.form 
-        variants={formVariants} initial="hidden" animate="visible" onSubmit={handleSubmit} 
+      <motion.form
+        variants={formVariants} initial="hidden" animate="visible" onSubmit={handleSubmit}
         className="w-full mx-auto space-y-6 sm:space-y-8 glass-card p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_8px_40px_rgba(13,148,136,0.08)] relative z-10 border border-slate-200/80"
       >
         {error && (
@@ -187,7 +187,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               <span className="group-hover:animate-bounce">🤔</span> Bingung? Lakukan Tes !!!
             </Link>
           </div>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {["Normal", "Kering", "Berminyak", "Kombinasi"].map((type) => (
               <button key={type} type="button" onClick={() => handleBaseSkinChange(type)} className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transform active:scale-95 transition-all ${baseSkin === type ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white border-teal-500 shadow-lg shadow-teal-200/50" : "bg-white text-gray-600 border-slate-300 shadow-sm hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-md"}`}>
@@ -239,7 +239,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             </span>
           </div>
           <p className="text-[11px] font-medium text-gray-500 mb-2">Kamu bisa memilih maksimal 3 fokus untuk menghindari iritasi akibat terlalu banyak bahan aktif.</p>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {focusOptions.map((item) => {
               const isSelected = selectedFocuses.includes(item.id);

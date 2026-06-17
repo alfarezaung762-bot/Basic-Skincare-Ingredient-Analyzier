@@ -89,11 +89,11 @@ const DEFAULT_REFERENCE_SOURCES = "CIR (Cosmetic Ingredient Review), PubChem, JC
 // 6 Kategori Fokus Profil
 const FOCUS_CATEGORIES = [
   "Mencerahkan & Bekas Jerawat",
-  "Merawat Jerawat & Sebum",
-  "Anti-Aging & Garis Halus",
+  "Mengatasi Jerawat & Mengontrol Sebum",
+  "Mengencangkan & Menyamarkan Garis Halus",
   "Memperbaiki Skin Barrier & Hidrasi",
   "Menenangkan Kemerahan (Soothing)",
-  "Eksfoliasi & Tekstur Pori-pori",
+  "Eksfoliasi & Mengurangi Tampilan Pori-pori",
 ];
 
 // Flag IDs yang MUTLAK tidak boleh disesuaikan AI
@@ -478,11 +478,11 @@ Pilih fokus utama dari HANYA 6 kategori ini:
    Bahan yang TERBUKTI menghambat tirosinase, mempercepat turnover sel, atau memudarkan hiperpigmentasi pasca-inflamasi (PIH).
    Contoh bahan: Arbutin, Tranexamic Acid, Vitamin C (L-Ascorbic Acid), Kojic Acid, Licorice Root Extract (Glabridin).
 
-2. "Merawat Jerawat & Sebum":
+2. "Mengatasi Jerawat & Mengontrol Sebum":
    Bahan yang TERBUKTI antibakteri terhadap C.acnes, mengurangi produksi sebum, atau membersihkan pori tersumbat.
    Contoh bahan: Salicylic Acid, Benzoyl Peroxide, Niacinamide, Zinc PCA, Tea Tree Oil, Sulfur.
 
-3. "Anti-Aging & Garis Halus":
+3. "Mengencangkan & Menyamarkan Garis Halus":
    Bahan yang TERBUKTI merangsang sintesis kolagen, mengurangi kerutan, atau melindungi dari kerusakan oksidatif/photoaging.
    Contoh bahan: Retinol, Peptides (Matrixyl, Argireline), Adenosine, Bakuchiol, Resveratrol, Vitamin E (Tocopherol).
 
@@ -494,7 +494,7 @@ Pilih fokus utama dari HANYA 6 kategori ini:
    Bahan yang TERBUKTI anti-inflamasi, meredam eritema, atau mengurangi TEWL (Trans-Epidermal Water Loss).
    Contoh bahan: Centella Asiatica (Madecassoside, Asiaticoside), Panthenol, Bisabolol, Allantoin, Colloidal Oatmeal.
 
-6. "Eksfoliasi & Tekstur Pori-pori":
+6. "Eksfoliasi & Mengurangi Tampilan Pori-pori":
    Bahan yang melarutkan ikatan antar sel mati (desmosomes) secara kimia atau secara fisik mengangkat sel tanduk.
    Contoh bahan: Glycolic Acid, Lactic Acid, PHA (Gluconolactone), Enzim Papain, BHA (Salicylic Acid), Azelaic Acid.
 
@@ -544,13 +544,12 @@ C. BAHAN TERLARANG SEBAGAI PENETRAL:
 ATURAN 8 — REASONING EDUKATIF & TO THE POINT (SANGAT PENTING):
 Setiap penjelasan reasoning dalam penaltyAdjustments HARUS padat, edukatif, berbasis ilmiah, dan langsung ke intinya tanpa basa-basi (DILARANG menggunakan kata penenang yang tidak perlu seperti "jangan khawatir", "tidak perlu cemas", "maka dari itu", dll.):
 1. DIAGNOSIS PENALTI: Jelaskan secara singkat mengapa bahan tersebut memicu risiko bagi kondisi kulit pengguna (contoh: "Dimethicone/Vinyl Dimethicone Crosspolymer bersifat oklusif yang berpotensi memerangkap sebum pada kulit berjerawat aktif.").
-2. MEKANISME NETRALISASI (EDUKATIF): Jelaskan secara ilmiah mengapa risiko tersebut hilang atau berkurang secara drastis dalam formulasi ini ${
-  productType === "FACEWASH"
-    ? `(contoh: "Namun, produk ini adalah pembersih bilas (wash-off) dengan durasi kontak singkat (~60 detik) sehingga tidak sempat membentuk lapisan film oklusif. Ditambah lagi, keberadaan Niacinamide membantu menyeimbangkan sekresi sebum.")`
-    : productType === "MOISTURIZER"
-    ? `(contoh: "Namun, meskipun produk ini adalah pelembap leave-on yang menempel lama, potensi iritasi dari eksfoliator diminimalisir oleh kandungan Ceramide NP dan Panthenol yang memperkuat lipid barrier kulit.")`
-    : `(contoh: "Namun, meskipun produk ini adalah tabir surya leave-on, potensi iritasi diredam oleh kandungan Bisabolol dan Allantoin yang menenangkan kulit selama terpapar sinar matahari.")`
-}.
+2. MEKANISME NETRALISASI (EDUKATIF): Jelaskan secara ilmiah mengapa risiko tersebut hilang atau berkurang secara drastis dalam formulasi ini ${productType === "FACEWASH"
+        ? `(contoh: "Namun, produk ini adalah pembersih bilas (wash-off) dengan durasi kontak singkat (~60 detik) sehingga tidak sempat membentuk lapisan film oklusif. Ditambah lagi, keberadaan Niacinamide membantu menyeimbangkan sekresi sebum.")`
+        : productType === "MOISTURIZER"
+          ? `(contoh: "Namun, meskipun produk ini adalah pelembap leave-on yang menempel lama, potensi iritasi dari eksfoliator diminimalisir oleh kandungan Ceramide NP dan Panthenol yang memperkuat lipid barrier kulit.")`
+          : `(contoh: "Namun, meskipun produk ini adalah tabir surya leave-on, potensi iritasi diredam oleh kandungan Bisabolol dan Allantoin yang menenangkan kulit selama terpapar sinar matahari.")`
+      }.
 3. REKOMENDASI KLINIS: Berikan kesimpulan konkret dan instruksi pemakaian yang to-the-point (contoh: "Risiko penyumbatan pori teratasi sepenuhnya. Aman digunakan sebagai sabun wajah harian.").
 JIKA TIDAK ADA PENETRAL: Jangan buat penyesuaian sama sekali (hapus dari array JSON).
 

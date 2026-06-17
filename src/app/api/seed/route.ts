@@ -6,54 +6,54 @@ export async function GET() {
   try {
     // Daftar bahan mentah yang sudah dikalibrasi ke Arsitektur V3
     const ingredientsToSeed = [
-      { 
-        name: "aqua", aliases: "water, air", type: "BASIC", functionalCategory: "UMUM", 
-        benefits: "Pelarut utama dalam sebagian besar produk kosmetik.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: false, strengthLevel: 1 
+      {
+        name: "aqua", aliases: "water, air", type: "BASIC", functionalCategory: "UMUM",
+        benefits: "Pelarut utama dalam sebagian besar produk kosmetik.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: false, strengthLevel: 1
       },
-      { 
-        name: "gliserin", aliases: "glycerin, glycerol", type: "BASIC", functionalCategory: "PELEMBAP_HUMEKTAN", 
-        benefits: "Menarik air dari udara ke dalam kulit untuk hidrasi mendalam.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: true, strengthLevel: 1, targetFocus: "Memperbaiki Skin Barrier & Hidrasi" 
+      {
+        name: "gliserin", aliases: "glycerin, glycerol", type: "BASIC", functionalCategory: "PELEMBAP_HUMEKTAN",
+        benefits: "Menarik air dari udara ke dalam kulit untuk hidrasi mendalam.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: true, strengthLevel: 1, targetFocus: "Memperbaiki Skin Barrier & Hidrasi"
       },
-      { 
-        name: "niacinamide", aliases: "vitamin b3", type: "BASIC", functionalCategory: "UMUM", 
-        benefits: "Mencerahkan kulit, mengontrol sebum, dan memperkuat barrier.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: true, strengthLevel: 1, targetFocus: "Mencerahkan & Bekas Jerawat,Merawat Jerawat & Sebum" 
+      {
+        name: "niacinamide", aliases: "vitamin b3", type: "BASIC", functionalCategory: "UMUM",
+        benefits: "Mencerahkan kulit, mengontrol sebum, dan memperkuat barrier.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: true, strengthLevel: 1, targetFocus: "Mencerahkan & Bekas Jerawat,Mengatasi Jerawat & Mengontrol Sebum"
       },
-      { 
-        name: "allantoin", aliases: "", type: "BUFFER", functionalCategory: "UMUM", 
-        benefits: "Menenangkan kulit kemerahan dan mempercepat penyembuhan luka.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: false, strengthLevel: 2, targetFocus: "Menenangkan Kemerahan (Soothing)" 
+      {
+        name: "allantoin", aliases: "", type: "BUFFER", functionalCategory: "UMUM",
+        benefits: "Menenangkan kulit kemerahan dan mempercepat penyembuhan luka.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: false, strengthLevel: 2, targetFocus: "Menenangkan Kemerahan (Soothing)"
       },
-      { 
-        name: "lisat fermentasi bifida", aliases: "bifida ferment lysate", type: "BUFFER", functionalCategory: "UMUM", 
-        benefits: "Probiotik untuk menyeimbangkan mikrobioma kulit dan mengurangi sensitivitas.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: true, strengthLevel: 2, targetFocus: "Memperbaiki Skin Barrier & Hidrasi,Anti-Aging & Garis Halus" 
+      {
+        name: "lisat fermentasi bifida", aliases: "bifida ferment lysate", type: "BUFFER", functionalCategory: "UMUM",
+        benefits: "Probiotik untuk menyeimbangkan mikrobioma kulit dan mengurangi sensitivitas.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: true, strengthLevel: 2, targetFocus: "Memperbaiki Skin Barrier & Hidrasi,Mengencangkan & Menyamarkan Garis Halus"
       },
-      { 
-        name: "natrium hialuronat", aliases: "sodium hyaluronate, hyaluronic acid", type: "BASIC", functionalCategory: "PELEMBAP_HUMEKTAN", 
-        benefits: "Bentuk garam dari asam hialuronat yang mampu menahan air.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: true, strengthLevel: 1, targetFocus: "Memperbaiki Skin Barrier & Hidrasi" 
+      {
+        name: "natrium hialuronat", aliases: "sodium hyaluronate, hyaluronic acid", type: "BASIC", functionalCategory: "PELEMBAP_HUMEKTAN",
+        benefits: "Bentuk garam dari asam hialuronat yang mampu menahan air.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: true, strengthLevel: 1, targetFocus: "Memperbaiki Skin Barrier & Hidrasi"
       },
-      { 
-        name: "butyrospermum parkii butter", aliases: "shea butter", type: "BASIC", functionalCategory: "PELEMBAP_OKLUSIF", 
-        benefits: "Emolien pekat yang sangat bagus untuk mengunci kelembapan pada kulit kering.", 
-        comedogenicRating: 4, safeForPregnancy: true, safeForSensitive: true, 
-        isKeyActive: false, strengthLevel: 1, 
-        blacklistedSkinTypes: "Berminyak", blacklistReason: "Sangat tebal dan berisiko tinggi menyumbat pori-pori pada kulit yang memproduksi banyak sebum." 
+      {
+        name: "butyrospermum parkii butter", aliases: "shea butter", type: "BASIC", functionalCategory: "PELEMBAP_OKLUSIF",
+        benefits: "Emolien pekat yang sangat bagus untuk mengunci kelembapan pada kulit kering.",
+        comedogenicRating: 4, safeForPregnancy: true, safeForSensitive: true,
+        isKeyActive: false, strengthLevel: 1,
+        blacklistedSkinTypes: "Berminyak", blacklistReason: "Sangat tebal dan berisiko tinggi menyumbat pori-pori pada kulit yang memproduksi banyak sebum."
       },
-      { 
-        name: "asam sitrat", aliases: "citric acid, aha", type: "HARSH", functionalCategory: "UMUM", 
-        benefits: "Mengeksfoliasi sel kulit mati di lapisan teratas kulit.", 
-        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: false, 
-        isKeyActive: false, strengthLevel: 2, targetFocus: "Eksfoliasi & Tekstur Pori-pori" 
+      {
+        name: "asam sitrat", aliases: "citric acid, aha", type: "HARSH", functionalCategory: "UMUM",
+        benefits: "Mengeksfoliasi sel kulit mati di lapisan teratas kulit.",
+        comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: false,
+        isKeyActive: false, strengthLevel: 2, targetFocus: "Eksfoliasi & Mengurangi Tampilan Pori-pori"
       },
       { name: "bisabolol", aliases: "alpha-bisabolol", type: "BUFFER", functionalCategory: "UMUM", benefits: "Komponen aktif chamomile yang meredakan inflamasi.", comedogenicRating: 0, safeForPregnancy: true, safeForSensitive: true, isKeyActive: false, strengthLevel: 2 },
       { name: "butilena glikol", aliases: "butylene glycol", type: "BASIC", functionalCategory: "PELEMBAP_HUMEKTAN", benefits: "Pelarut yang menarik kelembapan.", comedogenicRating: 1, safeForPregnancy: true, safeForSensitive: true, isKeyActive: false, strengthLevel: 1 },
@@ -105,7 +105,7 @@ export async function GET() {
     const result = await prisma.ingredientDictionary.createMany({
       // @ts-ignore
       data: ingredientsToSeed,
-      skipDuplicates: true, 
+      skipDuplicates: true,
     });
 
     return NextResponse.json({ message: `Berhasil menambahkan ${result.count} bahan ke database menggunakan standar V3!` });

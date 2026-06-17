@@ -248,6 +248,15 @@ export function runScoringEngine(
   const focusTally: Record<string, number> = {};
   const focusIngredientsMap: Record<string, string[]> = {};
 
+  // Normalisasi nama fokus lama ke nama baru (V3 Unified)
+  const FOCUS_NAME_MAP: Record<string, string> = {
+    "Merawat Jerawat & Sebum": "Mengatasi Jerawat & Mengontrol Sebum",
+    "Anti-Aging & Garis Halus": "Mengencangkan & Menyamarkan Garis Halus",
+    "Eksfoliasi & Tekstur Pori-pori": "Eksfoliasi & Mengurangi Tampilan Pori-pori",
+    "Eksfoliasi & Mengurangi Penampakan Pori-pori": "Eksfoliasi & Mengurangi Tampilan Pori-pori",
+  };
+  const normalizeFocusName = (name: string): string => FOCUS_NAME_MAP[name] || name;
+
   detected.forEach(ing => {
     // Toxic / Hamil / Alergi (Safety Score Penalties)
     if (ing.type === "TOXIC") {
@@ -296,7 +305,7 @@ export function runScoringEngine(
 
     if (ing.targetFocus) {
       ing.targetFocus.split(',').forEach(f => {
-        const cleanFocus = f.trim();
+        const cleanFocus = normalizeFocusName(f.trim());
         focusTally[cleanFocus] = (focusTally[cleanFocus] || 0) + (ing.isKeyActive ? 3 : 1);
 
         if (!focusIngredientsMap[cleanFocus]) {

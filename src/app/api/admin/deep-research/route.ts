@@ -213,11 +213,11 @@ HANYA pilih dari nilai persis berikut (boleh dikombinasi dengan koma):
   Bahan yang TERBUKTI menghambat tirosinase, mempercepat turnover sel, atau memudarkan hiperpigmentasi pasca-inflamasi (PIH).
   Contoh bahan: Arbutin, Tranexamic Acid, Vitamin C (L-Ascorbic Acid), Kojic Acid, Licorice Root Extract (Glabridin).
 
-"Merawat Jerawat & Sebum":
+"Mengatasi Jerawat & Mengontrol Sebum":
   Bahan yang TERBUKTI antibakteri terhadap C.acnes, mengurangi produksi sebum, atau membersihkan pori tersumbat.
   Contoh bahan: Salicylic Acid, Benzoyl Peroxide, Niacinamide, Zinc PCA, Tea Tree Oil, Sulfur.
 
-"Anti-Aging & Garis Halus":
+"Mengencangkan & Menyamarkan Garis Halus":
   Bahan yang TERBUKTI merangsang sintesis kolagen, mengurangi kerutan, atau melindungi dari kerusakan oksidatif/photoaging.
   Contoh bahan: Retinol, Peptides (Matrixyl, Argireline), Adenosine, Bakuchiol, Resveratrol, Vitamin E (Tocopherol).
 
@@ -229,7 +229,7 @@ HANYA pilih dari nilai persis berikut (boleh dikombinasi dengan koma):
   Bahan yang TERBUKTI anti-inflamasi, meredam eritema, atau mengurangi TEWL (Trans-Epidermal Water Loss).
   Contoh bahan: Centella Asiatica (Madecassoside, Asiaticoside), Panthenol, Bisabolol, Allantoin, Colloidal Oatmeal.
 
-"Eksfoliasi & Tekstur Pori-pori":
+"Eksfoliasi & Mengurangi Tampilan Pori-pori":
   Bahan yang melarutkan ikatan antar sel mati (desmosomes) secara kimia atau secara fisik mengangkat sel tanduk.
   Contoh bahan: Glycolic Acid, Lactic Acid, PHA (Gluconolactone), Enzim Papain, BHA (Salicylic Acid), Azelaic Acid.
 
@@ -338,7 +338,7 @@ Kembalikan TEPAT dalam format JSON berikut (kecuali jika terjadi error):
   "comedogenicRating": 0,
   "safeForPregnancy": true,
   "safeForSensitive": true,
-  "targetFocus": "Mencerahkan & Bekas Jerawat, Merawat Jerawat & Sebum...",
+  "targetFocus": "Mencerahkan & Bekas Jerawat, Mengatasi Jerawat & Mengontrol Sebum...",
   "blacklistedSkinTypes": "Normal, Kering, Berminyak, Kombinasi (kosongkan jika aman)",
   "blacklistReason": "Alasan klinis (namun dirangkum agar mudah dipahami awam) mengapa bahan ini di-blacklist. WAJIB DIISI jika ada tipe kulit yang di-blacklist!",
   "warnings": "peringatan penggunaan",
@@ -890,11 +890,11 @@ export async function POST(req: Request) {
               // Normalisasi targetFocus: validasi terhadap daftar resmi
               const validFocusList = [
                 "Mencerahkan & Bekas Jerawat",
-                "Merawat Jerawat & Sebum",
-                "Anti-Aging & Garis Halus",
+                "Mengatasi Jerawat & Mengontrol Sebum",
+                "Mengencangkan & Menyamarkan Garis Halus",
                 "Memperbaiki Skin Barrier & Hidrasi",
                 "Menenangkan Kemerahan (Soothing)",
-                "Eksfoliasi & Tekstur Pori-pori",
+                "Eksfoliasi & Mengurangi Tampilan Pori-pori",
               ];
               let rawFocus = toStr(data.targetFocus) || "";
               // Filter hanya fokus yang valid

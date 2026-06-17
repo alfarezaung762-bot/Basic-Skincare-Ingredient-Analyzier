@@ -28,11 +28,11 @@ const SEVERITY_OPTIONS = [
 
 const FOCUS_OPTIONS = [
     { id: "Mencerahkan & Bekas Jerawat", icon: "✨" },
-    { id: "Merawat Jerawat & Sebum", icon: "🛡️" },
-    { id: "Anti-Aging & Garis Halus", icon: "⏳" },
+    { id: "Mengatasi Jerawat & Mengontrol Sebum", icon: "🛡️" },
+    { id: "Mengencangkan & Menyamarkan Garis Halus", icon: "⏳" },
     { id: "Memperbaiki Skin Barrier & Hidrasi", icon: "🧱" },
     { id: "Menenangkan Kemerahan (Soothing)", icon: "🌿" },
-    { id: "Eksfoliasi & Tekstur Pori-pori", icon: "🌪️" },
+    { id: "Eksfoliasi & Mengurangi Tampilan Pori-pori", icon: "🌪️" },
 ];
 
 const FLOATERS = [

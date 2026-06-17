@@ -32,11 +32,11 @@ export default function CreateIngredientPage() {
 
   const [focuses, setFocuses] = useState({
     "Mencerahkan & Bekas Jerawat": false,
-    "Merawat Jerawat & Sebum": false,
-    "Anti-Aging & Garis Halus": false,
+    "Mengatasi Jerawat & Mengontrol Sebum": false,
+    "Mengencangkan & Menyamarkan Garis Halus": false,
     "Memperbaiki Skin Barrier & Hidrasi": false,
     "Menenangkan Kemerahan (Soothing)": false,
-    "Eksfoliasi & Tekstur Pori-pori": false,
+    "Eksfoliasi & Mengurangi Tampilan Pori-pori": false,
   });
 
   const [formData, setFormData] = useState({
@@ -179,8 +179,8 @@ export default function CreateIngredientPage() {
       }));
 
       setFocuses({
-        "Mencerahkan & Bekas Jerawat": false, "Merawat Jerawat & Sebum": false, "Anti-Aging & Garis Halus": false,
-        "Memperbaiki Skin Barrier & Hidrasi": false, "Menenangkan Kemerahan (Soothing)": false, "Eksfoliasi & Tekstur Pori-pori": false,
+        "Mencerahkan & Bekas Jerawat": false, "Mengatasi Jerawat & Mengontrol Sebum": false, "Mengencangkan & Menyamarkan Garis Halus": false,
+        "Memperbaiki Skin Barrier & Hidrasi": false, "Menenangkan Kemerahan (Soothing)": false, "Eksfoliasi & Mengurangi Tampilan Pori-pori": false,
       });
 
       setBlacklistedTypes({ Normal: false, Kering: false, Berminyak: false, Kombinasi: false });
@@ -303,8 +303,8 @@ export default function CreateIngredientPage() {
         });
         setBlacklistedTypes({ Normal: false, Kering: false, Berminyak: false, Kombinasi: false });
         setFocuses({
-          "Mencerahkan & Bekas Jerawat": false, "Merawat Jerawat & Sebum": false, "Anti-Aging & Garis Halus": false,
-          "Memperbaiki Skin Barrier & Hidrasi": false, "Menenangkan Kemerahan (Soothing)": false, "Eksfoliasi & Tekstur Pori-pori": false,
+          "Mencerahkan & Bekas Jerawat": false, "Mengatasi Jerawat & Mengontrol Sebum": false, "Mengencangkan & Menyamarkan Garis Halus": false,
+          "Memperbaiki Skin Barrier & Hidrasi": false, "Menenangkan Kemerahan (Soothing)": false, "Eksfoliasi & Mengurangi Tampilan Pori-pori": false,
         });
 
         setTimeout(() => {

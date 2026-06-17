@@ -49,11 +49,11 @@ HANYA pilih dari nilai persis berikut (boleh dikombinasi dengan koma):
   Bahan yang TERBUKTI menghambat tirosinase, mempercepat turnover sel, atau memudarkan hiperpigmentasi pasca-inflamasi (PIH).
   Contoh bahan: Arbutin, Tranexamic Acid, Vitamin C (L-Ascorbic Acid), Kojic Acid, Licorice Root Extract (Glabridin).
 
-"Merawat Jerawat & Sebum":
+"Mengatasi Jerawat & Mengontrol Sebum":
   Bahan yang TERBUKTI antibakteri terhadap C.acnes, mengurangi produksi sebum, atau membersihkan pori tersumbat.
   Contoh bahan: Salicylic Acid, Benzoyl Peroxide, Niacinamide, Zinc PCA, Tea Tree Oil, Sulfur.
 
-"Anti-Aging & Garis Halus":
+"Mengencangkan & Menyamarkan Garis Halus":
   Bahan yang TERBUKTI merangsang sintesis kolagen, mengurangi kerutan, atau melindungi dari kerusakan oksidatif/photoaging.
   Contoh bahan: Retinol, Peptides (Matrixyl, Argireline), Adenosine, Bakuchiol, Resveratrol, Vitamin E (Tocopherol).
 
@@ -65,7 +65,7 @@ HANYA pilih dari nilai persis berikut (boleh dikombinasi dengan koma):
   Bahan yang TERBUKTI anti-inflamasi, meredam eritema, atau mengurangi TEWL (Trans-Epidermal Water Loss).
   Contoh bahan: Centella Asiatica (Madecassoside, Asiaticoside), Panthenol, Bisabolol, Allantoin, Colloidal Oatmeal.
 
-"Eksfoliasi & Tekstur Pori-pori":
+"Eksfoliasi & Mengurangi Tampilan Pori-pori":
   Bahan yang melarutkan ikatan antar sel mati (desmosomes) secara kimia atau secara fisik mengangkat sel tanduk.
   Contoh bahan: Glycolic Acid, Lactic Acid, PHA (Gluconolactone), Enzim Papain, BHA (Salicylic Acid), Azelaic Acid.
 
