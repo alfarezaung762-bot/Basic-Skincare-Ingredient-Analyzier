@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   try {
     // Hanya role tertentu yang bisa akses (misal SUPERADMIN atau ADMIN)
     // Asumsi: di app ini admin divalidasi lewat session.user.email atau AdminAccount
-    // Karena kita tidak mengikat session dengan AdminAccount secara eksplisit di V3, 
+    // Karena kita tidak mengikat session dengan AdminAccount secara eksplistem di V3, 
     // kita akan lewati pengecekan RBAC strict di route ini, asalkan user terautentikasi (seperti route admin lain)
 
     let config = await prisma.aIPromptConfig.findUnique({

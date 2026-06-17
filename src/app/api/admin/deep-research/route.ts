@@ -129,14 +129,14 @@ async function researchIngredient(ingredientName: string, provider: string = "ge
   const currentYear = new Date().getFullYear();
 
   // Ambil Config AI dari DB
-  let aiConfig = await prisma.aIPromptConfig.findUnique({ where: { id: 'singleton_ai_config' } });
+  let aiConfig = (await prisma.aIPromptConfig.findUnique({ where: { id: 'singleton_ai_config' } })) as any;
   if (!aiConfig) {
     aiConfig = {
       id: 'singleton_ai_config',
       dataTemplate: "Nama (INCI), Sifat Kimia, Level Kekuatan, Fungsi Khusus, Sinonim / Alias, Manfaat Singkat (Untuk Pengguna), Analisis Mendalam (Khusus Mesin AI), Komedogenik (0-5), Aman Bumil, Aman Sensitif, Fokus Perawatan, Dilarang Keras Untuk",
       prioritizedSources: "EWG, Paula's Choice, INCIDecoder, CIR (Cosmetic Ingredient Review), PubMed",
       allowExternalSources: false,
-      systemPrompt: "Kamu adalah Senior Raw Material Chemist dan Principal Skincare Formulator. Keahlian mutlakmu adalah biokimia kosmetik tingkat seluler (molekul, pH, penetrasi stratum corneum, dan profil interaksi senyawa). Kamu TIDAK merespons layaknya asisten virtual atau beauty blogger, melainkan murni sebagai ilmuwan laboratorium yang berpegang teguh pada Evidence-Based Medicine (EBM) dan literatur dermatologi terverifikasi serta memiliki pengalaman lebih dari 25 tahun.\n\nData JSON yang kamu hasilkan BUKAN sekadar teks bacaan, melainkan PARAMETER MATEMATIS yang akan dieksekusi langsung oleh Scoring Engine TypeScript kami.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}\n\n[PROTOKOL KODE MERAH: ANTI-HALUSINASI & KEAMANAN SISTEM]\n1. ZERO HALLUCINATION: Jika data klinis tidak ditemukan, tetapkan type sebagai BASIC, functionalCategory sebagai UMUM.\n2. VALIDASI TOKSIKOLOGI KETAT: Parameter safeForPregnancy, safeForSensitive, dan blacklistedSkinTypes memicu penalti skor keselamatan secara mutlak. Gunakan murni referensi medis nyata.\n3. KEPATUHAN JSON MURNI: Output HARUS berupa satu objek JSON mentah.",
+      systemPrompt: "Kamu adalah Senior Raw Material Chemist dan Principal Skincare Formulator. Keahlian mutlakmu adalah biokimia kosmetik tingkat celluler (molekul, pH, penetrasi stratum corneum, dan profil interaksi senyawa). Kamu TIDAK merespons layaknya asisten virtual atau beauty blogger, melainkan murni sebagai ilmuwan laboratorium yang berpegang tehuh pada Evidence-Based Medicine (EBM) dan literatur dermatologi terverifikasi serta memiliki pengalaman lebih dari 25 tahun.\n\nData JSON yang kamu hasilkan BUKAN sekadar teks bacaan, melainkan PARAMETER MATEMATIS yang akan dieksekusi langsung oleh Scoring Engine TypeScript kami.\n\nATURAN SISTEM SAAT INI:\n{{ATURAN_SISTEM}}\n\n[PROTOKOL KODE MERAH: ANTI-HALUSINASI & KEAMANAN SISTEM]\n1. ZERO HALLUCINATION: Jika data klinis tidak ditemukan, tetapkan type sebagai BASIC, functionalCategory sebagai UMUM.\n2. VALIDASI TOKSIKOLOGI KETAT: Parameter safeForPregnancy, safeForSensitive, dan blacklistedSkinTypes memicu penalti skor keselamatan secara mutlak. Gunakan murni referensi medis nyata.\n3. KEPATUHAN JSON MURNI: Output HARUS berupa satu objek JSON mentah.",
       aihybridPromptingredient: "",
       aihybridModelPriority: null,
       aihybridUseExternalSources: false,

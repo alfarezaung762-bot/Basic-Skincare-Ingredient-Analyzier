@@ -315,6 +315,10 @@ model AIPromptConfig {
   aihybridReferenceSources  String?  @db.Text               // Sumber referensi formulasi (editable admin)
   autoReportUnknowns        Boolean  @default(true)         // Toggle auto report bahan asing
 
+  // OCR Label Scanner — Konfigurasi AI Vision untuk scan label skincare
+  ocrPrompt                 String?  @db.Text               // System prompt khusus OCR
+  ocrModelPriority          String?  @db.Text               // JSON array urutan model vision fallback
+
   updatedAt            DateTime @updatedAt
 }
 

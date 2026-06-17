@@ -66,7 +66,7 @@ export default function PusatAIPage() {
         </motion.div>
 
         {/* CARD NAVIGASI KE SUB-PAGE */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card Deep Research */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
             <Link href="/admin/pusat-ai/deepresearch" className="block group">
@@ -107,6 +107,28 @@ export default function PusatAIPage() {
                   <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">Sumber Referensi</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">Buka Konfigurasi →</div>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* Card OCR AI Vision Scanner */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
+            <Link href="/admin/pusat-ai/ocr-ai" className="block group">
+              <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:border-teal-400 dark:hover:border-teal-600 hover:shadow-lg transition-all duration-300 space-y-4 h-full">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">📷</div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors">OCR Label Scanner</h3>
+                    <p className="text-xs font-bold text-teal-600 dark:text-teal-500">Konfigurasi AI Vision</p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Atur prompt OCR, urutan model vision fallback, dan perilaku ekstraksi teks bahan kosmetik dari foto label.</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-800">Prompt OCR</span>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-800">Model Vision</span>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-800">Dual-Photo</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs font-bold text-teal-600 dark:text-teal-400 group-hover:translate-x-1 transition-transform">Buka Konfigurasi →</div>
               </div>
             </Link>
           </motion.div>

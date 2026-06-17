@@ -21,6 +21,9 @@ const ProductRecommendation = dynamic(() => import("./ProductRecommendation"), {
   ssr: false,
   loading: () => <div className="skeleton w-full h-[200px] rounded-2xl" />,
 });
+const OcrMode = dynamic(() => import("./ocrmode"), {
+  ssr: false,
+});
 
 interface SingleAnalyzerProps {
   points?: number | null;
@@ -45,6 +48,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
   // Titik Referensi untuk animasi gulir otomatis (Auto-Scroll)
   const resultRef = useRef<HTMLDivElement>(null);
   const [isAiSummaryOpen, setIsAiSummaryOpen] = useState(false);
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
 
   const handleGoToAiSummary = () => {
     setIsAiSummaryOpen(true);
@@ -112,7 +116,11 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
   }, []);
 
   const handleOCRClick = () => {
-    alert("Fitur Pindai Label (OCR) sedang dalam pengembangan!");
+    setIsOcrOpen(true);
+  };
+
+  const handleOcrResult = (extractedText: string) => {
+    setIngredients(extractedText);
   };
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -332,6 +340,12 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
           </div>
         )}
 
+        {/* Modal OCR */}
+        <OcrMode 
+          isOpen={isOcrOpen} 
+          onClose={() => setIsOcrOpen(false)} 
+          onResult={handleOcrResult} 
+        />
       </div>
   );
 }
