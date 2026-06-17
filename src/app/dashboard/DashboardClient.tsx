@@ -39,6 +39,15 @@ const FEATURES = [
   { icon: "⚡", title: "Hasil Instan", desc: "Analisis real-time tanpa perlu menunggu lama" },
 ];
 
+// Helper to optimize Cloudinary URLs on the fly (adding format auto, quality auto, width limits)
+const optimizeCloudinaryUrl = (url: string) => {
+  if (!url) return "";
+  if (url.includes("cloudinary.com") && url.includes("/upload/")) {
+    return url.replace("/upload/", "/upload/f_auto,q_auto,w_400,c_limit/");
+  }
+  return url;
+};
+
 export default function DashboardClient({ displayName, isGuest = false }: DashboardClientProps) {
   const [activeView, setActiveView] = useState<"menu" | "single" | "combine">("menu");
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -528,12 +537,12 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                 <>
                   {banners.map((banner, i) => (
                     <span key={`a-${banner.id}-${i}`} className={`hover:scale-[1.04] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden ring-1 hover:shadow-md hover:shadow-teal-100/30 ${isDark ? "ring-slate-700 hover:ring-teal-700" : "ring-slate-200 hover:ring-teal-200"}`}>
-                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} loading="lazy" className="h-[60px] sm:h-[80px] md:h-[120px] w-auto max-w-[200px] sm:max-w-[300px] md:max-w-[400px] object-cover" />
+                      <img src={optimizeCloudinaryUrl(banner.imageUrl)} alt={banner.altText || "Banner"} loading="lazy" decoding="async" className="h-[60px] sm:h-[80px] md:h-[120px] w-auto max-w-[200px] sm:max-w-[300px] md:max-w-[400px] object-cover" />
                     </span>
                   ))}
                   {banners.map((banner, i) => (
                     <span key={`a2-${banner.id}-${i}`} className={`hover:scale-[1.04] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden ring-1 hover:shadow-md hover:shadow-teal-100/30 ${isDark ? "ring-slate-700 hover:ring-teal-700" : "ring-slate-200 hover:ring-teal-200"}`}>
-                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                      <img src={optimizeCloudinaryUrl(banner.imageUrl)} alt={banner.altText || "Banner"} decoding="async" className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
                     </span>
                   ))}
                 </>
@@ -550,12 +559,12 @@ export default function DashboardClient({ displayName, isGuest = false }: Dashbo
                 <>
                   {banners.map((banner, i) => (
                     <span key={`b-${banner.id}-${i}`} className={`hover:scale-[1.04] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden ring-1 hover:shadow-md hover:shadow-teal-100/30 ${isDark ? "ring-slate-700 hover:ring-teal-700" : "ring-slate-200 hover:ring-teal-200"}`}>
-                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} loading="lazy" className="h-[60px] sm:h-[80px] md:h-[120px] w-auto max-w-[200px] sm:max-w-[300px] md:max-w-[400px] object-cover" />
+                      <img src={optimizeCloudinaryUrl(banner.imageUrl)} alt={banner.altText || "Banner"} loading="lazy" decoding="async" className="h-[60px] sm:h-[80px] md:h-[120px] w-auto max-w-[200px] sm:max-w-[300px] md:max-w-[400px] object-cover" />
                     </span>
                   ))}
                   {banners.map((banner, i) => (
                     <span key={`b2-${banner.id}-${i}`} className={`hover:scale-[1.04] transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm rounded-xl overflow-hidden ring-1 hover:shadow-md hover:shadow-teal-100/30 ${isDark ? "ring-slate-700 hover:ring-teal-700" : "ring-slate-200 hover:ring-teal-200"}`}>
-                      <img src={banner.imageUrl} alt={banner.altText || "Banner"} className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
+                      <img src={optimizeCloudinaryUrl(banner.imageUrl)} alt={banner.altText || "Banner"} decoding="async" className="h-[80px] md:h-[120px] w-auto max-w-[300px] md:max-w-[400px] object-cover" />
                     </span>
                   ))}
                 </>

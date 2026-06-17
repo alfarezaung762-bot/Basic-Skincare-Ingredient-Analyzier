@@ -70,33 +70,6 @@ export default function FirstProfilePage() {
         if (savedName) setName(savedName);
         if (savedAge) setAge(savedAge);
 
-        // Jika name atau age kosong di localStorage, ambil dari API/Session
-        if (!savedName || !savedAge) {
-            fetch("/api/auth/session")
-                .then(res => res.json())
-                .then(session => {
-                    if (session?.user?.name && !savedName) {
-                        setName(session.user.name);
-                        localStorage.setItem("tempProfileName", session.user.name);
-                    }
-                })
-                .catch(err => console.error("Error fetching session:", err));
-
-            fetch("/api/profile")
-                .then(res => res.json())
-                .then(data => {
-                    if (data?.profile?.age && !savedAge) {
-                        // Jangan gunakan jika umur bernilai 0 (nilai default kosong di database)
-                        if (data.profile.age > 0) {
-                            const ageStr = String(data.profile.age);
-                            setAge(ageStr);
-                            localStorage.setItem("tempProfileAge", ageStr);
-                        }
-                    }
-                })
-                .catch(err => console.error("Error fetching profile:", err));
-        }
-
         const quizResult = localStorage.getItem("quizSkinType");
         if (quizResult) {
             if (quizResult.includes("& Sensitif")) {

@@ -34,6 +34,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("FACEWASH");
   const [ingredients, setIngredients] = useState("");
+  const [displayIngredientCount, setDisplayIngredientCount] = useState(0);
   const [analysisMode, setAnalysisMode] = useState<"HYBRID" | "FAST">("FAST");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [costFast, setCostFast] = useState(1);
@@ -198,7 +199,14 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Gulir ke atas secara mulus
   };
 
-  const ingredientCount = ekstrakDaftarBahan(ingredients).length;
+  // Debouncing penghitungan bahan agar pengetikan di desktop tidak lag
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDisplayIngredientCount(ekstrakDaftarBahan(ingredients).length);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [ingredients]);
 
   return (
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-4">
@@ -284,7 +292,7 @@ export default function SingleAnalyzer({ points, onPointsChange }: SingleAnalyze
               <textarea rows={6} required value={ingredients} onChange={(e) => setIngredients(e.target.value)} placeholder="Paste daftar ingredients di sini, pisahkan dengan koma..." className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-slate-800 transition-all text-sm resize-none shadow-inner leading-relaxed" />
               {ingredients.trim().length > 0 && (
                 <p className="text-xs font-bold text-slate-400 mt-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> {ingredientCount} bahan terdeteksi dari teks
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> {displayIngredientCount} bahan terdeteksi dari teks
                 </p>
               )}
             </div>
