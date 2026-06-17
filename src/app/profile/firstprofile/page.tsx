@@ -64,6 +64,39 @@ export default function FirstProfilePage() {
 
     // Sinkronisasi hasil quiz & langsung lompat ke step 2
     useEffect(() => {
+        // Restore nama dan umur jika ada di localStorage
+        const savedName = localStorage.getItem("tempProfileName");
+        const savedAge = localStorage.getItem("tempProfileAge");
+        if (savedName) setName(savedName);
+        if (savedAge) setAge(savedAge);
+
+        // Jika name atau age kosong di localStorage, ambil dari API/Session
+        if (!savedName || !savedAge) {
+            fetch("/api/auth/session")
+                .then(res => res.json())
+                .then(session => {
+                    if (session?.user?.name && !savedName) {
+                        setName(session.user.name);
+                        localStorage.setItem("tempProfileName", session.user.name);
+                    }
+                })
+                .catch(err => console.error("Error fetching session:", err));
+
+            fetch("/api/profile")
+                .then(res => res.json())
+                .then(data => {
+                    if (data?.profile?.age && !savedAge) {
+                        // Jangan gunakan jika umur bernilai 0 (nilai default kosong di database)
+                        if (data.profile.age > 0) {
+                            const ageStr = String(data.profile.age);
+                            setAge(ageStr);
+                            localStorage.setItem("tempProfileAge", ageStr);
+                        }
+                    }
+                })
+                .catch(err => console.error("Error fetching profile:", err));
+        }
+
         const quizResult = localStorage.getItem("quizSkinType");
         if (quizResult) {
             if (quizResult.includes("& Sensitif")) {
@@ -81,6 +114,16 @@ export default function FirstProfilePage() {
         }
     }, []);
 
+    const handleNameChange = (val: string) => {
+        setName(val);
+        localStorage.setItem("tempProfileName", val);
+    };
+
+    const handleAgeChange = (val: string) => {
+        setAge(val);
+        localStorage.setItem("tempProfileAge", val);
+    };
+
     const skinType = isSensitive ? `${baseSkin} & Sensitif` : baseSkin;
 
     const goNext = () => { setDirection(1); setStep((s) => Math.min(s + 1, STEPS.length - 1)); };
@@ -92,6 +135,8 @@ export default function FirstProfilePage() {
     };
 
     const handleSubmit = async () => {
+        if (!name.trim() || name.trim().length < 2) { setError("Nama panggilan minimal 2 karakter."); return; }
+        if (!age.trim() || Number(age) < 10) { setError("Umur minimal 10 tahun."); return; }
         if (focuses.length === 0) { setError("Pilih minimal 1 fokus utama perawatan kulitmu."); return; }
         setIsLoading(true); setError("");
         try {
@@ -102,6 +147,8 @@ export default function FirstProfilePage() {
             });
             if (res.ok) {
                 localStorage.removeItem("quizSkinType");
+                localStorage.removeItem("tempProfileName");
+                localStorage.removeItem("tempProfileAge");
                 router.push("/profile");
                 router.refresh();
             } else {
@@ -214,12 +261,12 @@ export default function FirstProfilePage() {
                                 <motion.div key="s0" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }} className="flex flex-col gap-5 flex-1">
                                     <div className="space-y-2">
                                         <label className="block text-sm font-bold text-slate-700">Nama Panggilanmu 😊</label>
-                                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Sarah, Dika, Nana..."
+                                        <input type="text" value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="Contoh: Sarah, Dika, Nana..."
                                             className="w-full px-4 py-3.5 rounded-2xl premium-input text-slate-800 font-medium text-sm placeholder:text-slate-400" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="block text-sm font-bold text-slate-700">Umurmu 🎂</label>
-                                        <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Contoh: 22" min="10" max="100"
+                                        <input type="number" value={age} onChange={(e) => handleAgeChange(e.target.value)} placeholder="Contoh: 22" min="10" max="100"
                                             className="w-full px-4 py-3.5 rounded-2xl premium-input text-slate-800 font-medium text-sm placeholder:text-slate-400" />
                                     </div>
                                     <div className="mt-auto p-4 bg-gradient-to-r from-teal-50/80 to-cyan-50/80 rounded-2xl border border-teal-100">
