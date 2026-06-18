@@ -43,10 +43,10 @@ export default function KanbanPage() {
     assignee: "alfareza",
   });
 
-  // Sync theme
+  // Sync theme and tasks
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
       setIsDark(true);
       document.documentElement.setAttribute("data-theme", "dark");
     }
@@ -69,10 +69,11 @@ export default function KanbanPage() {
   };
 
   const handleStatusChange = async (taskId: string, newStatus: Task["status"]) => {
-    // Optimistic Update
-    setTasks(prev =>
-      prev.map(t => (t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t))
+    const originalTasks = [...tasks];
+    const updatedTasks = tasks.map(t =>
+      t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
     );
+    setTasks(updatedTasks);
 
     try {
       const res = await fetch("/api/kanban", {
@@ -81,28 +82,29 @@ export default function KanbanPage() {
         body: JSON.stringify({ id: taskId, status: newStatus }),
       });
       if (!res.ok) {
-        fetchTasks();
+        setTasks(originalTasks);
       }
     } catch (error) {
-      console.error("Gagal mengubah status tugas:", error);
-      fetchTasks();
+      console.error("Gagal mengubah status tugas di server:", error);
+      setTasks(originalTasks);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus tugas ini?")) return;
 
-    // Optimistic Update
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    const originalTasks = [...tasks];
+    const updatedTasks = tasks.filter(t => t.id !== taskId);
+    setTasks(updatedTasks);
 
     try {
       const res = await fetch(`/api/kanban?id=${taskId}`, { method: "DELETE" });
       if (!res.ok) {
-        fetchTasks();
+        setTasks(originalTasks);
       }
     } catch (error) {
-      console.error("Gagal menghapus tugas:", error);
-      fetchTasks();
+      console.error("Gagal menghapus tugas di server:", error);
+      setTasks(originalTasks);
     }
   };
 
@@ -131,6 +133,9 @@ export default function KanbanPage() {
       return;
     }
 
+    const originalTasks = [...tasks];
+    setIsModalOpen(false);
+
     try {
       if (modalMode === "create") {
         const res = await fetch("/api/kanban", {
@@ -141,6 +146,9 @@ export default function KanbanPage() {
         if (res.ok) {
           const newTask = await res.json();
           setTasks(prev => [...prev, newTask]);
+        } else {
+          alert("Gagal menyimpan tugas baru ke server.");
+          fetchTasks();
         }
       } else {
         const res = await fetch("/api/kanban", {
@@ -151,11 +159,14 @@ export default function KanbanPage() {
         if (res.ok) {
           const updatedTask = await res.json();
           setTasks(prev => prev.map(t => (t.id === updatedTask.id ? updatedTask : t)));
+        } else {
+          alert("Gagal memperbarui tugas di server.");
+          fetchTasks();
         }
       }
-      setIsModalOpen(false);
     } catch (error) {
       console.error("Gagal menyimpan tugas:", error);
+      setTasks(originalTasks);
     }
   };
 
