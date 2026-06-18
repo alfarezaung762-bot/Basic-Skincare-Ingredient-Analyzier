@@ -1,263 +1,92 @@
 [
   {
     "id": "task-1",
-    "title": "Implementasi OCR Label Scanner",
-    "description": "Menambahkan fitur pemindaian gambar label kemasan menggunakan AI OCR Cloud langsung di form input komposisi.",
-    "status": "backlog",
+    "title": "Jadwal Timer Stop Kontak 1 & 2 di Web [EDITED]",
+    "description": "Mengatur jadwal stop kontak 1 dan 2 dengan timer di web.",
+    "status": "todo",
     "priority": "high",
-    "assignee": "aksal",
-    "updatedAt": "2026-06-16T06:00:55.294Z"
+    "assignee": "alfareza",
+    "updatedAt": "2026-06-18T11:35:57.409Z"
   },
   {
     "id": "task-2",
-    "title": "Integrasi Log Audit Penyesuaian AI",
-    "description": "Mencatat setiap override penalti bahan oleh admin ke tabel AiAdjustmentLog untuk transparansi sistem.",
+    "title": "Monitoring Suhu, MQ2 Gas & DS3231 RTC",
+    "description": "Monitoring Suhu dan Gas Pada ruangan (sensor MQ2 dan Modul RTC ds3231) dan pemberitahuan ketika ada asap lewat df player.",
     "status": "backlog",
-    "priority": "medium",
+    "priority": "high",
     "assignee": "arif",
-    "updatedAt": "2026-06-16T12:05:00Z"
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-3",
-    "title": "Fitur Deep Research Analisis Bahan di Admin",
-    "description": "Menyediakan portal bagi admin untuk melakukan penelusuran mendalam pustaka bahan kimia kecantikan lewat mesin pencari terintegrasi.",
+    "title": "Sistem Deteksi Suara - Wake Word Halo_Aero",
+    "description": "Sistem deteksi: wake word atau pemanggilan suara sebelum menginisialisasi perintah dengan label (Halo_Aero).",
     "status": "backlog",
     "priority": "high",
-    "assignee": "aksal",
-    "updatedAt": "2026-06-16T06:01:01.926Z"
+    "assignee": "fadli",
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-4",
-    "title": "Dashboard Admin Grafik Finansial",
-    "description": "Visualisasi transaksi pembelian poin bulanan menggunakan chart diagram interaktif dari data PointTransaction.",
-    "status": "todo",
+    "title": "Suara Stop Kontak 1: 1_tepukan & Port_satu_on/off",
+    "description": "Mematikan dan menyalakan Stop kontak 1 lewat perintah suara dengan label (1_tepukan dan Port_satu_on dan port_satu_off).",
+    "status": "backlog",
     "priority": "medium",
     "assignee": "aksal",
-    "updatedAt": "2026-06-16T12:15:00Z"
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-5",
-    "title": "Ulasan Rating Terverifikasi",
-    "description": "Mengizinkan ulasan produk ProductReview hanya bagi pengguna yang memiliki kecocokan tipe kulit dengan produk terkait.",
-    "status": "todo",
-    "priority": "low",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T12:20:00Z"
+    "title": "Suara Stop Kontak 2: 1_tepukan x2 & Port_dua_on/off",
+    "description": "Mematikan dan menyalakan Stop kontak 2 lewat perintah suara dengan label (1_tepukan x2 dan Port_dua_on dan port_dua_off).",
+    "status": "backlog",
+    "priority": "medium",
+    "assignee": "aksal",
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-6",
-    "title": "Integrasi API AI Hybrid",
-    "description": "Menyempurnakan model fallback AI Hybrid Analyzer di route /api/analyze/ai-hybrid menggunakan multi-model LLM.",
-    "status": "in_progress",
-    "priority": "high",
+    "title": "Kontrol Modul Bluetooth (Tombol Putih & Suara)",
+    "description": "Mematikan Bluetooth dan menyalakan Bluetooth dengan menekan tombol putih serta perintah suara dengan label (bluetooth_mode, bluetooth_off).",
+    "status": "backlog",
+    "priority": "medium",
     "assignee": "audy",
-    "updatedAt": "2026-06-16T06:00:42.904Z"
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-7",
-    "title": "Verifikasi Laporan Bug & Sistem Reward",
-    "description": "Halaman admin khusus untuk meninjau BugReport dan memberikan reward poin koin secara otomatis jika laporan valid.",
-    "status": "in_progress",
-    "priority": "medium",
-    "assignee": "fadli",
-    "updatedAt": "2026-06-16T12:30:00Z"
+    "title": "Kalibrasi Otomatis (Tombol Merah / calibration)",
+    "description": "Kalibrasi atau perkenal otomatis dengan menekan tombol merah atau perintah suara dengan label (calibration).",
+    "status": "backlog",
+    "priority": "low",
+    "assignee": "arif",
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-8",
-    "title": "Responsive Donut Chart Mobile",
-    "description": "Mengoptimalkan visualisasi donut chart skor kecocokan agar pas pada lebar viewport seluler (< 640px) tanpa terpotong.",
-    "status": "testing",
-    "priority": "high",
-    "assignee": "arif",
-    "updatedAt": "2026-06-16T12:35:00Z"
+    "title": "Greeting Voice DFPlayer & Motion Sensor PIR",
+    "description": "Greeting voice lewat dfplayer dan motion sensor pir logic ketika ada orang yang lewat dengan jeda 1-2 menit di jam tertentu (misal jam 7 pagi, jam 12 siang) selama 1 jam.",
+    "status": "backlog",
+    "priority": "medium",
+    "assignee": "fadli",
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
     "id": "task-9",
-    "title": "Pemberian Poin Harian (Daily Refresh)",
-    "description": "Mengevaluasi kecocokan logika reset saldo poin harian pengguna berdasarkan konfigurasi SubscriptionConfig.",
-    "status": "testing",
-    "priority": "medium",
-    "assignee": "aksal",
-    "updatedAt": "2026-06-16T12:40:00Z"
-  },
-  {
-    "id": "task-10",
-    "title": "Desain Awal Form Skincare",
-    "description": "Membuat antarmuka Form Single Analyzer dengan input klasifikasi produk dan validasi komposisi.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T12:45:00Z"
-  },
-  {
-    "id": "task-11",
-    "title": "Auto Logout Session Expiry",
-    "description": "Menambahkan komponen AutoLogout di layout global untuk mendeteksi keaktifan user dalam 30 menit.",
-    "status": "done",
-    "priority": "low",
-    "assignee": "alfareza",
-    "updatedAt": "2026-06-16T12:50:00Z"
-  },
-  {
-    "id": "task-12",
-    "title": "Dynamic Imports Optimization",
-    "description": "Memecah bundle Javascript dashboard utama dengan memuat komponen besar seperti modal secara dinamis.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "fadli",
-    "updatedAt": "2026-06-16T12:55:00Z"
-  },
-  {
-    "id": "task-1781588900116",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
+    "title": "Tanya Jawab AI TTS (Tombol Hitam & Mic)",
+    "description": "Text To Speak tanya jawab AI saat menekan (menahan tombol Hitam) dengan bantuan IC PT8211 dan mic INMP441 (input) yang dialirkan ke speaker (perintah label ai_mode dan ai_mode_off).",
+    "status": "backlog",
     "priority": "high",
     "assignee": "alfareza",
-    "updatedAt": "2026-06-16T05:48:56.490Z"
+    "updatedAt": "2026-06-18T18:32:00.000Z"
   },
   {
-    "id": "task-1781588944011",
-    "title": "Bug Minor: Margin Tombol Deep Research Safari",
-    "description": "Jarak padding tombol reset tergeser 3px di browser Safari, tidak menghalangi rilis utama.",
+    "id": "task-1781782589122",
+    "title": "Tugas Pengujian Subagent",
+    "description": "Menguji pembuatan tugas baru di papan kanban.",
     "status": "backlog",
-    "priority": "low",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T05:49:04.011Z"
-  },
-  {
-    "id": "task-1781589006230",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "todo",
-    "priority": "high",
+    "priority": "medium",
     "assignee": "alfareza",
-    "updatedAt": "2026-06-16T05:50:12.107Z"
-  },
-  {
-    "id": "task-1781589228084",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "alfareza",
-    "updatedAt": "2026-06-16T05:54:24.445Z"
-  },
-  {
-    "id": "task-1781589271914",
-    "title": "Bug Minor: Margin Tombol Deep Research Safari",
-    "description": "Jarak padding tombol reset tergeser 3px di browser Safari, tidak menghalangi rilis utama.",
-    "status": "backlog",
-    "priority": "low",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T05:54:31.914Z"
-  },
-  {
-    "id": "task-1781589949463",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "alfareza",
-    "updatedAt": "2026-06-16T06:06:25.851Z"
-  },
-  {
-    "id": "task-1781589993333",
-    "title": "Bug Minor: Margin Tombol Deep Research Safari",
-    "description": "Jarak padding tombol reset tergeser 3px di browser Safari, tidak menghalangi rilis utama.",
-    "status": "backlog",
-    "priority": "low",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:06:33.333Z"
-  },
-  {
-    "id": "task-1781591208242",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:27:05.450Z"
-  },
-  {
-    "id": "task-1781591208286",
-    "title": "Desain Kustom UI Deep Research",
-    "description": "Perancangan tata letak antarmuka admin kecantikan berbasis glassmorphism.",
-    "status": "backlog",
-    "priority": "medium",
-    "assignee": "fadli",
-    "updatedAt": "2026-06-16T06:26:48.286Z"
-  },
-  {
-    "id": "task-1781591228755",
-    "title": "Bug Minor: Margin Tombol Deep Research Safari",
-    "description": "Jarak padding tombol reset tergeser 3px di browser Safari, tidak menghalangi rilis utama.",
-    "status": "backlog",
-    "priority": "low",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:27:08.755Z"
-  },
-  {
-    "id": "task-1781591263884",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:28:00.994Z"
-  },
-  {
-    "id": "task-1781591263922",
-    "title": "Desain Kustom UI Deep Research",
-    "description": "Perancangan tata letak antarmuka admin kecantikan berbasis glassmorphism.",
-    "status": "backlog",
-    "priority": "medium",
-    "assignee": "fadli",
-    "updatedAt": "2026-06-16T06:27:43.922Z"
-  },
-  {
-    "id": "task-1781591293974",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:28:31.019Z"
-  },
-  {
-    "id": "task-1781591294014",
-    "title": "Desain Kustom UI Deep Research",
-    "description": "Perancangan tata letak antarmuka admin kecantikan berbasis glassmorphism.",
-    "status": "backlog",
-    "priority": "medium",
-    "assignee": "fadli",
-    "updatedAt": "2026-06-16T06:28:14.014Z"
-  },
-  {
-    "id": "task-1781591998558",
-    "title": "Fitur Deep Research AI Admin",
-    "description": "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-    "status": "done",
-    "priority": "high",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:40:15.413Z"
-  },
-  {
-    "id": "task-1781591998577",
-    "title": "Desain Kustom UI Deep Research",
-    "description": "Perancangan tata letak antarmuka admin kecantikan berbasis glassmorphism.",
-    "status": "backlog",
-    "priority": "medium",
-    "assignee": "fadli",
-    "updatedAt": "2026-06-16T06:39:58.577Z"
-  },
-  {
-    "id": "task-1781592018693",
-    "title": "Bug Minor: Margin Tombol Deep Research Safari",
-    "description": "Jarak padding tombol reset tergeser 3px di browser Safari, tidak menghalangi rilis utama.",
-    "status": "backlog",
-    "priority": "low",
-    "assignee": "audy",
-    "updatedAt": "2026-06-16T06:40:18.693Z"
+    "updatedAt": "2026-06-18T11:36:29.122Z"
   }
 ]

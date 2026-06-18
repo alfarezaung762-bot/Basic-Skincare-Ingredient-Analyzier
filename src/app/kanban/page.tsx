@@ -28,14 +28,9 @@ export default function KanbanPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Simulation states
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simLogs, setSimLogs] = useState<string[]>([]);
-  const [simExplanation, setSimExplanation] = useState("");
-  const [simProgress, setSimProgress] = useState(0);
-  const [simActiveTaskIds, setSimActiveTaskIds] = useState<string[]>([]);
-  const isAbortedRef = useRef(false);
-  const createdTaskIdsRef = useRef<string[]>([]);
+  // Drag and drop states
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -171,230 +166,45 @@ export default function KanbanPage() {
     document.documentElement.setAttribute("data-theme", nextTheme);
   };
 
-  // Cleanup simulated tasks from db
-  const cleanupSimulatedTasks = async () => {
-    const idsToDelete = [...createdTaskIdsRef.current];
-    createdTaskIdsRef.current = [];
-    for (const id of idsToDelete) {
-      try {
-        await fetch(`/api/kanban?id=${id}`, { method: "DELETE" });
-      } catch (e) {
-        console.error("Gagal menghapus tugas simulasi:", id, e);
-      }
-    }
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedTaskId(id);
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
   };
 
-  // Run Simulation workflow
-  const startSimulation = async () => {
-    // Pastikan data simulasi sebelumnya bersih
-    await cleanupSimulatedTasks();
+  const handleDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (e: React.DragEvent, columnId: string) => {
+    e.preventDefault();
+    setDragOverColumn(columnId);
+  };
+
+  const handleDragLeave = () => {
+    // Reset on drop or dragEnd
+  };
+
+  const handleDrop = async (e: React.DragEvent, newStatus: Task["status"]) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain") || draggedTaskId;
+    setDragOverColumn(null);
+    if (!id) return;
     
-    isAbortedRef.current = false;
-    setIsSimulating(true);
-    setSimLogs([]);
-    setSimProgress(0);
-    setSimActiveTaskIds([]); // Empty cards dynamically in simulation UI
-
-    let createdTaskId = "";
-    let designTaskId = "";
-    let minorBugTaskId = "";
-
-    const stepDelay = async (seconds: number, explanation: string) => {
-      if (isAbortedRef.current) return;
-      setSimExplanation(explanation);
-      // smoothly update progress bar
-      const steps = 15;
-      for (let i = 0; i <= steps; i++) {
-        if (isAbortedRef.current) return;
-        setSimProgress(Math.round((i / steps) * 100));
-        await new Promise(r => setTimeout(r, (seconds * 1000) / steps));
-      }
-    };
-
-    try {
-      // Step 1: Create both cards in Backlog
-      setSimLogs(prev => ["🎬 Memulai simulasi alur kerja papan Kanban..."]);
-      await stepDelay(2.5, "Langkah 1: aksal membuat tugas 'Fitur Deep Research AI Admin' di Backlog. Secara paralel, fadli membuat tugas 'Desain Kustom UI Deep Research' di Backlog.");
-      if (isAbortedRef.current) return;
-
-      const res1 = await fetch("/api/kanban", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Fitur Deep Research AI Admin",
-          description: "Portal riset jurnal bahan kecantikan terintegrasi dengan data LLM untuk analisis tingkat lanjut.",
-          status: "backlog",
-          priority: "high",
-          assignee: "aksal"
-        })
-      });
-
-      const resDesign = await fetch("/api/kanban", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Desain Kustom UI Deep Research",
-          description: "Perancangan tata letak antarmuka admin kecantikan berbasis glassmorphism.",
-          status: "backlog",
-          priority: "medium",
-          assignee: "fadli"
-        })
-      });
-
-      if (res1.ok && resDesign.ok) {
-        const task1 = await res1.json();
-        const task2 = await resDesign.json();
-        createdTaskId = task1.id;
-        designTaskId = task2.id;
-        createdTaskIdsRef.current.push(createdTaskId, designTaskId);
-        setTasks(prev => [...prev, task1, task2]);
-        setSimActiveTaskIds([createdTaskId, designTaskId]);
-        setSimLogs(prev => [
-          ...prev,
-          "➕ [Backlog] Kartu 'Fitur Deep Research AI Admin' dibuat oleh aksal.",
-          "➕ [Backlog] Kartu 'Desain Kustom UI Deep Research' dibuat oleh fadli."
-        ]);
-      }
-
-      // Step 2: Move Task 1 to To Do
-      await stepDelay(2.5, "Langkah 2: alfareza menyetujui prioritas fitur backend dan memindahkan kartu 'Fitur Deep Research AI Admin' ke kolom To Do.");
-      if (isAbortedRef.current) return;
-
-      await fetch("/api/kanban", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: createdTaskId, status: "todo" })
-      });
-      setTasks(prev => prev.map(t => t.id === createdTaskId ? { ...t, status: "todo" } : t));
-      setSimLogs(prev => [...prev, "➡️ [To Do] Kartu dipindahkan ke kolom To Do oleh alfareza."]);
-
-      // Step 3: Move Task 1 to In Progress (Task 1 -> arif, Task 2 stays in Backlog)
-      await stepDelay(2.5, "Langkah 3: arif mulai memprogram backend fitur di kolom In Progress. Hanya tugas utama yang dieksekusi, sementara tugas desain tetap diam di Backlog.");
-      if (isAbortedRef.current) return;
-
-      await fetch("/api/kanban", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: createdTaskId, status: "in_progress", assignee: "arif" })
-      });
-      setTasks(prev => prev.map(t => {
-        if (t.id === createdTaskId) return { ...t, status: "in_progress", assignee: "arif" };
-        return t;
-      }));
-      setSimLogs(prev => [
-        ...prev,
-        "➡️ [In Progress] arif mulai memprogram backend Fitur Deep Research."
-      ]);
-
-      // Step 4: Move Task 1 to Testing (assigned to audy)
-      await stepDelay(2.5, "Langkah 4: Fitur selesai didevelop oleh arif. Kartu dipindahkan ke kolom Testing untuk diuji oleh audy.");
-      if (isAbortedRef.current) return;
-
-      await fetch("/api/kanban", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: createdTaskId, status: "testing", assignee: "audy" })
-      });
-      setTasks(prev => prev.map(t => t.id === createdTaskId ? { ...t, status: "testing", assignee: "audy" } : t));
-      setSimLogs(prev => [...prev, "➡️ [Testing] audy mulai menguji kestabilan fitur backend."]);
-
-      // Step 5: Detect Major Bug -> Move back to In Progress, assigned to audy to fix
-      await stepDelay(3.0, "Langkah 5 (Bug Mayor Terdeteksi): audy mendeteksi BUG MAYOR (API crash). Kartu ditarik kembali ke In Progress oleh audy untuk diperbaiki.");
-      if (isAbortedRef.current) return;
-
-      await fetch("/api/kanban", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: createdTaskId,
-          status: "in_progress",
-          assignee: "audy",
-          title: "Fitur Deep Research AI Admin [Perbaikan Bug Mayor]"
-        })
-      });
-      setTasks(prev => prev.map(t => t.id === createdTaskId ? { ...t, status: "in_progress", assignee: "audy", title: "Fitur Deep Research AI Admin [Perbaikan Bug Mayor]" } : t));
-      setSimLogs(prev => [...prev, "⚠️ [Bug Mayor] API crash terdeteksi! Kartu ditarik ke In Progress oleh audy."]);
-
-      // Step 6: Fix Bug -> Move back to Testing (audy)
-      await stepDelay(2.5, "Langkah 6: audy memperbaiki crash API. Kartu dikembalikan ke kolom Testing untuk pengujian ulang.");
-      if (isAbortedRef.current) return;
-
-      await fetch("/api/kanban", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: createdTaskId,
-          status: "testing",
-          title: "Fitur Deep Research AI Admin"
-        })
-      });
-      setTasks(prev => prev.map(t => t.id === createdTaskId ? { ...t, status: "testing", title: "Fitur Deep Research AI Admin" } : t));
-      setSimLogs(prev => [...prev, "➡️ [Testing] Bug mayor diperbaiki oleh audy! Memulai ulang pengujian."]);
-
-      // Step 7: Testing Success -> Move to Done (Implementasi)
-      await stepDelay(2.5, "Langkah 7: Pengujian ulang berhasil lulus tanpa ada kendala lagi. Kartu dipindahkan ke kolom Implementasi (Done) oleh audy.");
-      if (isAbortedRef.current) return;
-
-      await fetch("/api/kanban", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: createdTaskId, status: "done" })
-      });
-      setTasks(prev => prev.map(t => t.id === createdTaskId ? { ...t, status: "done" } : t));
-      setSimLogs(prev => [...prev, "🎉 [Done] Fitur utama sukses dirilis ke produksi!"]);
-
-      // Step 8: Minor Bug detected -> Completed + Create new card in Backlog (audy)
-      await stepDelay(3.0, "Langkah 8 (Bug Minor Terdeteksi): audy mendeteksi BUG MINOR (margin bergeser 3px di Safari). Fitur utama tetap di Done, namun tiket bug minor didaftarkan di Backlog.");
-      if (isAbortedRef.current) return;
-
-      const resBug = await fetch("/api/kanban", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Bug Minor: Margin Tombol Deep Research Safari",
-          description: "Jarak padding tombol reset tergeser 3px di browser Safari, tidak menghalangi rilis utama.",
-          status: "backlog",
-          priority: "low",
-          assignee: "audy"
-        })
-      });
-
-      if (resBug.ok) {
-        const bugTask = await resBug.json();
-        minorBugTaskId = bugTask.id;
-        createdTaskIdsRef.current.push(minorBugTaskId);
-        setTasks(prev => [...prev, bugTask]);
-        setSimActiveTaskIds([createdTaskId, designTaskId, minorBugTaskId]); // Show all simulated tasks now
-        setSimLogs(prev => [...prev, "➕ [Backlog] Kartu bug minor baru berhasil dibuat oleh audy."]);
-      }
-
-      // Step 9: Finished
-      await stepDelay(2.0, "Simulasi Alur Kerja Selesai! Papan Kanban telah sukses memperagakan alur logis penanganan fitur utama, tugas desain paralel, bug mayor, dan penemuan bug minor.");
-      if (isAbortedRef.current) return;
-      setSimLogs(prev => [...prev, "🏁 Demo selesai dengan sukses!"]);
-    } catch (error) {
-      console.error("Simulation error:", error);
-    } finally {
-      setIsSimulating(false);
+    const taskToUpdate = tasks.find(t => t.id === id);
+    if (taskToUpdate && taskToUpdate.status !== newStatus) {
+      await handleStatusChange(id, newStatus);
     }
   };
 
-  const stopSimulation = async () => {
-    isAbortedRef.current = true;
-    setIsSimulating(false);
-    setSimExplanation("Simulasi dihentikan oleh pengguna. Membersihkan papan...");
-    setSimLogs(prev => [...prev, "🛑 Simulasi dihentikan. Membersihkan data simulasi..."]);
-    await cleanupSimulatedTasks();
-    setSimActiveTaskIds([]);
-    fetchTasks(); // Reload default tasks from server
-  };
-
-  // Filter tasks based on search and simulation visibility
-  const visibleTasks = isSimulating
-    ? tasks.filter(t => simActiveTaskIds.includes(t.id))
-    : tasks;
-
-  const filteredTasks = visibleTasks.filter(
+  // Filter tasks based on search
+  const filteredTasks = tasks.filter(
     t =>
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -436,82 +246,29 @@ export default function KanbanPage() {
               placeholder="Cari tugas atau orang..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              disabled={isSimulating}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.637 10.637z" />
             </svg>
           </div>
 
-          {/* Action Buttons */}
-          <button
-            onClick={isSimulating ? stopSimulation : startSimulation}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95 ${
-              isSimulating
-                ? "bg-rose-600 text-white hover:bg-rose-700 shadow-rose-600/10"
-                : "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/10"
-            }`}
-          >
-            <span>{isSimulating ? "🛑 Hentikan Simulasi" : "🎬 Putar Simulasi"}</span>
-          </button>
-
           <button
             onClick={() => handleOpenCreateModal("backlog")}
-            disabled={isSimulating}
-            className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-all flex items-center gap-1.5 shadow-md shadow-teal-600/10 active:scale-95 disabled:opacity-50"
+            className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-all flex items-center gap-1.5 shadow-md shadow-teal-600/10 active:scale-95"
           >
             <span>➕</span> Tambah Tugas
           </button>
           
           <button
             onClick={toggleTheme}
-            className="p-2.5 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl transition-all"
+            className="p-2.5 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 rounded-xl transition-all"
             title="Ganti Tema"
           >
             {isDark ? "🌞" : "🌙"}
           </button>
         </div>
       </header>
-
-      {/* Simulation Log Panel */}
-      {isSimulating && (
-        <div className="relative z-10 mb-6 glass-card p-5 rounded-2xl border border-teal-500/30 bg-teal-500/5 shadow-lg shadow-teal-500/5 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex-grow">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-450 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-                </span>
-                <h3 className="text-xs font-black uppercase tracking-wider text-teal-600 dark:text-teal-400">Mode Simulasi Aktif</h3>
-              </div>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 transition-all duration-300">{simExplanation}</p>
-              
-              {/* Progress bar */}
-              <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div 
-                  className="bg-teal-500 h-full transition-all duration-300 ease-out" 
-                  style={{ width: `${simProgress}%` }}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Logs list */}
-          <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
-            <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Riwayat Kejadian (Logs):</h4>
-            <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-thin text-[10px] font-mono text-slate-600 dark:text-slate-400">
-              {simLogs.map((log, index) => (
-                <div key={index} className="flex items-start gap-1.5">
-                  <span className="text-teal-500 shrink-0">[{new Date().toLocaleTimeString()}]</span>
-                  <span>{log}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Board Columns container */}
       <div className="relative z-10 flex-grow overflow-x-auto pb-6 -mx-4 px-4 scrollbar-thin">
@@ -529,7 +286,16 @@ export default function KanbanPage() {
                 </div>
 
                 {/* Task Cards Area */}
-                <div className="flex-grow overflow-y-auto p-2 bg-slate-100/50 dark:bg-slate-950/20 border-x border-b border-slate-300 dark:border-slate-800 rounded-b-2xl min-h-[400px] flex flex-col gap-3">
+                <div
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, col.id)}
+                  onDragEnter={(e) => handleDragEnter(e, col.id)}
+                  className={`flex-grow overflow-y-auto p-2 border-x border-b rounded-b-2xl min-h-[400px] flex flex-col gap-3 transition-all duration-200 ${
+                    dragOverColumn === col.id
+                      ? "bg-teal-550/10 dark:bg-teal-950/20 border-teal-500/50"
+                      : "bg-slate-100/50 dark:bg-slate-950/20 border-slate-300 dark:border-slate-800"
+                  }`}
+                >
                   {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                       <div className="skeleton w-8 h-8 rounded-full mb-3" />
@@ -539,20 +305,21 @@ export default function KanbanPage() {
                     <div className="flex flex-col items-center justify-center py-16 text-slate-500 border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
                       <span className="text-2xl mb-1.5 opacity-60">📭</span>
                       <span className="text-[10px] font-bold uppercase tracking-wide">Kolom Kosong</span>
-                      {!isSimulating && (
-                        <button
-                          onClick={() => handleOpenCreateModal(col.id as Task["status"])}
-                          className="mt-3 text-[10px] font-black text-teal-650 dark:text-teal-400 hover:underline"
-                        >
-                          Tambah Tugas Baru
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleOpenCreateModal(col.id as Task["status"])}
+                        className="mt-3 text-[10px] font-black text-teal-650 dark:text-teal-400 hover:underline"
+                      >
+                        Tambah Tugas Baru
+                      </button>
                     </div>
                   ) : (
                     colTasks.map(task => (
                       <div
                         key={task.id}
-                        className={`p-4 rounded-xl border relative group transition-all duration-300 hover:shadow-md ${
+                        draggable={!isLoading}
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`p-4 rounded-xl border relative group transition-all duration-300 hover:shadow-md cursor-grab active:cursor-grabbing ${
                           isDark 
                             ? "border-slate-700 bg-slate-900/95 text-white hover:border-slate-500" 
                             : "border-slate-300 bg-white text-slate-900 shadow-sm hover:border-slate-400"
@@ -572,28 +339,26 @@ export default function KanbanPage() {
                             {task.priority === "high" ? "🔴 Tinggi" : task.priority === "medium" ? "🟡 Sedang" : "🟢 Rendah"}
                           </span>
 
-                          {!isSimulating && (
-                            <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => handleOpenEditModal(task)}
-                                className="text-slate-650 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5 rounded transition-colors"
-                                title="Edit Tugas"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="text-slate-650 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-0.5 rounded transition-colors"
-                                title="Hapus Tugas"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleOpenEditModal(task)}
+                              className="text-slate-650 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5 rounded transition-colors"
+                              title="Edit Tugas"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="text-slate-650 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-0.5 rounded transition-colors"
+                              title="Hapus Tugas"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Title & Description */}
@@ -615,9 +380,8 @@ export default function KanbanPage() {
                           {/* Dropdown status changer */}
                           <select
                             value={task.status}
-                            disabled={isSimulating}
                             onChange={e => handleStatusChange(task.id, e.target.value as Task["status"])}
-                            className="text-[9px] font-bold bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-750 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 disabled:opacity-60"
+                            className="text-[9px] font-bold bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-750 rounded px-1.5 py-0.5 text-slate-850 dark:text-slate-150 focus:outline-none focus:border-teal-500"
                           >
                             <option value="backlog">Backlog</option>
                             <option value="todo">To Do</option>
