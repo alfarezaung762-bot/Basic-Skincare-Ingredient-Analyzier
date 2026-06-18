@@ -399,4 +399,17 @@ model KanbanTask {
   assignee    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// 13. ELEVENLABS VOICE MANAGER
+// ==========================================
+
+model ElevenLabsVoice {
+  id        String   @id @default(cuid())
+  voiceId   String   @unique
+  name      String
+  note      String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
